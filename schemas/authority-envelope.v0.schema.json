@@ -35,7 +35,8 @@
           "nonce": {"type": "string", "minLength": 1},
           "task_id": {"type": "string", "minLength": 1},
           "capabilities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
-          "authority_slot": {"type": "string", "minLength": 1, "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"}
+          "authority_slot": {"type": "string", "minLength": 1, "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
+          "information": {"$ref": "information-label.v1.schema.json"}
         },
         "additionalProperties": false
       }

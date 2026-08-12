@@ -55,6 +55,39 @@ fn main() -> i64 effects [] { return echo(42); }
 }
 
 #[test]
+fn information_flow_syntax_formats_canonically() -> Result<(), Box<dyn std::error::Error>> {
+    let dense = r#"module secure flow;fn relay(payload:string flow[secret,tenant:agent_a,purpose:handoff])->string flow[secret,tenant:agent_a,purpose:handoff]effects[]authorities[]{let copy:string flow[secret,tenant:agent_a,purpose:handoff]=payload;return copy;}fn main()->unit flow[public]effects[network_send]authorities[send_once:network_send]{let payload:string flow[secret,tenant:agent_a,purpose:handoff]="classified";request network_send(payload)using send_once flow[secret,tenant:agent_a,purpose:handoff];return;}"#;
+    let expected = r#"module secure flow;
+
+fn relay(payload: string flow [secret, tenant:agent_a, purpose:handoff]) -> string flow [secret, tenant:agent_a, purpose:handoff] effects [] authorities [] {
+  let copy: string flow [secret, tenant:agent_a, purpose:handoff] = payload;
+  return copy;
+}
+
+fn main() -> unit flow [public] effects [network_send] authorities [send_once: network_send] {
+  let payload: string flow [secret, tenant:agent_a, purpose:handoff] = "classified";
+  request network_send(payload) using send_once flow [secret, tenant:agent_a, purpose:handoff];
+  return;
+}
+"#;
+    let formatted = format_source(dense)?;
+    assert_eq!(formatted, expected);
+    assert_eq!(format_source(&formatted)?, formatted);
+    Ok(())
+}
+
+#[test]
+fn flow_context_word_remains_a_legacy_identifier() -> Result<(), Box<dyn std::error::Error>> {
+    let source = r"module contextual;
+fn echo(flow: i64) -> i64 effects [] { return flow; }
+fn main() -> i64 effects [] { return echo(42); }
+";
+    let formatted = format_source(source)?;
+    assert!(formatted.contains("echo(flow: i64)"));
+    Ok(())
+}
+
+#[test]
 fn malformed_source_has_a_stable_parse_diagnostic() -> Result<(), Box<dyn std::error::Error>> {
     let Err(report) = parse("module missing_semicolon") else {
         return Err("malformed source unexpectedly parsed".into());

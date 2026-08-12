@@ -151,6 +151,44 @@ impl Type {
     }
 }
 
+/// Explicit information-flow label for values and effect sinks.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "class", rename_all = "lowercase", deny_unknown_fields)]
+pub enum InformationLabel {
+    /// Unrestricted information.
+    #[default]
+    Public,
+    /// Protected information scoped to one tenant and one declared purpose.
+    Secret {
+        /// Tenant isolation boundary.
+        tenant: String,
+        /// Authorized use of the information.
+        purpose: String,
+    },
+}
+
+impl InformationLabel {
+    /// Whether a value with this label may enter the destination label.
+    #[must_use]
+    pub fn can_flow_to(&self, destination: &Self) -> bool {
+        self == destination || matches!(self, Self::Public)
+    }
+
+    /// Join two expression labels, rejecting incompatible protected domains.
+    #[must_use]
+    pub fn join(&self, other: &Self) -> Option<Self> {
+        if self == other {
+            Some(self.clone())
+        } else if matches!(self, Self::Public) {
+            Some(other.clone())
+        } else if matches!(other, Self::Public) {
+            Some(self.clone())
+        } else {
+            None
+        }
+    }
+}
+
 /// Unary operator.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -289,6 +327,9 @@ pub enum Statement {
         name: String,
         /// Declared type.
         value_type: Type,
+        /// Explicit destination label in the information-flow profile.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        information: Option<InformationLabel>,
         /// Initializer.
         value: Expression,
         /// Source span.
@@ -309,6 +350,9 @@ pub enum Statement {
         effect: String,
         /// Linear authority slot moved into this request, when enabled.
         authority: Option<String>,
+        /// Explicit request sink label in the information-flow profile.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        information: Option<InformationLabel>,
         /// Request arguments.
         arguments: Vec<Expression>,
         /// Source span.
@@ -346,6 +390,9 @@ pub struct Parameter {
     pub name: String,
     /// Parameter type.
     pub value_type: Type,
+    /// Explicit parameter label in the information-flow profile.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub information: Option<InformationLabel>,
     /// Source span.
     #[serde(skip, default)]
     pub span: Span,
@@ -374,6 +421,9 @@ pub struct Function {
     pub parameters: Vec<Parameter>,
     /// Return type.
     pub return_type: Type,
+    /// Explicit return label in the information-flow profile.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub return_information: Option<InformationLabel>,
     /// Explicit effect row.
     pub effects: Vec<String>,
     /// Explicit linear authority profile. `None` preserves the legacy request profile.
@@ -395,6 +445,9 @@ pub struct Program {
     pub module: String,
     /// Function declarations in source order.
     pub functions: Vec<Function>,
+    /// Whether this module requires complete information-flow annotations.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub information_flow: bool,
     /// Source span.
     #[serde(skip, default)]
     pub span: Span,
@@ -423,17 +476,31 @@ impl CanonicalProgram {
     pub const LEGACY_SCHEMA: &'static str = "joan.canonical-ast.v0";
     /// Linear one-shot authority profile.
     pub const LINEAR_SCHEMA: &'static str = "joan.canonical-ast.v1";
+    /// Tenant-and-purpose information-flow profile.
+    pub const INFORMATION_SCHEMA: &'static str = "joan.canonical-ast.v2";
 
     /// Whether this canonical schema is supported by the language preview.
     #[must_use]
     pub fn supports_schema(schema: &str) -> bool {
-        matches!(schema, Self::LEGACY_SCHEMA | Self::LINEAR_SCHEMA)
+        matches!(
+            schema,
+            Self::LEGACY_SCHEMA | Self::LINEAR_SCHEMA | Self::INFORMATION_SCHEMA
+        )
     }
 
     /// Whether this program uses the linear authority profile.
     #[must_use]
     pub fn is_linear(&self) -> bool {
-        self.schema == Self::LINEAR_SCHEMA
+        matches!(
+            self.schema.as_str(),
+            Self::LINEAR_SCHEMA | Self::INFORMATION_SCHEMA
+        )
+    }
+
+    /// Whether this program uses explicit information-flow labels.
+    #[must_use]
+    pub fn is_information_flow(&self) -> bool {
+        self.schema == Self::INFORMATION_SCHEMA
     }
 }
 
@@ -447,6 +514,9 @@ pub struct CanonicalFunction {
     pub parameters: Vec<CanonicalParameter>,
     /// Declared return type.
     pub return_type: Type,
+    /// Explicit return label in the information-flow profile.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub return_information: Option<InformationLabel>,
     /// Lexicographically sorted effect row.
     pub effects: Vec<String>,
     /// Sorted per-invocation authority slots; absent only in the legacy profile.
@@ -474,6 +544,9 @@ pub struct CanonicalParameter {
     pub name: String,
     /// Parameter type.
     pub value_type: Type,
+    /// Explicit parameter label in the information-flow profile.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub information: Option<InformationLabel>,
 }
 
 /// One span-free canonical statement.
@@ -486,6 +559,9 @@ pub enum CanonicalStatement {
         name: String,
         /// Declared type.
         value_type: Type,
+        /// Explicit destination label in the information-flow profile.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        information: Option<InformationLabel>,
         /// Initializer.
         value: CanonicalExpression,
     },
@@ -501,6 +577,9 @@ pub enum CanonicalStatement {
         /// Linear authority slot moved into this request.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         authority: Option<String>,
+        /// Explicit request sink label in the information-flow profile.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        information: Option<InformationLabel>,
         /// Ordered request arguments.
         arguments: Vec<CanonicalExpression>,
     },
@@ -583,7 +662,9 @@ impl Program {
                 })
         });
         CanonicalProgram {
-            schema: if linear {
+            schema: if self.information_flow {
+                CanonicalProgram::INFORMATION_SCHEMA
+            } else if linear {
                 CanonicalProgram::LINEAR_SCHEMA
             } else {
                 CanonicalProgram::LEGACY_SCHEMA
@@ -615,6 +696,7 @@ impl From<&Function> for CanonicalFunction {
                 .map(CanonicalParameter::from)
                 .collect(),
             return_type: function.return_type.clone(),
+            return_information: function.return_information.clone(),
             effects,
             authorities,
             body: function.body.iter().map(CanonicalStatement::from).collect(),
@@ -636,6 +718,7 @@ impl From<&Parameter> for CanonicalParameter {
         Self {
             name: parameter.name.clone(),
             value_type: parameter.value_type.clone(),
+            information: parameter.information.clone(),
         }
     }
 }
@@ -646,11 +729,13 @@ impl From<&Statement> for CanonicalStatement {
             Statement::Let {
                 name,
                 value_type,
+                information,
                 value,
                 ..
             } => Self::Let {
                 name: name.clone(),
                 value_type: value_type.clone(),
+                information: information.clone(),
                 value: CanonicalExpression::from(value),
             },
             Statement::Return { value, .. } => Self::Return {
@@ -659,11 +744,13 @@ impl From<&Statement> for CanonicalStatement {
             Statement::Request {
                 effect,
                 authority,
+                information,
                 arguments,
                 ..
             } => Self::Request {
                 effect: effect.clone(),
                 authority: authority.clone(),
+                information: information.clone(),
                 arguments: arguments.iter().map(CanonicalExpression::from).collect(),
             },
             Statement::Expression { expression, .. } => Self::Expression {
@@ -671,6 +758,14 @@ impl From<&Statement> for CanonicalStatement {
             },
         }
     }
+}
+
+#[allow(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "serde skip_serializing_if hooks must borrow the field"
+)]
+const fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 impl From<&Expression> for CanonicalExpression {

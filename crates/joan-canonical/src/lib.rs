@@ -86,6 +86,8 @@ pub enum RegisteredDomainV1 {
     LanguageCanonicalAst,
     /// Canonical JOAN AST with linear authority slots.
     LanguageCanonicalAstLinear,
+    /// Canonical JOAN AST with tenant-purpose information labels.
+    LanguageCanonicalAstInformation,
     /// One conformance vector or vector manifest.
     ConformanceVector,
     /// Source-byte identity.
@@ -96,6 +98,8 @@ pub enum RegisteredDomainV1 {
     BytecodeProgram,
     /// Complete verified bytecode program with linear authority slots.
     BytecodeProgramLinear,
+    /// Complete verified bytecode program with information-flow labels.
+    BytecodeProgramInformation,
     /// Dispute case identity.
     DisputeCase,
     /// Dispute claim identity.
@@ -124,11 +128,13 @@ impl RegisteredDomainV1 {
             Self::CanonicalSetElement => "joan.canonical-set-element.v1",
             Self::LanguageCanonicalAst => "joan.language-canonical-ast.v1",
             Self::LanguageCanonicalAstLinear => "joan.language-canonical-ast.v2",
+            Self::LanguageCanonicalAstInformation => "joan.language-canonical-ast.v3",
             Self::ConformanceVector => "joan.conformance-vector.v1",
             Self::Source => "joan.source.v1",
             Self::PackageManifest => "joan.package-manifest.v1",
             Self::BytecodeProgram => "joan.bytecode-program.v1",
             Self::BytecodeProgramLinear => "joan.bytecode-program.v2",
+            Self::BytecodeProgramInformation => "joan.bytecode-program.v3",
             Self::DisputeCase => "joan.dispute-case.v1",
             Self::DisputeClaim => "joan.dispute-claim.v1",
             Self::ResolutionProfile => "joan.resolution-profile.v1",
@@ -147,11 +153,13 @@ impl RegisteredDomainV1 {
             "joan.canonical-set-element.v1" => Self::CanonicalSetElement,
             "joan.language-canonical-ast.v1" => Self::LanguageCanonicalAst,
             "joan.language-canonical-ast.v2" => Self::LanguageCanonicalAstLinear,
+            "joan.language-canonical-ast.v3" => Self::LanguageCanonicalAstInformation,
             "joan.conformance-vector.v1" => Self::ConformanceVector,
             "joan.source.v1" => Self::Source,
             "joan.package-manifest.v1" => Self::PackageManifest,
             "joan.bytecode-program.v1" => Self::BytecodeProgram,
             "joan.bytecode-program.v2" => Self::BytecodeProgramLinear,
+            "joan.bytecode-program.v3" => Self::BytecodeProgramInformation,
             "joan.dispute-case.v1" => Self::DisputeCase,
             "joan.dispute-claim.v1" => Self::DisputeClaim,
             "joan.resolution-profile.v1" => Self::ResolutionProfile,

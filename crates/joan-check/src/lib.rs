@@ -1,8 +1,8 @@
 //! Static type, effect-row, and bounded-termination checks for JOAN v0.
 
 use joan_ast::{
-    BinaryOperator, Diagnostic, DiagnosticReport, Expression, Function, Program, Span, Statement,
-    Type, UnaryOperator,
+    BinaryOperator, Diagnostic, DiagnosticReport, Expression, Function, InformationLabel, Program,
+    Span, Statement, Type, UnaryOperator,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -13,14 +13,20 @@ const MAX_STATEMENTS: usize = 100_000;
 
 #[derive(Clone)]
 struct FunctionSignature {
-    parameters: Vec<Type>,
-    return_type: Type,
+    parameters: Vec<ValueInfo>,
+    return_value: ValueInfo,
     effects: BTreeSet<String>,
     span: Span,
 }
 
+#[derive(Clone)]
+struct ValueInfo {
+    value_type: Type,
+    information: InformationLabel,
+}
+
 struct RequestCheckContext<'a> {
-    locals: &'a HashMap<String, Type>,
+    locals: &'a HashMap<String, ValueInfo>,
     authority_slots: &'a HashMap<String, String>,
     available_authorities: &'a mut BTreeSet<String>,
     function: &'a Function,
@@ -50,6 +56,12 @@ pub struct CheckReceipt {
     pub authority_profile: String,
     /// Number of declared per-invocation authority slots.
     pub authority_slot_count: usize,
+    /// Information-flow discipline, present only for flow modules.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub information_flow_profile: Option<String>,
+    /// Number of secret value and effect boundaries.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub protected_boundary_count: Option<usize>,
 }
 
 /// Validate types, names, effects, entrypoint, and the acyclic call graph.
@@ -68,7 +80,12 @@ pub fn check(program: &Program) -> Result<CheckReceipt, DiagnosticReport> {
         .map(Vec::len)
         .sum();
     Ok(CheckReceipt {
-        schema: "joan.check-receipt.v0".to_owned(),
+        schema: if program.information_flow {
+            "joan.check-receipt.v1"
+        } else {
+            "joan.check-receipt.v0"
+        }
+        .to_owned(),
         status: "accepted".to_owned(),
         module: program.module.clone(),
         function_count: program.functions.len(),
@@ -82,6 +99,12 @@ pub fn check(program: &Program) -> Result<CheckReceipt, DiagnosticReport> {
         effect_profile: "requests-recorded-never-executed".to_owned(),
         authority_profile: authority_profile.to_owned(),
         authority_slot_count,
+        information_flow_profile: program
+            .information_flow
+            .then(|| "explicit-tenant-purpose-no-declassification".to_owned()),
+        protected_boundary_count: program
+            .information_flow
+            .then(|| protected_boundary_count(program)),
     })
 }
 
@@ -96,18 +119,19 @@ struct Checker<'a> {
 
 impl<'a> Checker<'a> {
     fn new(program: &'a Program) -> Self {
-        let linear_profile = program.functions.iter().any(|function| {
-            function.authorities.is_some()
-                || function.body.iter().any(|statement| {
-                    matches!(
-                        statement,
-                        Statement::Request {
-                            authority: Some(_),
-                            ..
-                        }
-                    )
-                })
-        });
+        let linear_profile = program.information_flow
+            || program.functions.iter().any(|function| {
+                function.authorities.is_some()
+                    || function.body.iter().any(|statement| {
+                        matches!(
+                            statement,
+                            Statement::Request {
+                                authority: Some(_),
+                                ..
+                            }
+                        )
+                    })
+            });
         Self {
             program,
             signatures: HashMap::new(),
@@ -143,6 +167,7 @@ impl<'a> Checker<'a> {
         }
         let mut statement_count = 0usize;
         for function in &self.program.functions {
+            self.check_information_shape(function);
             statement_count = statement_count.saturating_add(function.body.len());
             if function.parameters.len() > MAX_PARAMETERS {
                 self.diagnostics.push(Diagnostic::error(
@@ -166,9 +191,15 @@ impl<'a> Checker<'a> {
                 parameters: function
                     .parameters
                     .iter()
-                    .map(|parameter| parameter.value_type.clone())
+                    .map(|parameter| ValueInfo {
+                        value_type: parameter.value_type.clone(),
+                        information: parameter.information.clone().unwrap_or_default(),
+                    })
                     .collect(),
-                return_type: function.return_type.clone(),
+                return_value: ValueInfo {
+                    value_type: function.return_type.clone(),
+                    information: function.return_information.clone().unwrap_or_default(),
+                },
                 effects,
                 span: function.span,
             };
@@ -211,6 +242,59 @@ impl<'a> Checker<'a> {
         }
     }
 
+    fn check_information_shape(&mut self, function: &Function) {
+        let mut boundary = |present: bool, span: Span, description: String| {
+            if self.program.information_flow && !present {
+                self.diagnostics.push(
+                    Diagnostic::error(
+                        "J2060",
+                        format!("{description} requires an explicit `flow [...]` label"),
+                        span,
+                    )
+                    .with_note("flow modules require labels on every value and request boundary"),
+                );
+            } else if !self.program.information_flow && present {
+                self.diagnostics.push(
+                    Diagnostic::error(
+                        "J2061",
+                        format!("{description} uses `flow [...]` outside a flow module"),
+                        span,
+                    )
+                    .with_note("declare the module as `module <name> flow;`"),
+                );
+            }
+        };
+        boundary(
+            function.return_information.is_some(),
+            function.span,
+            format!("return of function `{}`", function.name),
+        );
+        for parameter in &function.parameters {
+            boundary(
+                parameter.information.is_some(),
+                parameter.span,
+                format!("parameter `{}`", parameter.name),
+            );
+        }
+        for statement in &function.body {
+            match statement {
+                Statement::Let {
+                    name,
+                    information,
+                    span,
+                    ..
+                } => boundary(information.is_some(), *span, format!("local `{name}`")),
+                Statement::Request {
+                    effect,
+                    information,
+                    span,
+                    ..
+                } => boundary(information.is_some(), *span, format!("request `{effect}`")),
+                Statement::Return { .. } | Statement::Expression { .. } => {}
+            }
+        }
+    }
+
     fn check_bodies(&mut self) {
         for function in &self.program.functions {
             self.check_function(function);
@@ -232,7 +316,13 @@ impl<'a> Checker<'a> {
                 ));
             }
             if locals
-                .insert(parameter.name.clone(), parameter.value_type.clone())
+                .insert(
+                    parameter.name.clone(),
+                    ValueInfo {
+                        value_type: parameter.value_type.clone(),
+                        information: parameter.information.clone().unwrap_or_default(),
+                    },
+                )
                 .is_some()
             {
                 self.diagnostics.push(Diagnostic::error(
@@ -347,7 +437,7 @@ impl<'a> Checker<'a> {
     fn check_statement(
         &mut self,
         statement: &Statement,
-        locals: &mut HashMap<String, Type>,
+        locals: &mut HashMap<String, ValueInfo>,
         authority_slots: &HashMap<String, String>,
         available_authorities: &mut BTreeSet<String>,
         function: &Function,
@@ -356,6 +446,7 @@ impl<'a> Checker<'a> {
             Statement::Let {
                 name,
                 value_type,
+                information,
                 value,
                 span,
             } => {
@@ -367,8 +458,29 @@ impl<'a> Checker<'a> {
                     ));
                 }
                 let actual = self.expression_type(value, locals, function);
-                self.require_type(value_type, actual.as_ref(), value.span(), "initializer");
-                if locals.insert(name.clone(), value_type.clone()).is_some() {
+                self.require_type(
+                    value_type,
+                    actual.as_ref().map(|value| &value.value_type),
+                    value.span(),
+                    "initializer",
+                );
+                let destination = information.clone().unwrap_or_default();
+                self.require_flow(
+                    actual.as_ref().map(|value| &value.information),
+                    &destination,
+                    value.span(),
+                    "initializer",
+                );
+                if locals
+                    .insert(
+                        name.clone(),
+                        ValueInfo {
+                            value_type: value_type.clone(),
+                            information: destination,
+                        },
+                    )
+                    .is_some()
+                {
                     self.diagnostics.push(Diagnostic::error(
                         "J2025",
                         format!("duplicate local `{name}`"),
@@ -378,33 +490,13 @@ impl<'a> Checker<'a> {
                 false
             }
             Statement::Return { value, span } => {
-                match (value, &function.return_type) {
-                    (None, Type::Unit) => {}
-                    (None, expected) => self.diagnostics.push(Diagnostic::error(
-                        "J2026",
-                        format!("return requires a value of type {}", expected.as_str()),
-                        *span,
-                    )),
-                    (Some(_), Type::Unit) => self.diagnostics.push(Diagnostic::error(
-                        "J2027",
-                        "unit function must use `return;`",
-                        *span,
-                    )),
-                    (Some(expression), expected) => {
-                        let actual = self.expression_type(expression, locals, function);
-                        self.require_type(
-                            expected,
-                            actual.as_ref(),
-                            expression.span(),
-                            "return value",
-                        );
-                    }
-                }
+                self.check_return(value.as_ref(), *span, locals, function);
                 true
             }
             Statement::Request {
                 effect,
                 authority,
+                information,
                 arguments,
                 span,
             } => {
@@ -414,7 +506,14 @@ impl<'a> Checker<'a> {
                     available_authorities,
                     function,
                 };
-                self.check_request(effect, authority.as_deref(), arguments, *span, &mut context);
+                self.check_request(
+                    effect,
+                    authority.as_deref(),
+                    information.as_ref(),
+                    arguments,
+                    *span,
+                    &mut context,
+                );
                 false
             }
             Statement::Expression { expression, .. } => {
@@ -424,10 +523,51 @@ impl<'a> Checker<'a> {
         }
     }
 
+    fn check_return(
+        &mut self,
+        value: Option<&Expression>,
+        span: Span,
+        locals: &HashMap<String, ValueInfo>,
+        function: &Function,
+    ) {
+        match (value, &function.return_type) {
+            (None, Type::Unit) => {}
+            (None, expected) => self.diagnostics.push(Diagnostic::error(
+                "J2026",
+                format!("return requires a value of type {}", expected.as_str()),
+                span,
+            )),
+            (Some(_), Type::Unit) => self.diagnostics.push(Diagnostic::error(
+                "J2027",
+                "unit function must use `return;`",
+                span,
+            )),
+            (Some(expression), expected) => {
+                let actual = self.expression_type(expression, locals, function);
+                self.require_type(
+                    expected,
+                    actual.as_ref().map(|value| &value.value_type),
+                    expression.span(),
+                    "return value",
+                );
+                self.require_flow(
+                    actual.as_ref().map(|value| &value.information),
+                    function
+                        .return_information
+                        .as_ref()
+                        .unwrap_or(&InformationLabel::Public),
+                    expression.span(),
+                    "return value",
+                );
+            }
+        }
+    }
+
     fn check_request(
         &mut self,
         effect: &str,
         authority: Option<&str>,
+        information: Option<&InformationLabel>,
         arguments: &[Expression],
         span: Span,
         context: &mut RequestCheckContext<'_>,
@@ -447,8 +587,15 @@ impl<'a> Checker<'a> {
                 .with_note("add the effect to `effects [...]` or remove the request"),
             );
         }
+        let sink = information.cloned().unwrap_or_default();
         for argument in arguments {
-            self.expression_type(argument, context.locals, context.function);
+            let actual = self.expression_type(argument, context.locals, context.function);
+            self.require_flow(
+                actual.as_ref().map(|value| &value.information),
+                &sink,
+                argument.span(),
+                "request argument",
+            );
         }
         if !self.linear_profile {
             return;
@@ -498,13 +645,13 @@ impl<'a> Checker<'a> {
     fn expression_type(
         &mut self,
         expression: &Expression,
-        locals: &HashMap<String, Type>,
+        locals: &HashMap<String, ValueInfo>,
         caller: &Function,
-    ) -> Option<Type> {
+    ) -> Option<ValueInfo> {
         match expression {
-            Expression::Integer { .. } => Some(Type::I64),
-            Expression::Boolean { .. } => Some(Type::Bool),
-            Expression::String { .. } => Some(Type::String),
+            Expression::Integer { .. } => Some(public_value(Type::I64)),
+            Expression::Boolean { .. } => Some(public_value(Type::Bool)),
+            Expression::String { .. } => Some(public_value(Type::String)),
             Expression::Variable { name, span } => locals.get(name).cloned().or_else(|| {
                 self.diagnostics.push(Diagnostic::error(
                     "J2030",
@@ -523,8 +670,16 @@ impl<'a> Checker<'a> {
                     UnaryOperator::Negate => Type::I64,
                     UnaryOperator::Not => Type::Bool,
                 };
-                self.require_type(&expected, actual.as_ref(), *span, "unary operand");
-                Some(expected)
+                self.require_type(
+                    &expected,
+                    actual.as_ref().map(|value| &value.value_type),
+                    *span,
+                    "unary operand",
+                );
+                Some(ValueInfo {
+                    value_type: expected,
+                    information: actual.map(|value| value.information).unwrap_or_default(),
+                })
             }
             Expression::Binary {
                 operator,
@@ -546,21 +701,26 @@ impl<'a> Checker<'a> {
         left: &Expression,
         right: &Expression,
         span: Span,
-        locals: &HashMap<String, Type>,
+        locals: &HashMap<String, ValueInfo>,
         caller: &Function,
-    ) -> Type {
+    ) -> ValueInfo {
         let left_type = self.expression_type(left, locals, caller);
         let right_type = self.expression_type(right, locals, caller);
-        match operator {
+        let value_type = match operator {
             BinaryOperator::Add
             | BinaryOperator::Subtract
             | BinaryOperator::Multiply
             | BinaryOperator::Divide
             | BinaryOperator::Remainder => {
-                self.require_type(&Type::I64, left_type.as_ref(), left.span(), "left operand");
                 self.require_type(
                     &Type::I64,
-                    right_type.as_ref(),
+                    left_type.as_ref().map(|value| &value.value_type),
+                    left.span(),
+                    "left operand",
+                );
+                self.require_type(
+                    &Type::I64,
+                    right_type.as_ref().map(|value| &value.value_type),
                     right.span(),
                     "right operand",
                 );
@@ -570,20 +730,30 @@ impl<'a> Checker<'a> {
             | BinaryOperator::LessEqual
             | BinaryOperator::Greater
             | BinaryOperator::GreaterEqual => {
-                self.require_type(&Type::I64, left_type.as_ref(), left.span(), "left operand");
                 self.require_type(
                     &Type::I64,
-                    right_type.as_ref(),
+                    left_type.as_ref().map(|value| &value.value_type),
+                    left.span(),
+                    "left operand",
+                );
+                self.require_type(
+                    &Type::I64,
+                    right_type.as_ref().map(|value| &value.value_type),
                     right.span(),
                     "right operand",
                 );
                 Type::Bool
             }
             BinaryOperator::And | BinaryOperator::Or => {
-                self.require_type(&Type::Bool, left_type.as_ref(), left.span(), "left operand");
                 self.require_type(
                     &Type::Bool,
-                    right_type.as_ref(),
+                    left_type.as_ref().map(|value| &value.value_type),
+                    left.span(),
+                    "left operand",
+                );
+                self.require_type(
+                    &Type::Bool,
+                    right_type.as_ref().map(|value| &value.value_type),
                     right.span(),
                     "right operand",
                 );
@@ -591,20 +761,45 @@ impl<'a> Checker<'a> {
             }
             BinaryOperator::Equal | BinaryOperator::NotEqual => {
                 if let (Some(left_type), Some(right_type)) = (&left_type, &right_type)
-                    && left_type != right_type
+                    && left_type.value_type != right_type.value_type
                 {
                     self.diagnostics.push(Diagnostic::error(
                         "J2031",
                         format!(
                             "equality operands differ: {} and {}",
-                            left_type.as_str(),
-                            right_type.as_str()
+                            left_type.value_type.as_str(),
+                            right_type.value_type.as_str()
                         ),
                         span,
                     ));
                 }
                 Type::Bool
             }
+        };
+        let information = match (left_type, right_type) {
+            (Some(left), Some(right)) => {
+                left.information
+                    .join(&right.information)
+                    .unwrap_or_else(|| {
+                        self.diagnostics.push(
+                        Diagnostic::error(
+                            "J2063",
+                            "expression combines incompatible tenant or purpose labels",
+                            span,
+                        )
+                        .with_note(
+                            "protected values may combine only inside the same tenant and purpose",
+                        ),
+                    );
+                        InformationLabel::Public
+                    })
+            }
+            (Some(value), None) | (None, Some(value)) => value.information,
+            (None, None) => InformationLabel::Public,
+        };
+        ValueInfo {
+            value_type,
+            information,
         }
     }
 
@@ -613,9 +808,9 @@ impl<'a> Checker<'a> {
         function: &str,
         arguments: &[Expression],
         span: Span,
-        locals: &HashMap<String, Type>,
+        locals: &HashMap<String, ValueInfo>,
         caller: &Function,
-    ) -> Option<Type> {
+    ) -> Option<ValueInfo> {
         let Some(signature) = self.signatures.get(function).cloned() else {
             self.diagnostics.push(Diagnostic::error(
                 "J2032",
@@ -645,7 +840,18 @@ impl<'a> Checker<'a> {
         for (index, argument) in arguments.iter().enumerate() {
             let actual = self.expression_type(argument, locals, caller);
             if let Some(expected) = signature.parameters.get(index) {
-                self.require_type(expected, actual.as_ref(), argument.span(), "call argument");
+                self.require_type(
+                    &expected.value_type,
+                    actual.as_ref().map(|value| &value.value_type),
+                    argument.span(),
+                    "call argument",
+                );
+                self.require_flow(
+                    actual.as_ref().map(|value| &value.information),
+                    &expected.information,
+                    argument.span(),
+                    "call argument",
+                );
             }
         }
         let caller_effects = caller.effects.iter().cloned().collect::<BTreeSet<_>>();
@@ -664,7 +870,7 @@ impl<'a> Checker<'a> {
                 );
             }
         }
-        Some(signature.return_type)
+        Some(signature.return_value)
     }
 
     fn require_type(
@@ -686,6 +892,30 @@ impl<'a> Checker<'a> {
                 ),
                 span,
             ));
+        }
+    }
+
+    fn require_flow(
+        &mut self,
+        source: Option<&InformationLabel>,
+        destination: &InformationLabel,
+        span: Span,
+        context: &'static str,
+    ) {
+        if !self.program.information_flow {
+            return;
+        }
+        if let Some(source) = source
+            && !source.can_flow_to(destination)
+        {
+            self.diagnostics.push(
+                Diagnostic::error(
+                    "J2062",
+                    format!("{context} violates the declared information boundary"),
+                    span,
+                )
+                .with_note("secret data cannot become public, cross tenants, or change purpose"),
+            );
         }
     }
 
@@ -735,4 +965,46 @@ impl<'a> Checker<'a> {
         visiting.remove(name);
         visited.insert(name.to_owned());
     }
+}
+
+fn public_value(value_type: Type) -> ValueInfo {
+    ValueInfo {
+        value_type,
+        information: InformationLabel::Public,
+    }
+}
+
+fn protected_boundary_count(program: &Program) -> usize {
+    program
+        .functions
+        .iter()
+        .map(|function| {
+            usize::from(matches!(
+                function.return_information,
+                Some(InformationLabel::Secret { .. })
+            )) + function
+                .parameters
+                .iter()
+                .filter(|parameter| {
+                    matches!(parameter.information, Some(InformationLabel::Secret { .. }))
+                })
+                .count()
+                + function
+                    .body
+                    .iter()
+                    .filter(|statement| {
+                        matches!(
+                            statement,
+                            Statement::Let {
+                                information: Some(InformationLabel::Secret { .. }),
+                                ..
+                            } | Statement::Request {
+                                information: Some(InformationLabel::Secret { .. }),
+                                ..
+                            }
+                        )
+                    })
+                    .count()
+        })
+        .sum()
 }

@@ -136,6 +136,7 @@ fn exact_one_shot_approval_allows_required_effect() -> Result<(), Box<dyn std::e
         task_id: "task-1".to_owned(),
         capabilities: set(&["fs.write"]),
         authority_slot: None,
+        information: None,
     });
     assert_eq!(
         resolve_instructions(&request)?.decision,

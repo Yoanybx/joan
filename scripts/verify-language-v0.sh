@@ -15,7 +15,11 @@ bytecode="$(mktemp "${TMPDIR:-/tmp}/joan-language-bytecode.XXXXXX.json")"
 verification="$(mktemp "${TMPDIR:-/tmp}/joan-language-verification.XXXXXX.json")"
 linear_receipt="$(mktemp "${TMPDIR:-/tmp}/joan-linear-language-receipt.XXXXXX.json")"
 linear_artifact="$(mktemp "${TMPDIR:-/tmp}/joan-linear-language-artifact.XXXXXX.json")"
-trap 'rm -f "$receipt" "$artifact" "$bytecode" "$verification" "$linear_receipt" "$linear_artifact"' EXIT
+flow_receipt="$(mktemp "${TMPDIR:-/tmp}/joan-flow-language-receipt.XXXXXX.json")"
+flow_artifact="$(mktemp "${TMPDIR:-/tmp}/joan-flow-language-artifact.XXXXXX.json")"
+flow_bytecode="$(mktemp "${TMPDIR:-/tmp}/joan-flow-language-bytecode.XXXXXX.json")"
+flow_verification="$(mktemp "${TMPDIR:-/tmp}/joan-flow-language-verification.XXXXXX.json")"
+trap 'rm -f "$receipt" "$artifact" "$bytecode" "$verification" "$linear_receipt" "$linear_artifact" "$flow_receipt" "$flow_artifact" "$flow_bytecode" "$flow_verification"' EXIT
 
 cargo build --quiet --locked -p joan-node
 "$binary" fmt examples/agent-handoff.joan --check
@@ -29,14 +33,24 @@ node -e 'process.stdout.write(JSON.stringify(JSON.parse(require("node:fs").readF
 "$binary" check examples/linear-agent-handoff.joan --json >/dev/null
 "$binary" compile examples/linear-agent-handoff.joan --json >"$linear_artifact"
 "$binary" run examples/linear-agent-handoff.joan --json >"$linear_receipt"
+"$binary" fmt examples/tenant-safe-handoff.joan --check
+"$binary" check examples/tenant-safe-handoff.joan --json >/dev/null
+"$binary" compile examples/tenant-safe-handoff.joan --json >"$flow_artifact"
+"$binary" run examples/tenant-safe-handoff.joan --json >"$flow_receipt"
+node -e 'process.stdout.write(JSON.stringify(JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).bytecode))' "$flow_artifact" \
+  | "$binary" canonicalize-v1 - >"$flow_bytecode"
+"$binary" bytecode verify "$flow_bytecode" --json >"$flow_verification"
 
-node - "$artifact" "$receipt" "$verification" "$linear_artifact" "$linear_receipt" <<'NODE'
+node - "$artifact" "$receipt" "$verification" "$linear_artifact" "$linear_receipt" "$flow_artifact" "$flow_receipt" "$flow_verification" <<'NODE'
 const { readFileSync } = require("node:fs");
 const artifact = JSON.parse(readFileSync(process.argv[2], "utf8"));
 const receipt = JSON.parse(readFileSync(process.argv[3], "utf8"));
 const verification = JSON.parse(readFileSync(process.argv[4], "utf8"));
 const linearArtifact = JSON.parse(readFileSync(process.argv[5], "utf8"));
 const linearReceipt = JSON.parse(readFileSync(process.argv[6], "utf8"));
+const flowArtifact = JSON.parse(readFileSync(process.argv[7], "utf8"));
+const flowReceipt = JSON.parse(readFileSync(process.argv[8], "utf8"));
+const flowVerification = JSON.parse(readFileSync(process.argv[9], "utf8"));
 if (artifact.schema !== "joan.compile-artifact.v1" || artifact.status !== "compiled") {
   throw new Error("compile artifact contract failed");
 }
@@ -95,6 +109,29 @@ if (
 ) {
   throw new Error("linear authority slot was not bound to the effect request");
 }
+if (
+  flowArtifact.schema !== "joan.compile-artifact.v3" ||
+  flowArtifact.bytecode.schema !== "joan.bytecode-program.v3" ||
+  flowArtifact.bytecode.canonical_ast.schema !== "joan.canonical-ast.v2" ||
+  flowArtifact.bytecode.semantic_identity.schema !== "joan.canonical-ast-identity.v2" ||
+  flowArtifact.verification.schema !== "joan.bytecode-verification-receipt.v2" ||
+  flowReceipt.schema !== "joan.execution-receipt.v3"
+) {
+  throw new Error("information-flow artifact profile failed");
+}
+if (JSON.stringify(flowArtifact.verification) !== JSON.stringify(flowVerification)) {
+  throw new Error("flow compiler and standalone verifier receipts differ");
+}
+const flowRequest = flowReceipt.effect_requests[0];
+if (
+  flowReceipt.effect_requests.length !== 1 ||
+  flowRequest.authority_slot !== "send_once" ||
+  flowRequest.information?.class !== "secret" ||
+  flowRequest.information?.tenant !== "agent_a" ||
+  flowRequest.information?.purpose !== "handoff"
+) {
+  throw new Error("tenant-purpose request binding failed");
+}
 NODE
 
-printf '%s\n' 'JOAN legacy and linear-authority compile and execution contracts passed.'
+printf '%s\n' 'JOAN legacy, linear-authority, and tenant-purpose flow contracts passed.'

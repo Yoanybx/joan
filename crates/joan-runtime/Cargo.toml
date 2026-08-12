@@ -8,6 +8,7 @@ authors.workspace = true
 publish.workspace = true
 
 [dependencies]
+joan-ast = { path = "../joan-ast" }
 joan-canonical = { path = "../joan-canonical" }
 joan-compiler = { path = "../joan-compiler" }
 joan-instruction = { path = "../joan-instruction" }

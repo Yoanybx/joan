@@ -12,6 +12,7 @@ use thiserror::Error;
 
 const CANONICAL_AST_IDENTITY_SCHEMA_V0: &str = "joan.canonical-ast-identity.v0";
 const CANONICAL_AST_IDENTITY_SCHEMA_V1: &str = "joan.canonical-ast-identity.v1";
+const CANONICAL_AST_IDENTITY_SCHEMA_V2: &str = "joan.canonical-ast-identity.v2";
 
 /// Source-independent package identity inputs.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -259,6 +260,10 @@ fn canonical_ast_profile(
         CanonicalProgram::LINEAR_SCHEMA => Ok((
             CANONICAL_AST_IDENTITY_SCHEMA_V1,
             RegisteredDomainV1::LanguageCanonicalAstLinear,
+        )),
+        CanonicalProgram::INFORMATION_SCHEMA => Ok((
+            CANONICAL_AST_IDENTITY_SCHEMA_V2,
+            RegisteredDomainV1::LanguageCanonicalAstInformation,
         )),
         _ => Err(IdentityError::UnsupportedSchema(ast_schema.to_owned())),
     }

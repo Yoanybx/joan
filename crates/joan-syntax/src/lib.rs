@@ -2,7 +2,7 @@
 
 use joan_ast::{
     AuthorityParameter, BinaryOperator, Diagnostic, DiagnosticReport, Expression, Function,
-    Parameter, Position, Program, Span, Statement, Type, UnaryOperator,
+    InformationLabel, Parameter, Position, Program, Span, Statement, Type, UnaryOperator,
 };
 use std::fmt::Write as _;
 
@@ -481,6 +481,7 @@ impl Parser {
             )?
             .span;
         let (module, _) = self.identifier("J1002", "expected module name")?;
+        let information_flow = self.consume_contextual("flow").is_some();
         self.expect(
             &TokenKind::Semicolon,
             "J1003",
@@ -501,6 +502,7 @@ impl Parser {
             schema: "joan.ast.v0".to_owned(),
             module,
             functions,
+            information_flow,
             span: start.join(self.current().span),
         })
     }
@@ -524,9 +526,11 @@ impl Parser {
                     "expected `:` after parameter name",
                 )?;
                 let (value_type, type_span) = self.value_type()?;
+                let information = self.information_label()?;
                 parameters.push(Parameter {
                     name: parameter_name,
                     value_type,
+                    information,
                     span: parameter_span.join(type_span),
                 });
                 if self.consume(&TokenKind::Comma).is_none() {
@@ -545,6 +549,7 @@ impl Parser {
             "expected `->` before return type",
         )?;
         let (return_type, _) = self.value_type()?;
+        let return_information = self.information_label()?;
         self.expect(
             &TokenKind::Effects,
             "J1017",
@@ -575,6 +580,7 @@ impl Parser {
             name,
             parameters,
             return_type,
+            return_information,
             effects,
             authorities,
             body,
@@ -640,6 +646,64 @@ impl Parser {
         Ok((value_type, token.span))
     }
 
+    fn information_label(&mut self) -> Result<Option<InformationLabel>, Diagnostic> {
+        if self.consume_contextual("flow").is_none() {
+            return Ok(None);
+        }
+        self.expect(
+            &TokenKind::LeftBracket,
+            "J1090",
+            "expected `[` after `flow`",
+        )?;
+        let (class, class_span) =
+            self.identifier("J1091", "expected information class: public or secret")?;
+        let label = match class.as_str() {
+            "public" => InformationLabel::Public,
+            "secret" => {
+                self.expect(
+                    &TokenKind::Comma,
+                    "J1092",
+                    "expected `, tenant:<name>, purpose:<name>` after `secret`",
+                )?;
+                self.expect_contextual("tenant", "J1093", "expected `tenant` in secret label")?;
+                self.expect(&TokenKind::Colon, "J1094", "expected `:` after `tenant`")?;
+                let tenant = self.identifier("J1095", "expected tenant name")?.0;
+                self.expect(
+                    &TokenKind::Comma,
+                    "J1096",
+                    "expected `,` before secret purpose",
+                )?;
+                self.expect_contextual("purpose", "J1097", "expected `purpose` in secret label")?;
+                self.expect(&TokenKind::Colon, "J1098", "expected `:` after `purpose`")?;
+                let purpose = self.identifier("J1099", "expected purpose name")?.0;
+                InformationLabel::Secret { tenant, purpose }
+            }
+            _ => {
+                return Err(Diagnostic::error(
+                    "J1091",
+                    "expected information class: public or secret",
+                    class_span,
+                ));
+            }
+        };
+        self.expect(
+            &TokenKind::RightBracket,
+            "J1100",
+            "expected `]` after information label",
+        )?;
+        Ok(Some(label))
+    }
+
+    fn expect_contextual(
+        &mut self,
+        expected: &'static str,
+        code: &'static str,
+        message: &'static str,
+    ) -> Result<Token, Diagnostic> {
+        self.consume_contextual(expected)
+            .ok_or_else(|| Diagnostic::error(code, message, self.current().span))
+    }
+
     fn block(&mut self) -> Result<(Vec<Statement>, Span), Diagnostic> {
         let start = self
             .expect(&TokenKind::LeftBrace, "J1030", "expected `{`")?
@@ -686,6 +750,7 @@ impl Parser {
         let (name, _) = self.identifier("J1041", "expected local name")?;
         self.expect(&TokenKind::Colon, "J1042", "expected `:` after local name")?;
         let (value_type, _) = self.value_type()?;
+        let information = self.information_label()?;
         self.expect(
             &TokenKind::Equal,
             "J1043",
@@ -702,6 +767,7 @@ impl Parser {
         Ok(Statement::Let {
             name,
             value_type,
+            information,
             value,
             span: start.join(end),
         })
@@ -735,6 +801,7 @@ impl Parser {
         } else {
             None
         };
+        let information = self.information_label()?;
         let end = self
             .expect(
                 &TokenKind::Semicolon,
@@ -745,6 +812,7 @@ impl Parser {
         Ok(Statement::Request {
             effect,
             authority,
+            information,
             arguments,
             span: start.join(call_span).join(end),
         })
@@ -995,7 +1063,12 @@ pub fn format_source(source: &str) -> Result<String, DiagnosticReport> {
 #[must_use]
 pub fn format_program(program: &Program) -> String {
     let mut output = String::new();
-    let _ = writeln!(output, "module {};", program.module);
+    let profile = if program.information_flow {
+        " flow"
+    } else {
+        ""
+    };
+    let _ = writeln!(output, "module {}{profile};", program.module);
     for function in &program.functions {
         output.push('\n');
         format_function(&mut output, function);
@@ -1015,8 +1088,11 @@ fn format_function(output: &mut String, function: &Function) {
             parameter.name,
             parameter.value_type.as_str()
         );
+        format_information_label(output, parameter.information.as_ref());
     }
-    let _ = write!(output, ") -> {} effects [", function.return_type.as_str());
+    let _ = write!(output, ") -> {}", function.return_type.as_str());
+    format_information_label(output, function.return_information.as_ref());
+    output.push_str(" effects [");
     for (index, effect) in function.effects.iter().enumerate() {
         if index > 0 {
             output.push_str(", ");
@@ -1048,10 +1124,13 @@ fn format_statement(output: &mut String, statement: &Statement) {
         Statement::Let {
             name,
             value_type,
+            information,
             value,
             ..
         } => {
-            let _ = write!(output, "let {name}: {} = ", value_type.as_str());
+            let _ = write!(output, "let {name}: {}", value_type.as_str());
+            format_information_label(output, information.as_ref());
+            output.push_str(" = ");
             format_expression(output, value, 0);
             output.push(';');
         }
@@ -1066,6 +1145,7 @@ fn format_statement(output: &mut String, statement: &Statement) {
         Statement::Request {
             effect,
             authority,
+            information,
             arguments,
             ..
         } => {
@@ -1075,11 +1155,22 @@ fn format_statement(output: &mut String, statement: &Statement) {
             if let Some(authority) = authority {
                 let _ = write!(output, " using {authority}");
             }
+            format_information_label(output, information.as_ref());
             output.push(';');
         }
         Statement::Expression { expression, .. } => {
             format_expression(output, expression, 0);
             output.push(';');
+        }
+    }
+}
+
+fn format_information_label(output: &mut String, label: Option<&InformationLabel>) {
+    match label {
+        None => {}
+        Some(InformationLabel::Public) => output.push_str(" flow [public]"),
+        Some(InformationLabel::Secret { tenant, purpose }) => {
+            let _ = write!(output, " flow [secret, tenant:{tenant}, purpose:{purpose}]");
         }
     }
 }

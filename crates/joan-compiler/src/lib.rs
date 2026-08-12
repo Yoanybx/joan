@@ -2,11 +2,11 @@
 
 use joan_ast::{
     BinaryOperator, CanonicalExpression, CanonicalFunction, CanonicalStatement, DiagnosticReport,
-    Program, UnaryOperator,
+    InformationLabel, Program, UnaryOperator,
 };
 use joan_bytecode::{
-    BYTECODE_PROGRAM_LINEAR_SCHEMA, BYTECODE_PROGRAM_SCHEMA, BytecodeVerificationReceipt,
-    verify_bytecode,
+    BYTECODE_PROGRAM_INFORMATION_SCHEMA, BYTECODE_PROGRAM_LINEAR_SCHEMA, BYTECODE_PROGRAM_SCHEMA,
+    BytecodeVerificationReceipt, verify_bytecode,
 };
 pub use joan_bytecode::{
     BytecodeAuthoritySlot, BytecodeFunction, BytecodeProgram, Instruction, Value,
@@ -56,6 +56,9 @@ pub struct EffectRequest {
     /// Linear authority slot moved into this request, when enabled.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub authority_slot: Option<String>,
+    /// Exact request sink label in the information-flow profile.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub information: Option<InformationLabel>,
     /// Evaluated request arguments.
     pub arguments: Vec<Value>,
 }
@@ -67,6 +70,17 @@ struct LinearEffectRequestCore<'a> {
     function: &'a str,
     effect: &'a str,
     authority_slot: &'a str,
+    arguments: &'a [Value],
+}
+
+#[derive(Serialize)]
+struct InformationEffectRequestCore<'a> {
+    semantic_digest: &'a Digest,
+    request_index: u64,
+    function: &'a str,
+    effect: &'a str,
+    authority_slot: &'a str,
+    information: &'a InformationLabel,
     arguments: &'a [Value],
 }
 
@@ -144,7 +158,9 @@ pub fn compile_source(source: &str) -> Result<CompileArtifact, LanguageError> {
     let bytecode = compile_program(&program)?;
     let verification = verify_bytecode(&bytecode)?;
     Ok(CompileArtifact {
-        schema: if bytecode.schema == BYTECODE_PROGRAM_LINEAR_SCHEMA {
+        schema: if bytecode.schema == BYTECODE_PROGRAM_INFORMATION_SCHEMA {
+            "joan.compile-artifact.v3"
+        } else if bytecode.schema == BYTECODE_PROGRAM_LINEAR_SCHEMA {
             "joan.compile-artifact.v2"
         } else {
             "joan.compile-artifact.v1"
@@ -182,7 +198,9 @@ pub fn execute_bytecode(
     };
     let result = machine.call(program.entry_function, Vec::new(), 0)?;
     Ok(ExecutionReceipt {
-        schema: if program.schema == BYTECODE_PROGRAM_LINEAR_SCHEMA {
+        schema: if program.schema == BYTECODE_PROGRAM_INFORMATION_SCHEMA {
+            "joan.execution-receipt.v3"
+        } else if program.schema == BYTECODE_PROGRAM_LINEAR_SCHEMA {
             "joan.execution-receipt.v2"
         } else {
             "joan.execution-receipt.v1"
@@ -216,7 +234,9 @@ fn compile_program(program: &Program) -> Result<BytecodeProgram, LanguageError> 
         .collect::<Result<Vec<_>, _>>()?;
     let semantic_ast = encode_canonical_ast(&canonical_ast)?;
     Ok(BytecodeProgram {
-        schema: if canonical_ast.is_linear() {
+        schema: if canonical_ast.is_information_flow() {
+            BYTECODE_PROGRAM_INFORMATION_SCHEMA
+        } else if canonical_ast.is_linear() {
             BYTECODE_PROGRAM_LINEAR_SCHEMA
         } else {
             BYTECODE_PROGRAM_SCHEMA
@@ -235,6 +255,10 @@ fn encode_program_ast(program: &Program) -> Result<EncodedCanonicalAst, Language
     Ok(encode_canonical_ast(&program.canonical())?)
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "one flat compiler emitter remains directly comparable to the independent verifier"
+)]
 fn compile_function(
     function: &CanonicalFunction,
     function_indexes: &BTreeMap<String, usize>,
@@ -250,19 +274,45 @@ fn compile_function(
         .iter()
         .map(|parameter| parameter.value_type.clone())
         .collect::<Vec<_>>();
+    let parameter_information = function
+        .return_information
+        .as_ref()
+        .map(|_| {
+            function
+                .parameters
+                .iter()
+                .map(|parameter| {
+                    parameter.information.clone().ok_or_else(|| {
+                        LanguageError::Compiler(
+                            "checked flow parameter has no information label".to_owned(),
+                        )
+                    })
+                })
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()?;
     let mut local_types = parameter_types.clone();
+    let mut local_information = parameter_information.clone();
     let mut instructions = Vec::new();
     for statement in &function.body {
         match statement {
             CanonicalStatement::Let {
                 name,
                 value_type,
+                information,
                 value,
             } => {
                 compile_expression(value, &locals, function_indexes, &mut instructions)?;
                 let slot = locals.len();
                 locals.insert(name.clone(), slot);
                 local_types.push(value_type.clone());
+                if let Some(labels) = &mut local_information {
+                    labels.push(information.clone().ok_or_else(|| {
+                        LanguageError::Compiler(
+                            "checked flow local has no information label".to_owned(),
+                        )
+                    })?);
+                }
                 instructions.push(Instruction::StoreLocal { slot });
             }
             CanonicalStatement::Return { value } => {
@@ -276,6 +326,7 @@ fn compile_function(
             CanonicalStatement::Request {
                 effect,
                 authority,
+                information,
                 arguments,
             } => {
                 for argument in arguments {
@@ -284,6 +335,7 @@ fn compile_function(
                 instructions.push(Instruction::Request {
                     effect: effect.clone(),
                     authority: authority.clone(),
+                    information: information.clone(),
                     argument_count: arguments.len(),
                 });
             }
@@ -297,9 +349,12 @@ fn compile_function(
         name: function.name.clone(),
         parameter_count: parameter_types.len(),
         parameter_types,
+        parameter_information,
         local_count: local_types.len(),
         local_types,
+        local_information,
         return_type: function.return_type.clone(),
+        return_information: function.return_information.clone(),
         effects: function.effects.clone(),
         authority_slots: function.authorities.as_ref().map(|authorities| {
             authorities
@@ -494,13 +549,38 @@ impl Machine<'_> {
                 Instruction::Request {
                     effect,
                     authority,
+                    information,
                     argument_count,
                 } => {
                     let arguments = pop_arguments(&mut stack, *argument_count)?;
                     let request_index = u64::try_from(self.requests.len()).map_err(|_| {
                         LanguageError::Runtime("effect request count exceeds u64".to_owned())
                     })?;
-                    let request_id = if self.program.schema == BYTECODE_PROGRAM_LINEAR_SCHEMA {
+                    let request_id = if self.program.schema == BYTECODE_PROGRAM_INFORMATION_SCHEMA {
+                        let authority_slot = authority.as_deref().ok_or_else(|| {
+                            LanguageError::Runtime(
+                                "verified flow request has no authority slot".to_owned(),
+                            )
+                        })?;
+                        let information = information.as_ref().ok_or_else(|| {
+                            LanguageError::Runtime(
+                                "verified flow request has no information label".to_owned(),
+                            )
+                        })?;
+                        digest_serializable_v1(
+                            RegisteredDomainV1::EffectApplication,
+                            &InformationEffectRequestCore {
+                                semantic_digest: &self.program.semantic_digest,
+                                request_index,
+                                function: &function.name,
+                                effect,
+                                authority_slot,
+                                information,
+                                arguments: &arguments,
+                            },
+                        )?
+                        .value
+                    } else if self.program.schema == BYTECODE_PROGRAM_LINEAR_SCHEMA {
                         let authority_slot = authority.as_deref().ok_or_else(|| {
                             LanguageError::Runtime(
                                 "verified linear request has no authority slot".to_owned(),
@@ -530,6 +610,7 @@ impl Machine<'_> {
                         function: function.name.clone(),
                         effect: effect.clone(),
                         authority_slot: authority.clone(),
+                        information: information.clone(),
                         arguments,
                     });
                 }

@@ -4,8 +4,9 @@
 
 This document freezes the first non-executing verifier for externally supplied
 JOAN bytecode. The legacy artifact is `joan.bytecode-program.v1`; the additive
-linear-authority artifact is `joan.bytecode-program.v2`. Successful verification
-emits the matching v0 or v1 receipt.
+linear-authority artifact is `joan.bytecode-program.v2`; the tenant-purpose
+information-flow artifact is `joan.bytecode-program.v3`. Successful verification
+emits the matching v0, v1 or v2 receipt.
 
 The verifier reduces trust in serialized bytecode. It does not prove that the
 verifier, compiler, VM or specification has no defects, and it does not grant
@@ -23,8 +24,12 @@ A v1 program contains:
 The v2 profile additionally binds sorted effect-specific authority slots to
 every function and an exact slot name to every request instruction.
 
+The v3 profile additionally binds complete parameter, local and return label
+tables plus one exact label to every request instruction.
+
 The complete typed artifact identity is the JCE1 digest in matching domain
-`joan.bytecode-program.v1` or `joan.bytecode-program.v2`. Bytecode `i64`
+`joan.bytecode-program.v1`, `joan.bytecode-program.v2` or
+`joan.bytecode-program.v3`. Bytecode `i64`
 constants use canonical decimal text, not JSON numbers, so the complete signed
 64-bit range remains interoperable.
 
@@ -43,6 +48,8 @@ Before execution, an implementation must:
 9. hash the complete verified artifact and emit a receipt without executing it.
 10. for v2, abstractly consume every authority slot exactly once and reject
     missing, unknown, wrong-effect, duplicate or unconsumed slots.
+11. for v3, abstractly propagate labels and reject forbidden stores, calls,
+    returns, request sinks or incompatible expression joins.
 
 `joan-compiler` and `joan-bytecode` contain separate emitters. Equality closes
 the previous boundary where valid AST metadata could be attached to arbitrary
@@ -78,4 +85,6 @@ offline, performs no writes and never executes bytecode or effects.
 Legacy source still emits byte-for-byte compatible v0 canonical AST and v1
 bytecode shapes. A module that explicitly enables authority slots emits
 `joan.canonical-ast.v1`, `joan.bytecode-program.v2`, and separate digest domains.
+An explicit `module <name> flow;` emits `joan.canonical-ast.v2` and
+`joan.bytecode-program.v3` with a third pair of domains.
 Schema/profile pairs cannot be mixed or upgraded silently.

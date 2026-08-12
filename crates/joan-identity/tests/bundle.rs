@@ -83,6 +83,7 @@ fn canonical_ast_identity_rejects_noncanonical_or_modified_bytes()
             name: "main".to_owned(),
             parameters: Vec::new(),
             return_type: Type::Unit,
+            return_information: None,
             effects: Vec::new(),
             authorities: None,
             body: vec![CanonicalStatement::Return { value: None }],

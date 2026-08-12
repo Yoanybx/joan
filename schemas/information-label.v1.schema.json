@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/information-label.v1.schema.json",
+  "title": "JOAN Information Label v1",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class"],
+      "properties": {"class": {"const": "public"}}
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class", "tenant", "purpose"],
+      "properties": {
+        "class": {"const": "secret"},
+        "tenant": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
+        "purpose": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"}
+      }
+    }
+  ]
+}

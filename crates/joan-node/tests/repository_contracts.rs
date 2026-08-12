@@ -139,6 +139,37 @@ fn main() -> unit effects [audit] authorities [audit_once: audit] {
 }
 
 #[test]
+fn information_flow_artifacts_match_their_versioned_schemas()
+-> Result<(), Box<dyn std::error::Error>> {
+    let artifact = compile_source(
+        r#"module secure flow;
+fn main() -> unit flow [public] effects [audit] authorities [audit_once: audit] {
+  let event: string flow [secret, tenant:agent_a, purpose:audit] = "schema";
+  request audit(event) using audit_once flow [secret, tenant:agent_a, purpose:audit];
+  return;
+}
+"#,
+    )?;
+    validate_instance(
+        &serde_json::to_value(&artifact.bytecode.canonical_ast)?,
+        "schemas/canonical-ast.v2.schema.json",
+    )?;
+    validate_instance(
+        &serde_json::to_value(&artifact.bytecode.semantic_identity)?,
+        "schemas/canonical-ast-identity.v2.schema.json",
+    )?;
+    validate_instance(
+        &serde_json::to_value(&artifact.bytecode)?,
+        "schemas/bytecode-program.v3.schema.json",
+    )?;
+    validate_instance(
+        &serde_json::to_value(&artifact.verification)?,
+        "schemas/bytecode-verification-receipt.v2.schema.json",
+    )?;
+    Ok(())
+}
+
+#[test]
 fn bytecode_and_verification_receipt_match_their_schemas() -> Result<(), Box<dyn std::error::Error>>
 {
     let artifact =

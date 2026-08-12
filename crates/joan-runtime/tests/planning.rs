@@ -1,5 +1,6 @@
 //! One-use effect authority and atomic planning tests.
 
+use joan_ast::InformationLabel;
 use joan_compiler::{Value, execute_source};
 use joan_instruction::{AuthorityEnvelope, AuthorityRoot, OneShotApproval};
 use joan_runtime::{CapabilityLedger, RuntimePlanError, plan_effects};
@@ -40,6 +41,7 @@ fn authority(execution: &joan_compiler::ExecutionReceipt) -> AuthorityEnvelope {
                 task_id: execution.semantic_digest.value.clone(),
                 capabilities: BTreeSet::from([request.effect.clone()]),
                 authority_slot: request.authority_slot.clone(),
+                information: request.information.clone(),
             })
             .collect(),
     }
@@ -183,5 +185,49 @@ fn main() -> unit effects [api_call] authorities [first: api_call, second: api_c
     };
     assert!(matches!(error, RuntimePlanError::InvalidRequest(_)));
     assert!(ledger.is_empty());
+    Ok(())
+}
+
+#[test]
+fn flow_approval_is_bound_to_exact_tenant_and_purpose() -> Result<(), Box<dyn std::error::Error>> {
+    let execution = execute_source(
+        r#"
+module secure flow;
+fn main() -> unit flow [public] effects [api_call] authorities [call_once: api_call] {
+  let payload: string flow [secret, tenant:agent_a, purpose:handoff] = "classified";
+  request api_call(payload) using call_once flow [secret, tenant:agent_a, purpose:handoff];
+  return;
+}
+"#,
+    )?;
+    let exact = authority(&execution);
+    let mut ledger = CapabilityLedger::default();
+    let receipt = plan_effects(&execution, Some(&exact), &mut ledger)?;
+    assert_eq!(receipt.schema, "joan.effect-plan-receipt.v1");
+    assert_eq!(
+        receipt.effects[0].information,
+        execution.effect_requests[0].information
+    );
+
+    let mut wrong_purpose = authority(&execution);
+    wrong_purpose.approvals[0].information = Some(InformationLabel::Secret {
+        tenant: "agent_a".to_owned(),
+        purpose: "billing".to_owned(),
+    });
+    let mut fresh_ledger = CapabilityLedger::default();
+    let Err(error) = plan_effects(&execution, Some(&wrong_purpose), &mut fresh_ledger) else {
+        return Err("wrong-purpose approval unexpectedly authorized".into());
+    };
+    assert!(matches!(error, RuntimePlanError::MissingApproval(_)));
+    assert!(fresh_ledger.is_empty());
+
+    let mut tampered = execution;
+    tampered.effect_requests[0].information = Some(InformationLabel::Public);
+    let mut fresh_ledger = CapabilityLedger::default();
+    let Err(error) = plan_effects(&tampered, Some(&exact), &mut fresh_ledger) else {
+        return Err("tampered request information unexpectedly planned".into());
+    };
+    assert!(matches!(error, RuntimePlanError::InvalidRequest(_)));
+    assert!(fresh_ledger.is_empty());
     Ok(())
 }

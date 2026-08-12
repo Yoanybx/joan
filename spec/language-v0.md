@@ -25,24 +25,33 @@ The additive linear profile declares external requirements with
 create authority: the slot is a semantic obligation that must match an exact
 host-supplied one-shot approval before any external executor can act.
 
+The additive information-flow profile begins with `module <name> flow;` and
+requires a `public` or exact `secret` tenant-purpose label at every parameter,
+return, local and request boundary. It includes the linear-authority profile and
+has no declassification operation.
+
 ## Source grammar
 
 ```text
-program       := "module" identifier ";" function+
+program       := "module" identifier "flow"? ";" function+
 function      := "fn" identifier "(" parameters? ")"
-                 "->" type "effects" "[" effects? "]"
+                 "->" type information? "effects" "[" effects? "]"
                  authorities? block
 authorities   := "authorities" "[" authority-list? "]"
 authority-list:= authority ("," authority)*
 authority     := identifier ":" identifier
 parameters    := parameter ("," parameter)*
-parameter     := identifier ":" type
+parameter     := identifier ":" type information?
+information   := "flow" "[" ("public" | secret-label) "]"
+secret-label  := "secret" "," "tenant" ":" identifier
+                 "," "purpose" ":" identifier
 effects       := identifier ("," identifier)*
 type          := "i64" | "bool" | "string" | "unit"
 block         := "{" statement+ "}"
-statement     := "let" identifier ":" type "=" expression ";"
+statement     := "let" identifier ":" type information? "=" expression ";"
                | "return" expression? ";"
-               | "request" identifier arguments ("using" identifier)? ";"
+               | "request" identifier arguments ("using" identifier)?
+                 information? ";"
                | expression ";"
 arguments     := "(" (expression ("," expression)*)? ")"
 expression    := literals, immutable locals, calls, unary operators,
@@ -69,6 +78,11 @@ to 1 MiB and 200,000 tokens.
   profiles are static errors.
 - Loops and recursive call cycles are rejected in v0.
 - Unit parameters and unit local bindings are rejected.
+- An explicit flow module requires complete labels and complete linear
+  authority declarations; labels outside that profile reject the module.
+- Public values may enter any boundary. Secret values may enter only the exact
+  same tenant-purpose boundary. Operators join compatible labels, calls enforce
+  parameter/return labels, and request arguments enforce the sink label.
 
 The no-loop, acyclic-call-graph rule is intentionally restrictive. It gives the
 first preview a simple bounded-termination argument while future loop and
@@ -83,12 +97,14 @@ UTF-8 source -> bounded lexer -> parser -> AST -> static checker
              -> bytecode compiler -> bounded deterministic VM -> receipt
 ```
 
-Source spans and trivia are excluded from legacy `joan.canonical-ast.v0` and
-linear `joan.canonical-ast.v1`. Function declarations, effect rows and authority
-slots are sorted only for identity calculation, so
+Source spans and trivia are excluded from legacy `joan.canonical-ast.v0`,
+linear `joan.canonical-ast.v1`, and information-flow `joan.canonical-ast.v2`.
+Function declarations, effect rows and authority slots are sorted only for
+identity calculation, so
 equivalent whitespace, comments, formatting, function order, and effect order
-yield identical JCE1 bytes and the same `joan.language-canonical-ast.v1` typed
-digest. Execution order still follows compiled bytecode. Exact normalization,
+yield identical JCE1 bytes within one profile. Legacy, linear and information
+ASTs use digest domains `joan.language-canonical-ast.v1`, `.v2` and `.v3`
+respectively. Execution order still follows compiled bytecode. Exact normalization,
 integer encoding, verifier limits, and non-equivalence boundaries are frozen in
 `spec/canonical-ast-v0.md` and `spec/bytecode-verification-v0.md`.
 
@@ -122,6 +138,8 @@ Implemented in v0:
 - standalone typed bytecode verification with exact independent-emitter binding;
 - additive linear one-shot authority slots checked in source, canonical AST,
   bytecode, execution receipts and host approval planning;
+- additive explicit tenant-purpose labels checked and bound across those same
+  source, bytecode, receipt and approval boundaries;
 - versioned JCE1 canonical AST identities, structured diagnostics, and
   execution receipts bound to those identities.
 
@@ -130,6 +148,8 @@ Not implemented in v0:
 - native AOT/JIT code generation, LLVM, Cranelift, Wasm, or C backends;
 - general linear values, authority delegation through ordinary parameters, and
   durable multi-process approval storage;
+- control-flow labels, declassification, endorsement, dynamic principals, and
+  timing, resource, host or other side-channel protection;
 - arrays, records, variants, generics, modules across files, loops, or recursion;
 - networked package manager, standard library, LSP, debugger, optimizer, or stable ABI;
 - cross-file imports (the separate offline package resolver verifies exact source graphs but does not link them yet);

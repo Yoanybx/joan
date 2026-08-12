@@ -1,5 +1,6 @@
 //! Repository instruction discovery and deterministic authority attenuation.
 
+use joan_ast::InformationLabel;
 use joan_canonical::{CanonicalError, Digest, digest_bytes, digest_serializable};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -130,6 +131,9 @@ pub struct OneShotApproval {
     /// Exact source authority slot for linear JOAN requests.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub authority_slot: Option<String>,
+    /// Exact tenant-purpose sink approved for a flow request.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub information: Option<InformationLabel>,
 }
 
 /// Host-supplied authority ceiling and approval requirements.

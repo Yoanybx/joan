@@ -495,6 +495,7 @@ dependencies = [
 name = "joan-instruction"
 version = "0.1.0-alpha.1"
 dependencies = [
+ "joan-ast",
  "joan-canonical",
  "serde",
  "tempfile",
@@ -568,6 +569,7 @@ dependencies = [
 name = "joan-runtime"
 version = "0.1.0-alpha.1"
 dependencies = [
+ "joan-ast",
  "joan-canonical",
  "joan-compiler",
  "joan-identity",

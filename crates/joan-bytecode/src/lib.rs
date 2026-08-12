@@ -2,8 +2,8 @@
 
 use joan_ast::{
     AuthorityParameter, BinaryOperator, CanonicalExpression, CanonicalFunction, CanonicalProgram,
-    CanonicalStatement, Expression, Function, Parameter, Program, Span, Statement, Type,
-    UnaryOperator,
+    CanonicalStatement, Expression, Function, InformationLabel, Parameter, Program, Span,
+    Statement, Type, UnaryOperator,
 };
 use joan_canonical::{Digest, Jce1Error, RegisteredDomainV1, digest_serializable_v1};
 use joan_check::{CheckReceipt, check};
@@ -16,11 +16,16 @@ use thiserror::Error;
 pub const BYTECODE_PROGRAM_SCHEMA: &str = "joan.bytecode-program.v1";
 /// Bytecode schema with linear authority slots.
 pub const BYTECODE_PROGRAM_LINEAR_SCHEMA: &str = "joan.bytecode-program.v2";
+/// Bytecode schema with tenant-purpose information-flow labels.
+pub const BYTECODE_PROGRAM_INFORMATION_SCHEMA: &str = "joan.bytecode-program.v3";
 /// Exact receipt schema emitted by this verifier.
 pub const BYTECODE_VERIFICATION_RECEIPT_SCHEMA: &str = "joan.bytecode-verification-receipt.v0";
 /// Verification receipt for linear bytecode.
 pub const BYTECODE_VERIFICATION_LINEAR_RECEIPT_SCHEMA: &str =
     "joan.bytecode-verification-receipt.v1";
+/// Verification receipt for information-flow bytecode.
+pub const BYTECODE_VERIFICATION_INFORMATION_RECEIPT_SCHEMA: &str =
+    "joan.bytecode-verification-receipt.v2";
 
 const MAX_FUNCTIONS: usize = 1_024;
 const MAX_PARAMETERS: usize = 64;
@@ -91,6 +96,21 @@ impl Value {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct AbstractValue {
+    value_type: Type,
+    information: InformationLabel,
+}
+
+impl AbstractValue {
+    fn public(value_type: Type) -> Self {
+        Self {
+            value_type,
+            information: InformationLabel::Public,
+        }
+    }
+}
+
 /// One deterministic bytecode instruction.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, tag = "op", rename_all = "kebab-case")]
@@ -156,6 +176,9 @@ pub enum Instruction {
         /// Linear authority slot moved into this request.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         authority: Option<String>,
+        /// Exact request sink label in information-flow bytecode.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        information: Option<InformationLabel>,
         /// Number of arguments already on the value stack.
         argument_count: usize,
     },
@@ -183,12 +206,21 @@ pub struct BytecodeFunction {
     pub parameter_count: usize,
     /// Ordered parameter types.
     pub parameter_types: Vec<Type>,
+    /// Ordered parameter labels, present only in information-flow bytecode.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parameter_information: Option<Vec<InformationLabel>>,
     /// Total local slots, including parameters.
     pub local_count: usize,
     /// Ordered frame slot types, including parameters.
     pub local_types: Vec<Type>,
+    /// Ordered frame-slot labels, present only in information-flow bytecode.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub local_information: Option<Vec<InformationLabel>>,
     /// Declared return type.
     pub return_type: Type,
+    /// Return label, present only in information-flow bytecode.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub return_information: Option<InformationLabel>,
     /// Explicit sorted effect row.
     pub effects: Vec<String>,
     /// Sorted linear authority slots; absent only in legacy bytecode.
@@ -328,6 +360,12 @@ fn bytecode_profile(
             "linear-authority-validated-never-executed",
             "canonical-ast-v1-independent-emitter-exact-match",
         )),
+        (BYTECODE_PROGRAM_INFORMATION_SCHEMA, CanonicalProgram::INFORMATION_SCHEMA) => Ok((
+            RegisteredDomainV1::BytecodeProgramInformation,
+            BYTECODE_VERIFICATION_INFORMATION_RECEIPT_SCHEMA,
+            "tenant-purpose-flow-and-linear-authority-validated-never-executed",
+            "canonical-ast-v2-independent-emitter-exact-match",
+        )),
         _ => Err(BytecodeError::Invalid(format!(
             "unsupported bytecode/canonical AST schema pair {program_schema} / {ast_schema}"
         ))),
@@ -378,9 +416,12 @@ fn validate_canonical_shape(ast: &CanonicalProgram) -> Result<(), BytecodeError>
         }
         for parameter in &function.parameters {
             validate_identifier("parameter", &parameter.name)?;
+            validate_optional_information(parameter.information.as_ref())?;
         }
+        validate_optional_information(function.return_information.as_ref())?;
         validate_sorted_effects(&function.effects)?;
         validate_canonical_authorities(ast.is_linear(), function)?;
+        validate_canonical_information(ast.is_information_flow(), function)?;
         statement_count = statement_count
             .checked_add(function.body.len())
             .ok_or_else(|| BytecodeError::Invalid("statement count overflow".to_owned()))?;
@@ -390,7 +431,12 @@ fn validate_canonical_shape(ast: &CanonicalProgram) -> Result<(), BytecodeError>
             )));
         }
         for statement in &function.body {
-            validate_statement(statement, ast.is_linear(), &mut expression_count)?;
+            validate_statement(
+                statement,
+                ast.is_linear(),
+                ast.is_information_flow(),
+                &mut expression_count,
+            )?;
         }
     }
     Ok(())
@@ -434,6 +480,43 @@ fn validate_bytecode_authorities(
     }
 }
 
+fn validate_bytecode_information(
+    information_flow: bool,
+    function: &BytecodeFunction,
+) -> Result<(), BytecodeError> {
+    match (
+        information_flow,
+        &function.parameter_information,
+        &function.local_information,
+        &function.return_information,
+    ) {
+        (false, None, None, None) => Ok(()),
+        (false, _, _, _) => Err(BytecodeError::Invalid(format!(
+            "non-flow function {} contains information tables",
+            function.name
+        ))),
+        (true, Some(parameters), Some(locals), Some(return_label)) => {
+            if parameters.len() != function.parameter_count
+                || locals.len() != function.local_count
+                || parameters != &locals[..function.parameter_count]
+            {
+                return Err(BytecodeError::Invalid(format!(
+                    "flow function {} has inconsistent information tables",
+                    function.name
+                )));
+            }
+            for label in parameters.iter().chain(locals).chain([return_label]) {
+                validate_optional_information(Some(label))?;
+            }
+            Ok(())
+        }
+        (true, _, _, _) => Err(BytecodeError::Invalid(format!(
+            "flow function {} has incomplete information tables",
+            function.name
+        ))),
+    }
+}
+
 fn validate_canonical_authorities(
     linear: bool,
     function: &CanonicalFunction,
@@ -464,6 +547,50 @@ fn validate_canonical_authorities(
     }
 }
 
+fn validate_canonical_information(
+    information_flow: bool,
+    function: &CanonicalFunction,
+) -> Result<(), BytecodeError> {
+    validate_information_presence(
+        information_flow,
+        function.return_information.as_ref(),
+        "return",
+    )?;
+    for parameter in &function.parameters {
+        validate_information_presence(
+            information_flow,
+            parameter.information.as_ref(),
+            "parameter",
+        )?;
+    }
+    Ok(())
+}
+
+fn validate_information_presence(
+    information_flow: bool,
+    label: Option<&InformationLabel>,
+    boundary: &str,
+) -> Result<(), BytecodeError> {
+    match (information_flow, label) {
+        (true, Some(label)) => validate_optional_information(Some(label)),
+        (true, None) => Err(BytecodeError::Invalid(format!(
+            "flow {boundary} has no information label"
+        ))),
+        (false, None) => Ok(()),
+        (false, Some(_)) => Err(BytecodeError::Invalid(format!(
+            "non-flow {boundary} contains an information label"
+        ))),
+    }
+}
+
+fn validate_optional_information(label: Option<&InformationLabel>) -> Result<(), BytecodeError> {
+    if let Some(InformationLabel::Secret { tenant, purpose }) = label {
+        validate_identifier("information tenant", tenant)?;
+        validate_identifier("information purpose", purpose)?;
+    }
+    Ok(())
+}
+
 fn validate_sorted_effects(effects: &[String]) -> Result<(), BytecodeError> {
     let mut previous: Option<&str> = None;
     for effect in effects {
@@ -481,11 +608,18 @@ fn validate_sorted_effects(effects: &[String]) -> Result<(), BytecodeError> {
 fn validate_statement(
     statement: &CanonicalStatement,
     linear: bool,
+    information_flow: bool,
     expression_count: &mut usize,
 ) -> Result<(), BytecodeError> {
     match statement {
-        CanonicalStatement::Let { name, value, .. } => {
+        CanonicalStatement::Let {
+            name,
+            information,
+            value,
+            ..
+        } => {
             validate_identifier("local", name)?;
+            validate_information_presence(information_flow, information.as_ref(), "local")?;
             validate_expression(value, 0, expression_count)
         }
         CanonicalStatement::Return { value } => value.as_ref().map_or(Ok(()), |expression| {
@@ -494,9 +628,11 @@ fn validate_statement(
         CanonicalStatement::Request {
             effect,
             authority,
+            information,
             arguments,
         } => {
             validate_identifier("requested effect", effect)?;
+            validate_information_presence(information_flow, information.as_ref(), "request")?;
             match (linear, authority) {
                 (false, None) => {}
                 (true, Some(authority)) => validate_identifier("request authority", authority)?,
@@ -591,6 +727,7 @@ fn program_from_canonical(ast: &CanonicalProgram) -> Result<Program, BytecodeErr
     Ok(Program {
         schema: "joan.ast.v0".to_owned(),
         module: ast.module.clone(),
+        information_flow: ast.is_information_flow(),
         functions: ast
             .functions
             .iter()
@@ -609,10 +746,12 @@ fn function_from_canonical(function: &CanonicalFunction) -> Result<Function, Byt
             .map(|parameter| Parameter {
                 name: parameter.name.clone(),
                 value_type: parameter.value_type.clone(),
+                information: parameter.information.clone(),
                 span: Span::default(),
             })
             .collect(),
         return_type: function.return_type.clone(),
+        return_information: function.return_information.clone(),
         effects: function.effects.clone(),
         authorities: function.authorities.as_ref().map(|authorities| {
             authorities
@@ -639,10 +778,12 @@ fn statement_from_canonical(statement: &CanonicalStatement) -> Result<Statement,
         CanonicalStatement::Let {
             name,
             value_type,
+            information,
             value,
         } => Statement::Let {
             name: name.clone(),
             value_type: value_type.clone(),
+            information: information.clone(),
             value: expression_from_canonical(value)?,
             span,
         },
@@ -653,10 +794,12 @@ fn statement_from_canonical(statement: &CanonicalStatement) -> Result<Statement,
         CanonicalStatement::Request {
             effect,
             authority,
+            information,
             arguments,
         } => Statement::Request {
             effect: effect.clone(),
             authority: authority.clone(),
+            information: information.clone(),
             arguments: arguments
                 .iter()
                 .map(expression_from_canonical)
@@ -758,6 +901,7 @@ fn verify_structure(program: &BytecodeProgram) -> Result<VerificationObservation
         }
         validate_sorted_effects(&function.effects)?;
         validate_bytecode_authorities(program.canonical_ast.is_linear(), function)?;
+        validate_bytecode_information(program.canonical_ast.is_information_flow(), function)?;
         if function.local_count > MAX_LOCALS_PER_FUNCTION {
             return Err(BytecodeError::Invalid(format!(
                 "function {} local count exceeds {MAX_LOCALS_PER_FUNCTION}",
@@ -854,7 +998,7 @@ fn verify_function(
             )));
         }
         match instruction {
-            Instruction::Push { value } => stack.push(value.value_type()),
+            Instruction::Push { value } => stack.push(AbstractValue::public(value.value_type())),
             Instruction::LoadLocal { slot } => {
                 let value_type = function.local_types.get(*slot).ok_or_else(|| {
                     BytecodeError::Invalid(format!(
@@ -868,7 +1012,14 @@ fn verify_function(
                         function.name
                     )));
                 }
-                stack.push(value_type.clone());
+                let information = function
+                    .local_information
+                    .as_ref()
+                    .map_or(InformationLabel::Public, |labels| labels[*slot].clone());
+                stack.push(AbstractValue {
+                    value_type: value_type.clone(),
+                    information,
+                });
             }
             Instruction::StoreLocal { slot } => {
                 let expected = function.local_types.get(*slot).ok_or_else(|| {
@@ -883,7 +1034,12 @@ fn verify_function(
                         function.name
                     )));
                 }
-                require_pop(&mut stack, expected, "local store")?;
+                let actual = require_pop(&mut stack, expected, "local store")?;
+                let destination = function
+                    .local_information
+                    .as_ref()
+                    .map_or(&InformationLabel::Public, |labels| &labels[*slot]);
+                require_information_flow(&actual.information, destination, "local store")?;
                 initialized[*slot] = true;
             }
             Instruction::Pop => {
@@ -910,12 +1066,17 @@ fn verify_function(
             Instruction::Equal | Instruction::NotEqual => {
                 let right = pop_type(&mut stack, "equality")?;
                 let left = pop_type(&mut stack, "equality")?;
-                if left != right {
+                if left.value_type != right.value_type {
                     return Err(BytecodeError::Invalid(
                         "equality operands have different types".to_owned(),
                     ));
                 }
-                stack.push(Type::Bool);
+                let information =
+                    join_information(&left.information, &right.information, "equality")?;
+                stack.push(AbstractValue {
+                    value_type: Type::Bool,
+                    information,
+                });
             }
             Instruction::Call {
                 function: target_index,
@@ -930,7 +1091,12 @@ fn verify_function(
                         target.name
                     )));
                 }
-                require_arguments(&mut stack, &target.parameter_types, "call")?;
+                require_arguments(
+                    &mut stack,
+                    &target.parameter_types,
+                    target.parameter_information.as_deref(),
+                    "call",
+                )?;
                 if !target
                     .effects
                     .iter()
@@ -942,11 +1108,15 @@ fn verify_function(
                     )));
                 }
                 calls.push(*target_index);
-                stack.push(target.return_type.clone());
+                stack.push(AbstractValue {
+                    value_type: target.return_type.clone(),
+                    information: target.return_information.clone().unwrap_or_default(),
+                });
             }
             Instruction::Request {
                 effect,
                 authority,
+                information,
                 argument_count,
             } => {
                 validate_identifier("bytecode requested effect", effect)?;
@@ -960,6 +1130,15 @@ fn verify_function(
                     return Err(BytecodeError::Invalid(
                         "effect argument stack underflow".to_owned(),
                     ));
+                }
+                validate_information_presence(
+                    program.canonical_ast.is_information_flow(),
+                    information.as_ref(),
+                    "bytecode request",
+                )?;
+                let sink = information.as_ref().unwrap_or(&InformationLabel::Public);
+                for argument in &stack[stack.len() - argument_count..] {
+                    require_information_flow(&argument.information, sink, "effect request")?;
                 }
                 match (program.canonical_ast.is_linear(), authority) {
                     (false, None) => {}
@@ -998,12 +1177,21 @@ fn verify_function(
                 stack.truncate(stack.len() - argument_count);
             }
             Instruction::Return => {
-                if stack.len() != 1 || stack[0] != function.return_type {
+                let expected_information = function
+                    .return_information
+                    .as_ref()
+                    .unwrap_or(&InformationLabel::Public);
+                if stack.len() != 1 || stack[0].value_type != function.return_type {
                     return Err(BytecodeError::Invalid(format!(
                         "function {} returns the wrong stack shape or type",
                         function.name
                     )));
                 }
+                require_information_flow(
+                    &stack[0].information,
+                    expected_information,
+                    "function return",
+                )?;
                 stack.clear();
             }
         }
@@ -1029,50 +1217,61 @@ fn verify_function(
     Ok(max_depth)
 }
 
-fn pop_type(stack: &mut Vec<Type>, context: &str) -> Result<Type, BytecodeError> {
+fn pop_type(stack: &mut Vec<AbstractValue>, context: &str) -> Result<AbstractValue, BytecodeError> {
     stack
         .pop()
         .ok_or_else(|| BytecodeError::Invalid(format!("{context} stack underflow")))
 }
 
-fn require_pop(stack: &mut Vec<Type>, expected: &Type, context: &str) -> Result<(), BytecodeError> {
+fn require_pop(
+    stack: &mut Vec<AbstractValue>,
+    expected: &Type,
+    context: &str,
+) -> Result<AbstractValue, BytecodeError> {
     let actual = pop_type(stack, context)?;
-    if actual != *expected {
+    if actual.value_type != *expected {
         return Err(BytecodeError::Invalid(format!(
             "{context} expected {} but found {}",
             expected.as_str(),
-            actual.as_str()
+            actual.value_type.as_str()
         )));
     }
-    Ok(())
+    Ok(actual)
 }
 
 fn unary_type(
-    stack: &mut Vec<Type>,
+    stack: &mut Vec<AbstractValue>,
     input: &Type,
     output: &Type,
     context: &str,
 ) -> Result<(), BytecodeError> {
-    require_pop(stack, input, context)?;
-    stack.push(output.clone());
+    let value = require_pop(stack, input, context)?;
+    stack.push(AbstractValue {
+        value_type: output.clone(),
+        information: value.information,
+    });
     Ok(())
 }
 
 fn binary_type(
-    stack: &mut Vec<Type>,
+    stack: &mut Vec<AbstractValue>,
     input: &Type,
     output: &Type,
     context: &str,
 ) -> Result<(), BytecodeError> {
-    require_pop(stack, input, context)?;
-    require_pop(stack, input, context)?;
-    stack.push(output.clone());
+    let right = require_pop(stack, input, context)?;
+    let left = require_pop(stack, input, context)?;
+    stack.push(AbstractValue {
+        value_type: output.clone(),
+        information: join_information(&left.information, &right.information, context)?,
+    });
     Ok(())
 }
 
 fn require_arguments(
-    stack: &mut Vec<Type>,
+    stack: &mut Vec<AbstractValue>,
     expected: &[Type],
+    expected_information: Option<&[InformationLabel]>,
     context: &str,
 ) -> Result<(), BytecodeError> {
     if stack.len() < expected.len() {
@@ -1081,13 +1280,48 @@ fn require_arguments(
         )));
     }
     let start = stack.len() - expected.len();
-    if stack[start..] != *expected {
+    if stack[start..]
+        .iter()
+        .map(|value| &value.value_type)
+        .ne(expected.iter())
+    {
         return Err(BytecodeError::Invalid(format!(
             "{context} argument types do not match target signature"
         )));
     }
+    if let Some(labels) = expected_information {
+        for (actual, destination) in stack[start..].iter().zip(labels) {
+            require_information_flow(&actual.information, destination, context)?;
+        }
+    }
     stack.truncate(start);
     Ok(())
+}
+
+fn require_information_flow(
+    source: &InformationLabel,
+    destination: &InformationLabel,
+    context: &str,
+) -> Result<(), BytecodeError> {
+    if source.can_flow_to(destination) {
+        Ok(())
+    } else {
+        Err(BytecodeError::Invalid(format!(
+            "{context} violates tenant-purpose information flow"
+        )))
+    }
+}
+
+fn join_information(
+    left: &InformationLabel,
+    right: &InformationLabel,
+    context: &str,
+) -> Result<InformationLabel, BytecodeError> {
+    left.join(right).ok_or_else(|| {
+        BytecodeError::Invalid(format!(
+            "{context} combines incompatible tenant-purpose labels"
+        ))
+    })
 }
 
 fn verify_acyclic(graph: &[Vec<usize>]) -> Result<(), BytecodeError> {
@@ -1136,7 +1370,9 @@ fn independently_emit(
         .map(|function| independently_emit_function(function, &indexes))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(BytecodeProgram {
-        schema: if ast.is_linear() {
+        schema: if ast.is_information_flow() {
+            BYTECODE_PROGRAM_INFORMATION_SCHEMA
+        } else if ast.is_linear() {
             BYTECODE_PROGRAM_LINEAR_SCHEMA
         } else {
             BYTECODE_PROGRAM_SCHEMA
@@ -1151,6 +1387,10 @@ fn independently_emit(
     })
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "one flat independent emitter keeps exact AST-to-bytecode binding reviewable"
+)]
 fn independently_emit_function(
     function: &CanonicalFunction,
     function_indexes: &BTreeMap<String, usize>,
@@ -1166,19 +1406,41 @@ fn independently_emit_function(
         .iter()
         .map(|parameter| parameter.value_type.clone())
         .collect::<Vec<_>>();
+    let parameter_information = function
+        .return_information
+        .as_ref()
+        .map(|_| {
+            function
+                .parameters
+                .iter()
+                .map(|parameter| {
+                    parameter.information.clone().ok_or_else(|| {
+                        BytecodeError::Invalid("flow parameter has no information label".to_owned())
+                    })
+                })
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()?;
     let mut local_types = parameter_types.clone();
+    let mut local_information = parameter_information.clone();
     let mut instructions = Vec::new();
     for statement in &function.body {
         match statement {
             CanonicalStatement::Let {
                 name,
                 value_type,
+                information,
                 value,
             } => {
                 independently_emit_expression(value, &locals, function_indexes, &mut instructions)?;
                 let slot = locals.len();
                 locals.insert(name.clone(), slot);
                 local_types.push(value_type.clone());
+                if let Some(labels) = &mut local_information {
+                    labels.push(information.clone().ok_or_else(|| {
+                        BytecodeError::Invalid("flow local has no information label".to_owned())
+                    })?);
+                }
                 instructions.push(Instruction::StoreLocal { slot });
             }
             CanonicalStatement::Return { value } => {
@@ -1197,6 +1459,7 @@ fn independently_emit_function(
             CanonicalStatement::Request {
                 effect,
                 authority,
+                information,
                 arguments,
             } => {
                 for argument in arguments {
@@ -1210,6 +1473,7 @@ fn independently_emit_function(
                 instructions.push(Instruction::Request {
                     effect: effect.clone(),
                     authority: authority.clone(),
+                    information: information.clone(),
                     argument_count: arguments.len(),
                 });
             }
@@ -1228,9 +1492,12 @@ fn independently_emit_function(
         name: function.name.clone(),
         parameter_count: parameter_types.len(),
         parameter_types,
+        parameter_information,
         local_count: local_types.len(),
         local_types,
+        local_information,
         return_type: function.return_type.clone(),
+        return_information: function.return_information.clone(),
         effects: function.effects.clone(),
         authority_slots: function.authorities.as_ref().map(|authorities| {
             authorities

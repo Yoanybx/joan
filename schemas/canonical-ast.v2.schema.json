@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/canonical-ast.v2.schema.json",
+  "title": "JOAN Canonical Language AST v2 Information Flow",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "module", "functions"],
+  "properties": {
+    "schema": {"const": "joan.canonical-ast.v2"},
+    "module": {"$ref": "#/$defs/identifier"},
+    "functions": {"type": "array", "minItems": 1, "maxItems": 1024, "items": {"$ref": "#/$defs/function"}}
+  },
+  "$defs": {
+    "identifier": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
+    "type": {"enum": ["i64", "bool", "string", "unit"]},
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "value_type", "information"],
+      "properties": {
+        "name": {"$ref": "#/$defs/identifier"},
+        "value_type": {"$ref": "#/$defs/type"},
+        "information": {"$ref": "information-label.v1.schema.json"}
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "effect"],
+      "properties": {"name": {"$ref": "#/$defs/identifier"}, "effect": {"$ref": "#/$defs/identifier"}}
+    },
+    "function": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "parameters", "return_type", "return_information", "effects", "authorities", "body"],
+      "properties": {
+        "name": {"$ref": "#/$defs/identifier"},
+        "parameters": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/parameter"}},
+        "return_type": {"$ref": "#/$defs/type"},
+        "return_information": {"$ref": "information-label.v1.schema.json"},
+        "effects": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}},
+        "authorities": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/authority"}},
+        "body": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/statement"}}
+      }
+    },
+    "statement": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "name", "value_type", "information", "value"],
+          "properties": {"kind": {"const": "let"}, "name": {"$ref": "#/$defs/identifier"}, "value_type": {"$ref": "#/$defs/type"}, "information": {"$ref": "information-label.v1.schema.json"}, "value": {"$ref": "#/$defs/expression"}}
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "value"],
+          "properties": {"kind": {"const": "return"}, "value": {"oneOf": [{"$ref": "#/$defs/expression"}, {"type": "null"}]}}
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "effect", "authority", "information", "arguments"],
+          "properties": {
+            "kind": {"const": "request"},
+            "effect": {"$ref": "#/$defs/identifier"},
+            "authority": {"$ref": "#/$defs/identifier"},
+            "information": {"$ref": "information-label.v1.schema.json"},
+            "arguments": {"type": "array", "items": {"$ref": "#/$defs/expression"}}
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "expression"],
+          "properties": {"kind": {"const": "expression"}, "expression": {"$ref": "#/$defs/expression"}}
+        }
+      ]
+    },
+    "expression": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["kind", "value"], "properties": {"kind": {"const": "integer"}, "value": {"type": "string", "pattern": "^-?(0|[1-9][0-9]*)$"}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "value"], "properties": {"kind": {"const": "boolean"}, "value": {"type": "boolean"}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "value"], "properties": {"kind": {"const": "string"}, "value": {"type": "string"}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "name"], "properties": {"kind": {"const": "variable"}, "name": {"$ref": "#/$defs/identifier"}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "operator", "operand"], "properties": {"kind": {"const": "unary"}, "operator": {"enum": ["negate", "not"]}, "operand": {"$ref": "#/$defs/expression"}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "operator", "left", "right"], "properties": {"kind": {"const": "binary"}, "operator": {"enum": ["add", "subtract", "multiply", "divide", "remainder", "equal", "not-equal", "less", "less-equal", "greater", "greater-equal", "and", "or"]}, "left": {"$ref": "#/$defs/expression"}, "right": {"$ref": "#/$defs/expression"}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "function", "arguments"], "properties": {"kind": {"const": "call"}, "function": {"$ref": "#/$defs/identifier"}, "arguments": {"type": "array", "items": {"$ref": "#/$defs/expression"}}}}
+      ]
+    }
+  }
+}

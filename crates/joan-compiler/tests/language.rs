@@ -1,5 +1,6 @@
 //! Bytecode compiler and bounded-VM contract tests.
 
+use joan_ast::InformationLabel;
 use joan_bytecode::verify_bytecode;
 use joan_canonical::canonicalize_str_v1;
 use joan_compiler::{
@@ -19,6 +20,18 @@ fn main() -> i64 effects [] {
   return add(40, 2);
 }
 ";
+
+const INFORMATION_FLOW: &str = r#"
+module secure flow;
+fn relay(payload: string flow [secret, tenant:agent_a, purpose:handoff]) -> string flow [secret, tenant:agent_a, purpose:handoff] effects [] authorities [] {
+  return payload;
+}
+fn main() -> unit flow [public] effects [api_call] authorities [call_once: api_call] {
+  let payload: string flow [secret, tenant:agent_a, purpose:handoff] = "classified";
+  request api_call(relay(payload)) using call_once flow [secret, tenant:agent_a, purpose:handoff];
+  return;
+}
+"#;
 
 #[test]
 fn compiles_and_executes_real_source() -> Result<(), Box<dyn std::error::Error>> {
@@ -199,6 +212,69 @@ fn main() -> i64 effects [network_send] authorities [send_once: network_send] {
 }
 
 #[test]
+fn information_labels_are_bound_through_identity_bytecode_and_receipt()
+-> Result<(), Box<dyn std::error::Error>> {
+    let artifact = compile_source(INFORMATION_FLOW)?;
+    assert_eq!(artifact.schema, "joan.compile-artifact.v3");
+    assert_eq!(artifact.bytecode.schema, "joan.bytecode-program.v3");
+    assert_eq!(
+        artifact.bytecode.canonical_ast.schema,
+        "joan.canonical-ast.v2"
+    );
+    assert_eq!(
+        artifact.bytecode.semantic_identity.schema,
+        "joan.canonical-ast-identity.v2"
+    );
+    assert_eq!(
+        artifact.bytecode.semantic_digest.domain,
+        "joan.language-canonical-ast.v3"
+    );
+    assert_eq!(
+        artifact.verification.schema,
+        "joan.bytecode-verification-receipt.v2"
+    );
+    assert_eq!(
+        artifact.verification.bytecode_digest.domain,
+        "joan.bytecode-program.v3"
+    );
+
+    let receipt = execute_source(INFORMATION_FLOW)?;
+    assert_eq!(receipt.schema, "joan.execution-receipt.v3");
+    assert_eq!(
+        receipt.effect_requests[0].information,
+        Some(InformationLabel::Secret {
+            tenant: "agent_a".to_owned(),
+            purpose: "handoff".to_owned(),
+        })
+    );
+    assert_eq!(receipt.effect_requests[0].request_id.len(), 64);
+
+    let changed_purpose = INFORMATION_FLOW.replace("purpose:handoff", "purpose:billing");
+    assert_ne!(
+        artifact.bytecode.semantic_digest,
+        compile_source(&changed_purpose)?.bytecode.semantic_digest
+    );
+    Ok(())
+}
+
+#[test]
+fn bytecode_verifier_rejects_information_table_downgrade() -> Result<(), Box<dyn std::error::Error>>
+{
+    let mut bytecode = compile_source(INFORMATION_FLOW)?.bytecode;
+    let relay = bytecode
+        .functions
+        .iter_mut()
+        .find(|function| function.name == "relay")
+        .ok_or("missing relay function")?;
+    relay.return_information = Some(InformationLabel::Public);
+    let Err(error) = verify_bytecode(&bytecode) else {
+        return Err("degraded information table unexpectedly verified".into());
+    };
+    assert!(error.to_string().contains("function return violates"));
+    Ok(())
+}
+
+#[test]
 fn legacy_source_keeps_legacy_identity_and_omits_authority_fields()
 -> Result<(), Box<dyn std::error::Error>> {
     let artifact = compile_source(
@@ -214,6 +290,7 @@ fn main() -> unit effects [audit] { request audit("event"); return; }
     let encoded = serde_json::to_string(&artifact.bytecode)?;
     assert!(!encoded.contains("authority_slots"));
     assert!(!encoded.contains("\"authority\""));
+    assert!(!encoded.contains("information"));
     Ok(())
 }
 

@@ -21,6 +21,7 @@ const DOMAINS = new Set([
   "joan.conformance-vector.v1",
   "joan.source.v1",
   "joan.package-manifest.v1",
+  "joan.bytecode-program.v1",
   "joan.dispute-case.v1",
   "joan.dispute-claim.v1",
   "joan.resolution-profile.v1",

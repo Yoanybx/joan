@@ -103,6 +103,13 @@ fn package_manifest_domain_is_registered() -> Result<(), Box<dyn std::error::Err
 }
 
 #[test]
+fn bytecode_program_domain_is_registered() -> Result<(), Box<dyn std::error::Error>> {
+    let domain = RegisteredDomainV1::parse("joan.bytecode-program.v1")?;
+    assert_eq!(domain, RegisteredDomainV1::BytecodeProgram);
+    Ok(())
+}
+
+#[test]
 fn typed_digest_rejects_profile_domain_and_payload_substitution()
 -> Result<(), Box<dyn std::error::Error>> {
     let payload = b"JOAN JCE1 fixed payload";

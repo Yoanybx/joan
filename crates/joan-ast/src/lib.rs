@@ -432,7 +432,7 @@ pub struct CanonicalParameter {
 
 /// One span-free canonical statement.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "kebab-case")]
+#[serde(deny_unknown_fields, tag = "kind", rename_all = "kebab-case")]
 pub enum CanonicalStatement {
     /// Immutable local binding.
     Let {
@@ -464,7 +464,7 @@ pub enum CanonicalStatement {
 
 /// One span-free canonical expression.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "kebab-case")]
+#[serde(deny_unknown_fields, tag = "kind", rename_all = "kebab-case")]
 pub enum CanonicalExpression {
     /// Exact signed integer encoded as decimal text for lossless JCE1 transport.
     Integer {

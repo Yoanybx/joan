@@ -39,6 +39,6 @@ strict input
   -> scoped claim
 ```
 
-The current Rust implementation includes an executable language preview: `.joan` syntax, AST, static type/effect checks, deterministic bytecode, a bounded VM and structured receipts. Native code generation, linear capability values, JOAN Lattice transport, a distributed network, marketplace and real external effects remain outside this release.
+The current Rust implementation includes an executable language preview: `.joan` syntax, AST, static type/effect checks, deterministic bytecode, standalone non-executing bytecode verification, a bounded VM and structured receipts. Native code generation, linear capability values, JOAN Lattice transport, a distributed network, marketplace and real external effects remain outside this release.
 
 JDR1 adds an offline case engine, locked evidence graph, disjoint primary/appeal machine quorums, automatic ambiguity fallbacks and a mock ledger. It executes no real payment and makes no legal decision.

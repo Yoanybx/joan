@@ -65,11 +65,11 @@ typed digest. JCE1's 1 MiB hash-payload bound applies.
 the descriptor tags and equality of both digest fields are checked. Effect
 request IDs continue to derive from that exact semantic digest.
 
-The v0 VM does not yet recompute bytecode from embedded canonical AST bytes and
-there is no standalone bytecode verifier. Therefore, this profile proves the
-compiler's declared AST identity and detects inconsistent identity metadata; it
-does not prove that arbitrary externally supplied instructions were generated
-from that AST. A future bytecode-verification profile must close that boundary.
+`joan.bytecode-program.v1` embeds these canonical AST values. The standalone
+profile in `spec/bytecode-verification-v0.md` recomputes this identity and
+requires exact agreement with a second deterministic emitter before execution.
+That closes the v0 metadata-only binding but remains one-workspace engineering
+evidence, not a formal compiler-correctness proof.
 
 ## Required tests
 

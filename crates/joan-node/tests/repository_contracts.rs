@@ -2,12 +2,13 @@
 
 use joan_canonical::parse_strict;
 use joan_canonical::{RegisteredDomainV1, digest_bytes_v1};
-use joan_compiler::canonicalize_source_ast;
+use joan_compiler::{canonicalize_source_ast, compile_source};
 use joan_package::{
     PACKAGE_MANIFEST_SCHEMA, PackageCoordinate, PackageManifest, PackageModule, encode_manifest,
     resolve_package,
 };
 use serde_json::Value;
+use std::collections::HashMap;
 use std::fs;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
@@ -104,6 +105,22 @@ fn main() -> i64 effects [audit] {
     if let Err(error) = validator.validate(&instance) {
         return Err(format!("compiler canonical AST does not match its schema: {error}").into());
     }
+    Ok(())
+}
+
+#[test]
+fn bytecode_and_verification_receipt_match_their_schemas() -> Result<(), Box<dyn std::error::Error>>
+{
+    let artifact =
+        compile_source("module contract;\nfn main() -> i64 effects [] { return 42; }\n")?;
+    validate_instance(
+        &serde_json::to_value(&artifact.bytecode)?,
+        "schemas/bytecode-program.v1.schema.json",
+    )?;
+    validate_instance(
+        &serde_json::to_value(&artifact.verification)?,
+        "schemas/bytecode-verification-receipt.v0.schema.json",
+    )?;
     Ok(())
 }
 
@@ -295,11 +312,46 @@ fn validate_instance(
     schema_path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let schema = read_json(&workspace_root().join(schema_path))?;
-    let validator = jsonschema::draft202012::options().build(&schema)?;
+    let validator = jsonschema::draft202012::options()
+        .with_retriever(LocalSchemaRetriever::load()?)
+        .build(&schema)?;
     if let Err(error) = validator.validate(instance) {
         return Err(format!("instance does not match {schema_path}: {error}").into());
     }
     Ok(())
+}
+
+struct LocalSchemaRetriever {
+    schemas: HashMap<String, Value>,
+}
+
+impl LocalSchemaRetriever {
+    fn load() -> Result<Self, Box<dyn std::error::Error>> {
+        let mut paths = Vec::new();
+        collect_json(&workspace_root().join("schemas"), &mut paths)?;
+        let mut schemas = HashMap::new();
+        for path in paths {
+            let schema = read_json(&path)?;
+            let id = schema
+                .get("$id")
+                .and_then(Value::as_str)
+                .ok_or_else(|| format!("schema has no string $id: {}", path.display()))?;
+            schemas.insert(id.to_owned(), schema);
+        }
+        Ok(Self { schemas })
+    }
+}
+
+impl jsonschema::Retrieve for LocalSchemaRetriever {
+    fn retrieve(
+        &self,
+        uri: &jsonschema::Uri<String>,
+    ) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
+        self.schemas
+            .get(uri.as_str())
+            .cloned()
+            .ok_or_else(|| format!("local schema not found: {uri}").into())
+    }
 }
 
 fn source_snapshot(root: &Path) -> Result<Value, Box<dyn std::error::Error>> {

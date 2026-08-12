@@ -1,8 +1,10 @@
 //! Bytecode compiler and bounded-VM contract tests.
 
+use joan_bytecode::verify_bytecode;
 use joan_canonical::canonicalize_str_v1;
 use joan_compiler::{
-    LanguageError, Value, canonicalize_source_ast, compile_source, execute_bytecode, execute_source,
+    Instruction, LanguageError, Value, canonicalize_source_ast, compile_source, execute_bytecode,
+    execute_source,
 };
 use joan_identity::verify_canonical_ast_identity;
 
@@ -20,10 +22,16 @@ fn main() -> i64 effects [] {
 
 #[test]
 fn compiles_and_executes_real_source() -> Result<(), Box<dyn std::error::Error>> {
+    let artifact = compile_source(ARITHMETIC)?;
+    assert_eq!(artifact.verification, verify_bytecode(&artifact.bytecode)?);
     let receipt = execute_source(ARITHMETIC)?;
     assert_eq!(receipt.result, Value::I64(42));
     assert!(receipt.effect_requests.is_empty());
     assert!(receipt.instructions_executed > 0);
+    assert_eq!(
+        receipt.bytecode_digest,
+        artifact.verification.bytecode_digest
+    );
     Ok(())
 }
 
@@ -39,6 +47,11 @@ fn add(left:i64,right:i64)->i64 effects[]{return left+right;}
     assert_eq!(
         first.bytecode.semantic_digest,
         second.bytecode.semantic_digest
+    );
+    assert_eq!(first.bytecode, second.bytecode);
+    assert_eq!(
+        first.verification.bytecode_digest,
+        second.verification.bytecode_digest
     );
     Ok(())
 }
@@ -148,6 +161,107 @@ fn bytecode_with_inconsistent_semantic_identity_is_rejected()
             .to_string()
             .contains("semantic digest does not match the canonical AST identity")
     );
+    Ok(())
+}
+
+#[test]
+fn modified_instructions_never_execute_under_a_valid_ast_identity()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut artifact = compile_source(ARITHMETIC)?;
+    let instruction = artifact
+        .bytecode
+        .functions
+        .iter_mut()
+        .flat_map(|function| function.instructions.iter_mut())
+        .find(|instruction| matches!(instruction, Instruction::Push { .. }))
+        .ok_or("compiled artifact has no push instruction")?;
+    *instruction = Instruction::Push {
+        value: Value::I64(999),
+    };
+    let Err(error) = verify_bytecode(&artifact.bytecode) else {
+        return Err("modified bytecode verified".into());
+    };
+    assert!(error.to_string().contains("deterministic code generation"));
+    let Err(error) = execute_bytecode(&artifact.bytecode, 100) else {
+        return Err("modified bytecode ran".into());
+    };
+    assert!(error.to_string().contains("bytecode verification failed"));
+    Ok(())
+}
+
+#[test]
+fn invalid_stack_and_frame_shapes_fail_before_execution() -> Result<(), Box<dyn std::error::Error>>
+{
+    let mut stack_underflow = compile_source(ARITHMETIC)?.bytecode;
+    stack_underflow.functions[0].instructions[0] = Instruction::Pop;
+    let Err(error) = verify_bytecode(&stack_underflow) else {
+        return Err("stack underflow verified".into());
+    };
+    assert!(error.to_string().contains("stack underflow"));
+
+    let mut frame = compile_source(ARITHMETIC)?.bytecode;
+    frame.functions[0].local_count += 1;
+    let Err(error) = verify_bytecode(&frame) else {
+        return Err("inconsistent frame verified".into());
+    };
+    assert!(error.to_string().contains("inconsistent frame"));
+
+    let mut oversized_frame = compile_source(ARITHMETIC)?.bytecode;
+    oversized_frame.functions[0].local_count = usize::MAX;
+    let Err(error) = verify_bytecode(&oversized_frame) else {
+        return Err("oversized frame verified".into());
+    };
+    assert!(error.to_string().contains("local count exceeds"));
+    Ok(())
+}
+
+#[test]
+fn embedded_ast_and_effect_substitution_fail_closed() -> Result<(), Box<dyn std::error::Error>> {
+    let mut ast = compile_source(ARITHMETIC)?.bytecode;
+    ast.canonical_ast.module = "substituted".to_owned();
+    let Err(error) = verify_bytecode(&ast) else {
+        return Err("substituted AST verified".into());
+    };
+    assert!(error.to_string().contains("semantic identity"));
+
+    let source = r#"
+module dispatch;
+fn main() -> i64 effects [audit] {
+  request audit("event");
+  return 7;
+}
+"#;
+    let mut effect_program = compile_source(source)?.bytecode;
+    let request = effect_program
+        .functions
+        .iter_mut()
+        .flat_map(|function| function.instructions.iter_mut())
+        .find(|instruction| matches!(instruction, Instruction::Request { .. }))
+        .ok_or("compiled artifact has no request instruction")?;
+    let Instruction::Request {
+        effect: requested_effect,
+        ..
+    } = request
+    else {
+        return Err("selected instruction is not request".into());
+    };
+    *requested_effect = "network_send".to_owned();
+    let Err(error) = verify_bytecode(&effect_program) else {
+        return Err("undeclared effect verified".into());
+    };
+    assert!(error.to_string().contains("undeclared effect"));
+    Ok(())
+}
+
+#[test]
+fn bytecode_json_rejects_unknown_fields() -> Result<(), Box<dyn std::error::Error>> {
+    let artifact = compile_source(ARITHMETIC)?;
+    let mut value = serde_json::to_value(&artifact.bytecode)?;
+    value
+        .as_object_mut()
+        .ok_or("bytecode is not an object")?
+        .insert("ambient_authority".to_owned(), serde_json::json!(true));
+    assert!(serde_json::from_value::<joan_compiler::BytecodeProgram>(value).is_err());
     Ok(())
 }
 

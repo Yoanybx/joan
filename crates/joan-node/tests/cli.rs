@@ -4,7 +4,10 @@ use std::fs;
 use std::process::Command;
 use tempfile::tempdir;
 
-use joan_canonical::{RegisteredDomainV1, digest_bytes_v1};
+use joan_canonical::{
+    RegisteredDomainV1, digest_bytes_v1, from_serializable_v1, to_canonical_bytes_v1,
+};
+use joan_compiler::compile_source;
 use joan_package::{
     PACKAGE_MANIFEST_SCHEMA, PackageCoordinate, PackageManifest, PackageModule, encode_manifest,
 };
@@ -146,7 +149,7 @@ fn language_commands_are_available_to_agents() -> Result<(), Box<dyn std::error:
     assert!(run.status.success());
     let stdout = String::from_utf8(run.stdout)?;
     assert!(stdout.contains(r#""status":"completed""#));
-    assert!(stdout.contains(r#""type":"i64","value":42"#));
+    assert!(stdout.contains(r#""type":"i64","value":"42""#));
     Ok(())
 }
 
@@ -234,5 +237,61 @@ fn package_resolution_rejects_oversized_root_before_decode()
         .output()?;
     assert!(!output.status.success());
     assert!(String::from_utf8(output.stderr)?.contains("1048577 byte limit"));
+    Ok(())
+}
+
+#[test]
+fn standalone_bytecode_verification_is_available_without_execution()
+-> Result<(), Box<dyn std::error::Error>> {
+    let directory = tempdir()?;
+    let artifact = compile_source("module verify;\nfn main() -> i64 effects [] { return 42; }\n")?;
+    let value = from_serializable_v1(&artifact.bytecode)?;
+    let path = directory.path().join("bytecode.json");
+    fs::write(&path, to_canonical_bytes_v1(&value)?)?;
+    let output = Command::new(env!("CARGO_BIN_EXE_joan"))
+        .arg("bytecode")
+        .arg("verify")
+        .arg(path)
+        .arg("--json")
+        .output()?;
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout)?;
+    assert!(stdout.contains(r#""schema":"joan.bytecode-verification-receipt.v0""#));
+    assert!(stdout.contains(r#""status":"verified""#));
+    assert!(stdout.contains(r#""effect_profile":"requests-validated-never-executed""#));
+    Ok(())
+}
+
+#[test]
+fn bytecode_cli_rejects_noncanonical_transport() -> Result<(), Box<dyn std::error::Error>> {
+    let directory = tempdir()?;
+    let artifact = compile_source("module verify;\nfn main() -> i64 effects [] { return 42; }\n")?;
+    let path = directory.path().join("pretty-bytecode.json");
+    fs::write(&path, serde_json::to_vec_pretty(&artifact.bytecode)?)?;
+    let output = Command::new(env!("CARGO_BIN_EXE_joan"))
+        .arg("bytecode")
+        .arg("verify")
+        .arg(path)
+        .arg("--json")
+        .output()?;
+    assert!(!output.status.success());
+    assert!(String::from_utf8(output.stderr)?.contains("input is not exact canonical JCE1"));
+    Ok(())
+}
+
+#[test]
+fn bytecode_cli_rejects_payload_over_one_mib_without_optional_lf()
+-> Result<(), Box<dyn std::error::Error>> {
+    let directory = tempdir()?;
+    let path = directory.path().join("oversized-bytecode.json");
+    fs::write(&path, vec![b' '; 1_048_577])?;
+    let output = Command::new(env!("CARGO_BIN_EXE_joan"))
+        .arg("bytecode")
+        .arg("verify")
+        .arg(path)
+        .arg("--json")
+        .output()?;
+    assert!(!output.status.success());
+    assert!(String::from_utf8(output.stderr)?.contains("JCE1 payload exceeds 1048576 byte limit"));
     Ok(())
 }

@@ -1,5 +1,5 @@
 [package]
-name = "joan-compiler"
+name = "joan-bytecode"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,16 +9,11 @@ publish.workspace = true
 
 [dependencies]
 joan-ast = { path = "../joan-ast" }
-joan-bytecode = { path = "../joan-bytecode" }
 joan-canonical = { path = "../joan-canonical" }
 joan-check = { path = "../joan-check" }
 joan-identity = { path = "../joan-identity" }
-joan-syntax = { path = "../joan-syntax" }
 serde.workspace = true
 thiserror.workspace = true
-
-[dev-dependencies]
-serde_json.workspace = true
 
 [lints]
 workspace = true

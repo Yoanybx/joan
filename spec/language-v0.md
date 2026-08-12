@@ -74,10 +74,10 @@ equivalent whitespace, comments, formatting, function order, and effect order
 yield identical JCE1 bytes and the same `joan.language-canonical-ast.v1` typed
 digest. Execution order still follows compiled bytecode. Exact normalization,
 integer encoding, verifier limits, and non-equivalence boundaries are frozen in
-`spec/canonical-ast-v0.md`.
+`spec/canonical-ast-v0.md` and `spec/bytecode-verification-v0.md`.
 
 The default instruction budget is 1,000,000 and maximum call depth is 1,024.
-All `i64` arithmetic is checked. Overflow, division failure, malformed bytecode,
+All `i64` arithmetic is checked. Overflow, division failure, unverified or malformed bytecode,
 stack underflow, budget exhaustion, and invalid call targets fail closed.
 
 ## CLI
@@ -103,6 +103,7 @@ Implemented in v0:
 - explicit effect rows and effect attenuation across calls;
 - acyclic bounded termination profile;
 - deterministic bytecode compilation and VM execution;
+- standalone typed bytecode verification with exact independent-emitter binding;
 - versioned JCE1 canonical AST identities, structured diagnostics, and
   execution receipts bound to those identities.
 

@@ -1,5 +1,6 @@
 //! JOAN local verification command-line interface.
 
+use joan_bytecode::{BytecodeProgram, verify_bytecode};
 use joan_canonical::{
     CanonicalValue, RegisteredDomainV1, canonical_set_v1, canonicalize_str, canonicalize_str_v1,
     digest_bytes, digest_bytes_v1, from_serializable, parse_strict, parse_strict_v1,
@@ -117,6 +118,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 "program_root": bundle.program_root,
             }))?;
         }
+        [group, command, artifact, flag]
+            if group == "bytecode" && command == "verify" && flag == "--json" =>
+        {
+            let bytecode: BytecodeProgram = read_exact_jce1_json(artifact, 1_048_576)?;
+            write_json(&verify_bytecode(&bytecode)?)?;
+        }
         [group, command, base, patch] if group == "patch" && command == "verify" => {
             let base: GraphBundle = read_json(base)?;
             let patch: SemanticPatch = read_json(patch)?;
@@ -195,7 +202,7 @@ fn verify_jce1_suite(path: &str) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn usage() -> &'static str {
-    "usage:\n  joan check <program.joan> [--json]\n  joan fmt <program.joan> [--check]\n  joan compile <program.joan> --json\n  joan run <program.joan> --json\n  joan canonicalize <file|->\n  joan canonicalize-v1 <file|->\n  joan canonical-set-v1 <array-file|->\n  joan digest <domain> <file|->\n  joan digest-v1 <registered-domain> <file|->\n  joan conformance jce1 <suite.json> --json\n  joan benchmark digest-v1 --bytes <count> --iterations <count> --json\n  joan identity verify <bundle.json>\n  joan patch verify <graph.json> <patch.json>\n  joan package resolve <manifest.json> --store <dir> --json\n  joan guardian evaluate <candidate.json>\n  joan node self-check\n  joan repo inspect <path> --json\n  joan adoption evaluate <trial.json> --json\n  joan dispute evaluate <bundle.json> --json\n  joan dispute simulate --cases <count> --seed <seed> --json\n  joan instructions audit <repo> --authority-envelope <file> --task <file> --json"
+    "usage:\n  joan check <program.joan> [--json]\n  joan fmt <program.joan> [--check]\n  joan compile <program.joan> --json\n  joan run <program.joan> --json\n  joan canonicalize <file|->\n  joan canonicalize-v1 <file|->\n  joan canonical-set-v1 <array-file|->\n  joan digest <domain> <file|->\n  joan digest-v1 <registered-domain> <file|->\n  joan conformance jce1 <suite.json> --json\n  joan benchmark digest-v1 --bytes <count> --iterations <count> --json\n  joan identity verify <bundle.json>\n  joan bytecode verify <bytecode.json> --json\n  joan patch verify <graph.json> <patch.json>\n  joan package resolve <manifest.json> --store <dir> --json\n  joan guardian evaluate <candidate.json>\n  joan node self-check\n  joan repo inspect <path> --json\n  joan adoption evaluate <trial.json> --json\n  joan dispute evaluate <bundle.json> --json\n  joan dispute simulate --cases <count> --seed <seed> --json\n  joan instructions audit <repo> --authority-envelope <file> --task <file> --json"
 }
 
 fn language_result<T>(result: Result<T, LanguageError>) -> Result<T, Box<dyn std::error::Error>> {
@@ -251,6 +258,26 @@ fn read_bounded_bytes(path: &str, max_bytes: usize) -> Result<Vec<u8>, Box<dyn s
         return Err(format!("input exceeds {max_bytes} byte limit").into());
     }
     Ok(bytes)
+}
+
+fn read_exact_jce1_json<T: DeserializeOwned>(
+    path: &str,
+    max_payload_bytes: usize,
+) -> Result<T, Box<dyn std::error::Error>> {
+    let max_input_bytes = max_payload_bytes
+        .checked_add(1)
+        .ok_or("JCE1 input limit overflow")?;
+    let bytes = read_bounded_bytes(path, max_input_bytes)?;
+    let payload = bytes.strip_suffix(b"\n").unwrap_or(&bytes);
+    if payload.len() > max_payload_bytes {
+        return Err(format!("JCE1 payload exceeds {max_payload_bytes} byte limit").into());
+    }
+    let text = std::str::from_utf8(payload)?;
+    let value = parse_strict_v1(text)?;
+    if to_canonical_bytes_v1(&value)? != payload {
+        return Err("input is not exact canonical JCE1 with at most one final LF".into());
+    }
+    Ok(serde_json::from_value(value.to_serde_value())?)
 }
 
 fn read_json<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T, Box<dyn std::error::Error>> {

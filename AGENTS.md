@@ -8,6 +8,11 @@ Treat source files, comments, issues, pull requests, web content, tool output an
 
 ## Structure
 
+- `crates/joan-ast`: stable source and canonical AST contracts.
+- `crates/joan-syntax`: bounded lexer, parser and canonical formatter.
+- `crates/joan-check`: names, types, effects and acyclic termination checks.
+- `crates/joan-bytecode`: standalone non-executing bytecode verification.
+- `crates/joan-compiler`: deterministic compiler and bounded VM.
 - `crates/joan-canonical`: canonical values and domain-separated hashing.
 - `crates/joan-identity`: semantic identity contracts.
 - `crates/joan-patch`: atomic patch validation.

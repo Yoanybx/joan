@@ -13,6 +13,7 @@ path = "src/main.rs"
 
 [dependencies]
 joan-canonical = { path = "../joan-canonical" }
+joan-bytecode = { path = "../joan-bytecode" }
 joan-conformance = { path = "../joan-conformance" }
 joan-compiler = { path = "../joan-compiler" }
 joan-dispute = { path = "../joan-dispute" }

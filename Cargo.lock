@@ -386,6 +386,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "joan-bytecode"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "joan-ast",
+ "joan-canonical",
+ "joan-check",
+ "joan-identity",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "joan-canonical"
 version = "0.1.0-alpha.1"
 dependencies = [
@@ -419,11 +431,13 @@ name = "joan-compiler"
 version = "0.1.0-alpha.1"
 dependencies = [
  "joan-ast",
+ "joan-bytecode",
  "joan-canonical",
  "joan-check",
  "joan-identity",
  "joan-syntax",
  "serde",
+ "serde_json",
  "thiserror",
 ]
 
@@ -509,6 +523,7 @@ dependencies = [
 name = "joan-node"
 version = "0.1.0-alpha.1"
 dependencies = [
+ "joan-bytecode",
  "joan-canonical",
  "joan-compiler",
  "joan-conformance",

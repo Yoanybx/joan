@@ -1,139 +1,22 @@
 //! Deterministic bytecode compiler and bounded virtual machine for JOAN v0.
 
 use joan_ast::{
-    BinaryOperator, DiagnosticReport, Expression, Program, Statement, Type, UnaryOperator,
+    BinaryOperator, CanonicalExpression, CanonicalFunction, CanonicalStatement, DiagnosticReport,
+    Program, UnaryOperator,
 };
+use joan_bytecode::{BYTECODE_PROGRAM_SCHEMA, BytecodeVerificationReceipt, verify_bytecode};
+pub use joan_bytecode::{BytecodeFunction, BytecodeProgram, Instruction, Value};
 use joan_canonical::{CanonicalError, Digest};
 use joan_check::{CheckReceipt, check};
 use joan_identity::{
     CanonicalAstIdentity, EncodedCanonicalAst, IdentityError, encode_canonical_ast,
-    verify_canonical_ast_identity_descriptor,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use thiserror::Error;
 
 const DEFAULT_INSTRUCTION_BUDGET: u64 = 1_000_000;
 const MAX_CALL_DEPTH: usize = 1_024;
-
-/// One runtime value supported by the JOAN v0 VM.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", content = "value", rename_all = "lowercase")]
-pub enum Value {
-    /// Signed 64-bit integer.
-    I64(i64),
-    /// Boolean.
-    Bool(bool),
-    /// UTF-8 string.
-    String(String),
-    /// Unit value.
-    Unit,
-}
-
-/// One deterministic bytecode instruction.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "op", rename_all = "kebab-case")]
-pub enum Instruction {
-    /// Push a constant.
-    Push {
-        /// Constant value.
-        value: Value,
-    },
-    /// Copy a local onto the value stack.
-    LoadLocal {
-        /// Zero-based frame slot.
-        slot: usize,
-    },
-    /// Pop a value into a local.
-    StoreLocal {
-        /// Zero-based frame slot.
-        slot: usize,
-    },
-    /// Drop the top stack value.
-    Pop,
-    /// Negate an integer.
-    Negate,
-    /// Negate a boolean.
-    Not,
-    /// Add two integers.
-    Add,
-    /// Subtract two integers.
-    Subtract,
-    /// Multiply two integers.
-    Multiply,
-    /// Divide two integers.
-    Divide,
-    /// Compute integer remainder.
-    Remainder,
-    /// Compare values for equality.
-    Equal,
-    /// Compare values for inequality.
-    NotEqual,
-    /// Compare integers.
-    Less,
-    /// Compare integers.
-    LessEqual,
-    /// Compare integers.
-    Greater,
-    /// Compare integers.
-    GreaterEqual,
-    /// Boolean conjunction.
-    And,
-    /// Boolean disjunction.
-    Or,
-    /// Invoke one statically resolved function.
-    Call {
-        /// Function table index.
-        function: usize,
-        /// Number of arguments already on the value stack.
-        argument_count: usize,
-    },
-    /// Record, but do not execute, a host-effect request.
-    Request {
-        /// Effect identifier.
-        effect: String,
-        /// Number of arguments already on the value stack.
-        argument_count: usize,
-    },
-    /// Return the top value, or unit when the stack is empty.
-    Return,
-}
-
-/// Compiled function.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct BytecodeFunction {
-    /// Function name.
-    pub name: String,
-    /// Number of parameter slots.
-    pub parameter_count: usize,
-    /// Total local slots, including parameters.
-    pub local_count: usize,
-    /// Declared return type.
-    pub return_type: Type,
-    /// Explicit sorted effect row.
-    pub effects: Vec<String>,
-    /// Ordered bytecode.
-    pub instructions: Vec<Instruction>,
-}
-
-/// Complete deterministic bytecode artifact.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct BytecodeProgram {
-    /// Artifact schema.
-    pub schema: String,
-    /// Module name.
-    pub module: String,
-    /// Whitespace- and declaration-order-independent source meaning digest.
-    pub semantic_digest: Digest,
-    /// Versioned JCE1 AST identity from which `semantic_digest` is copied.
-    pub semantic_identity: CanonicalAstIdentity,
-    /// Entrypoint function table index.
-    pub entry_function: usize,
-    /// Functions in source order.
-    pub functions: Vec<BytecodeFunction>,
-}
 
 /// Successful compilation receipt and artifact.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -145,6 +28,8 @@ pub struct CompileArtifact {
     pub status: String,
     /// Static-check evidence.
     pub check: CheckReceipt,
+    /// Standalone non-executing bytecode verification receipt.
+    pub verification: BytecodeVerificationReceipt,
     /// Executable bytecode.
     pub bytecode: BytecodeProgram,
 }
@@ -177,6 +62,8 @@ pub struct ExecutionReceipt {
     pub semantic_digest: Digest,
     /// Versioned JCE1 AST identity accepted by the VM.
     pub semantic_identity: CanonicalAstIdentity,
+    /// Typed identity of the exact verified bytecode artifact.
+    pub bytecode_digest: Digest,
     /// Entrypoint result.
     pub result: Value,
     /// Host effects requested but not executed.
@@ -197,6 +84,9 @@ pub enum LanguageError {
     /// Canonical AST identity construction failed.
     #[error("semantic identity failed: {0}")]
     Identity(#[from] IdentityError),
+    /// Standalone bytecode verification failed before execution.
+    #[error("bytecode verification failed: {0}")]
+    Bytecode(#[from] joan_bytecode::BytecodeError),
     /// Internal compiler invariant failed.
     #[error("compiler invariant failed: {0}")]
     Compiler(String),
@@ -229,10 +119,12 @@ pub fn compile_source(source: &str) -> Result<CompileArtifact, LanguageError> {
     let program = joan_syntax::parse(source)?;
     let receipt = check(&program)?;
     let bytecode = compile_program(&program)?;
+    let verification = verify_bytecode(&bytecode)?;
     Ok(CompileArtifact {
-        schema: "joan.compile-artifact.v0".to_owned(),
+        schema: "joan.compile-artifact.v1".to_owned(),
         status: "compiled".to_owned(),
         check: receipt,
+        verification,
         bytecode,
     })
 }
@@ -248,22 +140,10 @@ pub fn execute_bytecode(
     program: &BytecodeProgram,
     instruction_budget: u64,
 ) -> Result<ExecutionReceipt, LanguageError> {
+    let verification = verify_bytecode(program)?;
     if instruction_budget == 0 {
         return Err(LanguageError::Runtime(
             "instruction budget must be greater than zero".to_owned(),
-        ));
-    }
-    if program.entry_function >= program.functions.len() {
-        return Err(LanguageError::Runtime(
-            "entry function index is outside the function table".to_owned(),
-        ));
-    }
-    verify_canonical_ast_identity_descriptor(&program.semantic_identity).map_err(|error| {
-        LanguageError::Runtime(format!("invalid semantic identity descriptor: {error}"))
-    })?;
-    if program.semantic_digest != program.semantic_identity.digest {
-        return Err(LanguageError::Runtime(
-            "semantic digest does not match the canonical AST identity".to_owned(),
         ));
     }
     let mut machine = Machine {
@@ -274,10 +154,11 @@ pub fn execute_bytecode(
     };
     let result = machine.call(program.entry_function, Vec::new(), 0)?;
     Ok(ExecutionReceipt {
-        schema: "joan.execution-receipt.v0".to_owned(),
+        schema: "joan.execution-receipt.v1".to_owned(),
         status: "completed".to_owned(),
         semantic_digest: program.semantic_digest.clone(),
         semantic_identity: program.semantic_identity.clone(),
+        bytecode_digest: verification.bytecode_digest,
         result,
         effect_requests: machine.requests,
         instructions_executed: machine.executed,
@@ -285,26 +166,28 @@ pub fn execute_bytecode(
 }
 
 fn compile_program(program: &Program) -> Result<BytecodeProgram, LanguageError> {
-    let function_indexes = program
+    let canonical_ast = program.canonical();
+    let function_indexes = canonical_ast
         .functions
         .iter()
         .enumerate()
         .map(|(index, function)| (function.name.clone(), index))
-        .collect::<HashMap<_, _>>();
+        .collect::<BTreeMap<_, _>>();
     let entry_function = function_indexes.get("main").copied().ok_or_else(|| {
         LanguageError::Compiler("checked program has no main function".to_owned())
     })?;
-    let functions = program
+    let functions = canonical_ast
         .functions
         .iter()
         .map(|function| compile_function(function, &function_indexes))
         .collect::<Result<Vec<_>, _>>()?;
-    let semantic_ast = encode_program_ast(program)?;
+    let semantic_ast = encode_canonical_ast(&canonical_ast)?;
     Ok(BytecodeProgram {
-        schema: "joan.bytecode-program.v0".to_owned(),
-        module: program.module.clone(),
+        schema: BYTECODE_PROGRAM_SCHEMA.to_owned(),
+        module: canonical_ast.module.clone(),
         semantic_digest: semantic_ast.identity.digest.clone(),
         semantic_identity: semantic_ast.identity,
+        canonical_ast,
         entry_function,
         functions,
     })
@@ -315,25 +198,36 @@ fn encode_program_ast(program: &Program) -> Result<EncodedCanonicalAst, Language
 }
 
 fn compile_function(
-    function: &joan_ast::Function,
-    function_indexes: &HashMap<String, usize>,
+    function: &CanonicalFunction,
+    function_indexes: &BTreeMap<String, usize>,
 ) -> Result<BytecodeFunction, LanguageError> {
     let mut locals = function
         .parameters
         .iter()
         .enumerate()
         .map(|(index, parameter)| (parameter.name.clone(), index))
-        .collect::<HashMap<_, _>>();
+        .collect::<BTreeMap<_, _>>();
+    let parameter_types = function
+        .parameters
+        .iter()
+        .map(|parameter| parameter.value_type.clone())
+        .collect::<Vec<_>>();
+    let mut local_types = parameter_types.clone();
     let mut instructions = Vec::new();
     for statement in &function.body {
         match statement {
-            Statement::Let { name, value, .. } => {
+            CanonicalStatement::Let {
+                name,
+                value_type,
+                value,
+            } => {
                 compile_expression(value, &locals, function_indexes, &mut instructions)?;
                 let slot = locals.len();
                 locals.insert(name.clone(), slot);
+                local_types.push(value_type.clone());
                 instructions.push(Instruction::StoreLocal { slot });
             }
-            Statement::Return { value, .. } => {
+            CanonicalStatement::Return { value } => {
                 if let Some(value) = value {
                     compile_expression(value, &locals, function_indexes, &mut instructions)?;
                 } else {
@@ -341,9 +235,7 @@ fn compile_function(
                 }
                 instructions.push(Instruction::Return);
             }
-            Statement::Request {
-                effect, arguments, ..
-            } => {
+            CanonicalStatement::Request { effect, arguments } => {
                 for argument in arguments {
                     compile_expression(argument, &locals, function_indexes, &mut instructions)?;
                 }
@@ -352,69 +244,67 @@ fn compile_function(
                     argument_count: arguments.len(),
                 });
             }
-            Statement::Expression { expression, .. } => {
+            CanonicalStatement::Expression { expression } => {
                 compile_expression(expression, &locals, function_indexes, &mut instructions)?;
                 instructions.push(Instruction::Pop);
             }
         }
     }
-    let mut effects = function.effects.clone();
-    effects.sort();
     Ok(BytecodeFunction {
         name: function.name.clone(),
-        parameter_count: function.parameters.len(),
-        local_count: locals.len(),
+        parameter_count: parameter_types.len(),
+        parameter_types,
+        local_count: local_types.len(),
+        local_types,
         return_type: function.return_type.clone(),
-        effects,
+        effects: function.effects.clone(),
         instructions,
     })
 }
 
 fn compile_expression(
-    expression: &Expression,
-    locals: &HashMap<String, usize>,
-    function_indexes: &HashMap<String, usize>,
+    expression: &CanonicalExpression,
+    locals: &BTreeMap<String, usize>,
+    function_indexes: &BTreeMap<String, usize>,
     instructions: &mut Vec<Instruction>,
 ) -> Result<(), LanguageError> {
     match expression {
-        Expression::Integer { value, .. } => instructions.push(Instruction::Push {
-            value: Value::I64(*value),
+        CanonicalExpression::Integer { value } => instructions.push(Instruction::Push {
+            value: Value::I64(value.parse::<i64>().map_err(|_| {
+                LanguageError::Compiler("canonical integer is outside i64".to_owned())
+            })?),
         }),
-        Expression::Boolean { value, .. } => instructions.push(Instruction::Push {
+        CanonicalExpression::Boolean { value } => instructions.push(Instruction::Push {
             value: Value::Bool(*value),
         }),
-        Expression::String { value, .. } => instructions.push(Instruction::Push {
+        CanonicalExpression::String { value } => instructions.push(Instruction::Push {
             value: Value::String(value.clone()),
         }),
-        Expression::Variable { name, .. } => {
+        CanonicalExpression::Variable { name } => {
             let slot = locals.get(name).copied().ok_or_else(|| {
                 LanguageError::Compiler(format!("checked local `{name}` is missing"))
             })?;
             instructions.push(Instruction::LoadLocal { slot });
         }
-        Expression::Unary {
-            operator, operand, ..
-        } => {
+        CanonicalExpression::Unary { operator, operand } => {
             compile_expression(operand, locals, function_indexes, instructions)?;
             instructions.push(match operator {
                 UnaryOperator::Negate => Instruction::Negate,
                 UnaryOperator::Not => Instruction::Not,
             });
         }
-        Expression::Binary {
+        CanonicalExpression::Binary {
             operator,
             left,
             right,
-            ..
         } => {
             compile_expression(left, locals, function_indexes, instructions)?;
             compile_expression(right, locals, function_indexes, instructions)?;
             instructions.push(binary_instruction(operator));
         }
-        Expression::Call {
+        CanonicalExpression::Call {
             function,
             arguments,
-            ..
         } => {
             for argument in arguments {
                 compile_expression(argument, locals, function_indexes, instructions)?;

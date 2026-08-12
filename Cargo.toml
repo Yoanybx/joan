@@ -4,6 +4,7 @@ members = [
   "crates/joan-ast",
   "crates/joan-canonical",
   "crates/joan-check",
+  "crates/joan-bytecode",
   "crates/joan-compiler",
   "crates/joan-conformance",
   "crates/joan-identity",

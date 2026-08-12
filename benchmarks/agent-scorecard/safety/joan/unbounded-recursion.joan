@@ -1,0 +1,6 @@
+module scorecard_unbounded_recursion;
+
+fn main() -> unit effects [] {
+  main();
+  return;
+}

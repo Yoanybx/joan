@@ -31,6 +31,8 @@ const SIMULATION_TEST_RELATIVE = "crates/joan-sim/tests/corpus.rs";
 const SIMULATION_TEST_PATH = join(ROOT, SIMULATION_TEST_RELATIVE);
 const BENCHMARK_RELATIVE = "benchmarks/results/2026-08-11-mac15-4-jce1-digest.json";
 const BENCHMARK_PATH = join(ROOT, BENCHMARK_RELATIVE);
+const AGENT_SCORECARD_RELATIVE = "benchmarks/results/2026-08-12-mac15-4-agent-scorecard.json";
+const AGENT_SCORECARD_PATH = join(ROOT, AGENT_SCORECARD_RELATIVE);
 const PAYMENT_REPORT_RELATIVE = "vectors/payment-cost/report-v0.json";
 const PAYMENT_REPORT_PATH = join(ROOT, PAYMENT_REPORT_RELATIVE);
 const EXCLUDES = [".git", "target", ".joan/evidence", "**/.DS_Store", "**/._*"];
@@ -177,6 +179,8 @@ function currentState() {
   const specSha256 = fileSha256(JCE1_SPEC_PATH);
   const benchmarkBytes = readFileSync(BENCHMARK_PATH);
   const benchmark = JSON.parse(benchmarkBytes.toString("utf8"));
+  const agentScorecardBytes = readFileSync(AGENT_SCORECARD_PATH);
+  const agentScorecard = JSON.parse(agentScorecardBytes.toString("utf8"));
   const paymentReportBytes = readFileSync(PAYMENT_REPORT_PATH);
   const paymentReport = JSON.parse(paymentReportBytes.toString("utf8"));
   return {
@@ -207,6 +211,18 @@ function currentState() {
       status: benchmark.comparison.status,
       faster_observed: benchmark.comparison.faster_observed_implementation,
       language_superiority_claim: benchmark.comparison.language_superiority_claim,
+    },
+    agent_scorecard: {
+      path: AGENT_SCORECARD_RELATIVE,
+      file_sha256: sha256(agentScorecardBytes),
+      status: agentScorecard.qualification.status,
+      workload_count: agentScorecard.workloads.length,
+      joan_safety_cases_protected: agentScorecard.qualification.joan_safety_cases_protected,
+      joan_safety_cases_total: agentScorecard.qualification.joan_safety_cases_total,
+      broad_language_superiority_claim:
+        agentScorecard.qualification.broad_language_superiority_claim,
+      universal_language_superiority_claim:
+        agentScorecard.universal_language_superiority_claim,
     },
     payment_cost: {
       path: PAYMENT_REPORT_RELATIVE,
@@ -360,6 +376,7 @@ function buildEvidence(receiptPaths) {
     },
     benchmark: {
       ...state.benchmark,
+      agent_scorecard: state.agent_scorecard,
       payment_cost: state.payment_cost,
     },
     limitations: [
@@ -368,6 +385,7 @@ function buildEvidence(receiptPaths) {
       "No official remote, public adoption, native-code backend, distributed network or real payment exists",
       "JDR1 synthetic results do not authorize effects; JDR2 remains unimplemented",
       "The recorded digest benchmark does not establish language superiority",
+      "The two-workload agent scorecard is baseline-only and does not establish language superiority",
       "The payment-cost vector proves local integer accounting only, not universal market superiority",
     ],
   };
@@ -416,7 +434,11 @@ function checkEvidence() {
     binding: "matched",
   }, "JCE1 specification binding");
   requireEqual(evidence.conformance.jdr1, state.simulation, "JDR1 current-source simulation claim");
-  requireEqual(evidence.benchmark, { ...state.benchmark, payment_cost: state.payment_cost }, "benchmark evidence");
+  requireEqual(evidence.benchmark, {
+    ...state.benchmark,
+    agent_scorecard: state.agent_scorecard,
+    payment_cost: state.payment_cost,
+  }, "benchmark evidence");
   requireEqual(evidence.verification.runner, {
     path: RUNNER_RELATIVE,
     file_sha256: fileSha256(RUNNER_PATH),

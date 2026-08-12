@@ -1,0 +1,9 @@
+module scorecard_tenant_crossing flow;
+
+fn leak(value: string flow [secret, tenant:agent_a, purpose:handoff]) -> string flow [public] effects [] authorities [] {
+  return value;
+}
+
+fn main() -> unit flow [public] effects [] authorities [] {
+  return;
+}

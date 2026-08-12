@@ -1,0 +1,11 @@
+module tenant_safe_handoff_scorecard flow;
+
+fn relay(payload: string flow [secret, tenant:agent_a, purpose:handoff]) -> string flow [secret, tenant:agent_a, purpose:handoff] effects [] authorities [] {
+  return payload;
+}
+
+fn main() -> unit flow [public] effects [network_send] authorities [send_once: network_send] {
+  let payload: string flow [secret, tenant:agent_a, purpose:handoff] = "bounded-agent-context";
+  request network_send(relay(payload)) using send_once flow [secret, tenant:agent_a, purpose:handoff];
+  return;
+}

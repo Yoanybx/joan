@@ -60,6 +60,7 @@ fn every_machine_contract_is_strict_json() -> Result<(), Box<dyn std::error::Err
     collect_json(&root.join("vectors/jce1"), &mut files)?;
     collect_json(&root.join("vectors/language-differential"), &mut files)?;
     collect_json(&root.join("vectors/payment-cost"), &mut files)?;
+    collect_json(&root.join("benchmarks/agent-scorecard"), &mut files)?;
     assert!(!files.is_empty());
     for path in files {
         parse_strict(&fs::read_to_string(&path)?).map_err(|error| {
@@ -300,6 +301,48 @@ fn differential_language_report_matches_its_schema() -> Result<(), Box<dyn std::
 }
 
 #[test]
+fn agent_scorecard_report_matches_its_schema() -> Result<(), Box<dyn std::error::Error>> {
+    let root = workspace_root();
+    let temporary = tempfile::tempdir()?;
+    let report_path = temporary.path().join("report.json");
+    let output = Command::new("node")
+        .args([
+            "tools/agent-scorecard-runner.mjs",
+            env!("CARGO_BIN_EXE_joan"),
+            "benchmarks/agent-scorecard/workloads-v1.json",
+        ])
+        .arg(&report_path)
+        .args([
+            "--samples",
+            "3",
+            "--prepare-samples",
+            "1",
+            "--mode",
+            "smoke",
+        ])
+        .env("JOAN_SCORECARD_TMPDIR", temporary.path())
+        .current_dir(&root)
+        .output()?;
+    if !output.status.success() {
+        return Err(format!(
+            "agent scorecard runner failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )
+        .into());
+    }
+    let report = read_json(&report_path)?;
+    validate_instance(&report, "schemas/agent-scorecard-report.v1.schema.json")?;
+    assert_eq!(
+        report["qualification"]["status"],
+        "baseline-only-not-qualified"
+    );
+    assert_eq!(report["qualification"]["correctness_equivalent"], true);
+    assert_eq!(report["safety"]["protection"]["joan"]["protected"], 4);
+    assert_eq!(report["universal_language_superiority_claim"], false);
+    Ok(())
+}
+
+#[test]
 fn verification_receipts_match_their_schema() -> Result<(), Box<dyn std::error::Error>> {
     let root = workspace_root();
     let receipt_directory = root.join(".joan/evidence/runs");
@@ -362,7 +405,7 @@ fn workspace_root() -> PathBuf {
         )
 }
 
-fn manifest_schema_pairs() -> [(&'static str, &'static str); 11] {
+fn manifest_schema_pairs() -> [(&'static str, &'static str); 13] {
     [
         (
             ".joan/adoption.json",
@@ -407,6 +450,14 @@ fn manifest_schema_pairs() -> [(&'static str, &'static str); 11] {
         (
             "tools/verification-gates.v1.json",
             "schemas/verification-gates.v1.schema.json",
+        ),
+        (
+            "benchmarks/agent-scorecard/workloads-v1.json",
+            "schemas/agent-scorecard-workloads.v1.schema.json",
+        ),
+        (
+            "benchmarks/results/2026-08-12-mac15-4-agent-scorecard.json",
+            "schemas/agent-scorecard-report.v1.schema.json",
         ),
     ]
 }

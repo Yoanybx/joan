@@ -21,6 +21,9 @@ node tools/evidence-index.mjs check
 printf '%s\n' '==> differential language parser/checker'
 bash scripts/verify-differential-language.sh
 
+printf '%s\n' '==> AI-agent language scorecard'
+bash scripts/verify-agent-scorecard.sh
+
 printf '%s\n' '==> offline PR trust envelope'
 bash scripts/verify-pr-trust.sh
 

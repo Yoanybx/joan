@@ -1,0 +1,701 @@
+{
+  "claim_scope": "ai-agent-task-path-baseline-only",
+  "generated_at": "2026-08-12T17:57:50.306Z",
+  "manifest_sha256": "b1452b01eda061d0e8ef96d5fdfbd78796fe1bc6fbf40649f60bc8f657bb8adc",
+  "mode": "recorded",
+  "platform": {
+    "arch": "arm64",
+    "model": "Mac15,4",
+    "os": "darwin",
+    "processor": "Apple M3",
+    "release": "22.6.0"
+  },
+  "preparation_sample_count": 3,
+  "qualification": {
+    "blockers": [
+      "workload-corpus-below-minimum",
+      "native-backend-not-implemented",
+      "independent-hardware-rerun-missing",
+      "runtime-target-not-met",
+      "peak-rss-target-not-met",
+      "material-win-count-below-minimum",
+      "typescript-static-typecheck-not-measured",
+      "m2m-wire-protocol-baselines-not-measured"
+    ],
+    "broad_language_superiority_claim": false,
+    "correctness_equivalent": true,
+    "eligible": false,
+    "independent_rerun": false,
+    "joan_safety_cases_protected": 4,
+    "joan_safety_cases_total": 4,
+    "material_wins": 1,
+    "native_backend": false,
+    "peak_rss_targets_met": false,
+    "runtime_targets_met": false,
+    "status": "baseline-only-not-qualified"
+  },
+  "safety": {
+    "case_count": 4,
+    "protection": {
+      "joan": {
+        "protected": 4,
+        "protection_ppm": 1000000,
+        "total": 4
+      },
+      "c": {
+        "protected": 0,
+        "protection_ppm": 0,
+        "total": 4
+      },
+      "rust": {
+        "protected": 2,
+        "protection_ppm": 500000,
+        "total": 4
+      },
+      "typescript": {
+        "protected": 0,
+        "protection_ppm": 0,
+        "total": 4
+      }
+    },
+    "results": [
+      {
+        "id": "authority-replay",
+        "observations": [
+          {
+            "diagnostic_evidence_sha256": "656ec9773396f674268bc5e5c0d06d7706105f2172ec99b03778f0c26a9e21f4",
+            "expected_status_match": true,
+            "implementation": "joan",
+            "protects": true,
+            "stage": "check",
+            "status": "rejected"
+          },
+          {
+            "diagnostic_evidence_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "expected_status_match": true,
+            "implementation": "c",
+            "protects": false,
+            "stage": "compile",
+            "status": "accepted"
+          },
+          {
+            "diagnostic_evidence_sha256": "1ad03306f3b90006a6dd3fad84370a33ba4541ff3b419c2ba5cff7feb50afe6a",
+            "expected_status_match": true,
+            "implementation": "rust",
+            "protects": true,
+            "stage": "compile",
+            "status": "rejected"
+          },
+          {
+            "diagnostic_evidence_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "expected_status_match": true,
+            "implementation": "typescript",
+            "protects": false,
+            "stage": "strip-check",
+            "status": "accepted"
+          }
+        ],
+        "rule": "one-shot authority cannot be consumed twice"
+      },
+      {
+        "id": "tenant-crossing",
+        "observations": [
+          {
+            "diagnostic_evidence_sha256": "f7cb74c8c4a3528d787790efc9864fecb81ce08391ca3efce9296760e209966b",
+            "expected_status_match": true,
+            "implementation": "joan",
+            "protects": true,
+            "stage": "check",
+            "status": "rejected"
+          },
+          {
+            "diagnostic_evidence_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "expected_status_match": true,
+            "implementation": "c",
+            "protects": false,
+            "stage": "compile",
+            "status": "accepted"
+          },
+          {
+            "diagnostic_evidence_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "expected_status_match": true,
+            "implementation": "rust",
+            "protects": false,
+            "stage": "compile",
+            "status": "accepted"
+          },
+          {
+            "diagnostic_evidence_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "expected_status_match": true,
+            "implementation": "typescript",
+            "protects": false,
+            "stage": "strip-check",
+            "status": "accepted"
+          }
+        ],
+        "rule": "secret context cannot become public or cross tenant-purpose boundaries"
+      },
+      {
+        "id": "unbounded-recursion",
+        "observations": [
+          {
+            "diagnostic_evidence_sha256": "64ccb1f052322a3250426ca3b796889976560172c0c86ec78f83fe6dac687a9a",
+            "expected_status_match": true,
+            "implementation": "joan",
+            "protects": true,
+            "stage": "check",
+            "status": "rejected"
+          },
+          {
+            "diagnostic_evidence_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "expected_status_match": true,
+            "implementation": "c",
+            "protects": false,
+            "stage": "compile",
+            "status": "accepted"
+          },
+          {
+            "diagnostic_evidence_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "expected_status_match": true,
+            "implementation": "rust",
+            "protects": false,
+            "stage": "compile",
+            "status": "accepted"
+          },
+          {
+            "diagnostic_evidence_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "expected_status_match": true,
+            "implementation": "typescript",
+            "protects": false,
+            "stage": "strip-check",
+            "status": "accepted"
+          }
+        ],
+        "rule": "unproven recursive call cycles are rejected"
+      },
+      {
+        "id": "i64-overflow",
+        "observations": [
+          {
+            "diagnostic_evidence_sha256": "051a5651bb4f4a2f5c35e2ac386ef7b5eefcf2ae5964566fc1be6264da049057",
+            "expected_status_match": true,
+            "implementation": "joan",
+            "protects": true,
+            "stage": "run",
+            "status": "rejected"
+          },
+          {
+            "diagnostic_evidence_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "expected_status_match": true,
+            "implementation": "c",
+            "protects": false,
+            "stage": "compile",
+            "status": "accepted"
+          },
+          {
+            "diagnostic_evidence_sha256": "83702bc2951e48db84b58a27c7816c3004a5c102adafd4ebf460ee110860a5a4",
+            "expected_status_match": true,
+            "implementation": "rust",
+            "protects": true,
+            "stage": "run",
+            "status": "rejected"
+          },
+          {
+            "diagnostic_evidence_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "expected_status_match": true,
+            "implementation": "typescript",
+            "protects": false,
+            "stage": "run",
+            "status": "accepted"
+          }
+        ],
+        "rule": "signed 64-bit addition overflow fails instead of wrapping or continuing"
+      }
+    ]
+  },
+  "sample_count": 21,
+  "schema": "joan.agent-scorecard-report.v1",
+  "toolchains": [
+    {
+      "executable": "joan",
+      "executable_sha256": "f738e9e1059d2c9f1fb6febb9ee6c6a6ac7364356cb32fd1273cb44f1c825a5f",
+      "id": "joan",
+      "version": "alpha-language-preview; release binary digest bound"
+    },
+    {
+      "executable": "cc",
+      "executable_sha256": "60e0dc56bdd6e58d00830d2947f5e7dcaab7bfabbca0fdac83a7e4a9a0e32459",
+      "id": "c",
+      "version": "Apple clang version 14.0.3 (clang-1403.0.22.14.1)\nTarget: arm64-apple-darwin22.6.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin"
+    },
+    {
+      "executable": "rustc",
+      "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
+      "id": "rust",
+      "version": "rustc 1.94.1 (e408947bf 2026-03-25)\nbinary: rustc\ncommit-hash: e408947bfd200af42db322daf0fadfe7e26d3bd1\ncommit-date: 2026-03-25\nhost: aarch64-apple-darwin\nrelease: 1.94.1\nLLVM version: 21.1.8"
+    },
+    {
+      "executable": "node",
+      "executable_sha256": "ab216ce39827553e745d59a6be97da745660525336c7f39ed5e0a27647acaa83",
+      "id": "typescript-runtime",
+      "version": "v24.11.1"
+    }
+  ],
+  "universal_language_superiority_claim": false,
+  "workloads": [
+    {
+      "comparison": {
+        "best_native_p95_ns": 2275750,
+        "best_native_peak_rss_bytes": 983040,
+        "joan_p95_ns": 1782042,
+        "joan_peak_rss_bytes": 2129920,
+        "joan_to_best_native_peak_rss_ratio_ppm": 2166667,
+        "joan_to_best_native_runtime_ratio_ppm": 783057
+      },
+      "equivalence_passed": true,
+      "expected_output_sha256": "5470ea1424bf8faf3cda8cb2841d810d7fa8428f1aa138948852fc46b70404ed",
+      "id": "tool-memory-workflow",
+      "results": [
+        {
+          "actual_stdout_bytes": 1356,
+          "artifact_bytes": 4687,
+          "artifact_scope": "serialized-bytecode-and-verification-receipt",
+          "implementation": "joan",
+          "normalized_output_bytes": 385,
+          "output_sha256": "5470ea1424bf8faf3cda8cb2841d810d7fa8428f1aa138948852fc46b70404ed",
+          "peak_rss_bytes": 2129920,
+          "preparation": {
+            "max_ns": 863382833,
+            "min_ns": 1592916,
+            "p50_ns": 1965667,
+            "p95_ns": 863382833,
+            "p99_ns": 863382833,
+            "samples_ns": [
+              863382833,
+              1965667,
+              1592916
+            ]
+          },
+          "runtime": {
+            "max_ns": 2037625,
+            "min_ns": 1429417,
+            "p50_ns": 1560041,
+            "p95_ns": 1782042,
+            "p99_ns": 2037625,
+            "samples_ns": [
+              1729041,
+              1600875,
+              1624584,
+              1584125,
+              2037625,
+              1683708,
+              1636833,
+              1782042,
+              1545375,
+              1496333,
+              1560041,
+              1465416,
+              1455625,
+              1468042,
+              1459833,
+              1429417,
+              1469292,
+              1443667,
+              1432791,
+              1586625,
+              1606583
+            ]
+          },
+          "source_bytes": 517,
+          "source_sha256": "165d383e7e43eacbe6e073fdb03e99cfe887c64def33481711210f822e54d773"
+        },
+        {
+          "actual_stdout_bytes": 386,
+          "artifact_bytes": 33443,
+          "artifact_scope": "native-executable",
+          "implementation": "c",
+          "normalized_output_bytes": 385,
+          "output_sha256": "5470ea1424bf8faf3cda8cb2841d810d7fa8428f1aa138948852fc46b70404ed",
+          "peak_rss_bytes": 983040,
+          "preparation": {
+            "max_ns": 240188917,
+            "min_ns": 35242041,
+            "p50_ns": 35650583,
+            "p95_ns": 240188917,
+            "p99_ns": 240188917,
+            "samples_ns": [
+              240188917,
+              35650583,
+              35242041
+            ]
+          },
+          "runtime": {
+            "max_ns": 3281333,
+            "min_ns": 946583,
+            "p50_ns": 1081667,
+            "p95_ns": 2939625,
+            "p99_ns": 3281333,
+            "samples_ns": [
+              2939625,
+              3281333,
+              2782375,
+              2091667,
+              1876916,
+              1400917,
+              1305333,
+              1239250,
+              1097041,
+              1238458,
+              1081667,
+              1072458,
+              1054000,
+              1065292,
+              1064833,
+              1041542,
+              983625,
+              962375,
+              946583,
+              951375,
+              946667
+            ]
+          },
+          "source_bytes": 1186,
+          "source_sha256": "a7415b39c4af0c3c4a4917d12c1250cf23f25fb95de64666a0b06976cb415f2b"
+        },
+        {
+          "actual_stdout_bytes": 386,
+          "artifact_bytes": 488358,
+          "artifact_scope": "native-executable",
+          "implementation": "rust",
+          "normalized_output_bytes": 385,
+          "output_sha256": "5470ea1424bf8faf3cda8cb2841d810d7fa8428f1aa138948852fc46b70404ed",
+          "peak_rss_bytes": 1130496,
+          "preparation": {
+            "max_ns": 596975583,
+            "min_ns": 74358000,
+            "p50_ns": 77850084,
+            "p95_ns": 596975583,
+            "p99_ns": 596975583,
+            "samples_ns": [
+              596975583,
+              74358000,
+              77850084
+            ]
+          },
+          "runtime": {
+            "max_ns": 2498166,
+            "min_ns": 864583,
+            "p50_ns": 947417,
+            "p95_ns": 2275750,
+            "p99_ns": 2498166,
+            "samples_ns": [
+              2498166,
+              2275750,
+              2032166,
+              1243125,
+              1088709,
+              947417,
+              912375,
+              1019583,
+              1010584,
+              958500,
+              929666,
+              914625,
+              894166,
+              954042,
+              982000,
+              868959,
+              877042,
+              864583,
+              873834,
+              867750,
+              868125
+            ]
+          },
+          "source_bytes": 1167,
+          "source_sha256": "8fef5cf43d2d5aeca7c75e40690c0cd4872bd4f75974cf14dd74bea44be20284"
+        },
+        {
+          "actual_stdout_bytes": 386,
+          "artifact_bytes": 1046,
+          "artifact_scope": "typescript-source-native-strip-runtime",
+          "implementation": "typescript",
+          "normalized_output_bytes": 385,
+          "output_sha256": "5470ea1424bf8faf3cda8cb2841d810d7fa8428f1aa138948852fc46b70404ed",
+          "peak_rss_bytes": 62767104,
+          "preparation": {
+            "max_ns": 45075666,
+            "min_ns": 41360959,
+            "p50_ns": 42019209,
+            "p95_ns": 45075666,
+            "p99_ns": 45075666,
+            "samples_ns": [
+              45075666,
+              42019209,
+              41360959
+            ]
+          },
+          "runtime": {
+            "max_ns": 39295584,
+            "min_ns": 33143333,
+            "p50_ns": 37695875,
+            "p95_ns": 38960750,
+            "p99_ns": 39295584,
+            "samples_ns": [
+              39295584,
+              38419542,
+              34318375,
+              37700917,
+              37468542,
+              34468542,
+              38523416,
+              38058750,
+              38199708,
+              38305250,
+              38960750,
+              38084208,
+              38211750,
+              37125667,
+              33195958,
+              36588833,
+              33143333,
+              37695875,
+              33480833,
+              33807917,
+              33485000
+            ]
+          },
+          "source_bytes": 1046,
+          "source_sha256": "984b718dcb5bd14488abe52789732db730920a7d94875e7ff48997eacd1e82bd"
+        }
+      ]
+    },
+    {
+      "comparison": {
+        "best_native_p95_ns": 1291000,
+        "best_native_peak_rss_bytes": 983040,
+        "joan_p95_ns": 1502708,
+        "joan_peak_rss_bytes": 2113536,
+        "joan_to_best_native_peak_rss_ratio_ppm": 2150000,
+        "joan_to_best_native_runtime_ratio_ppm": 1163988
+      },
+      "equivalence_passed": true,
+      "expected_output_sha256": "fff2e5249b9f2230e804f510d8d32b1b3236e32b74038ab7c3258d1df096db89",
+      "id": "tenant-safe-handoff",
+      "results": [
+        {
+          "actual_stdout_bytes": 1091,
+          "artifact_bytes": 4172,
+          "artifact_scope": "serialized-bytecode-and-verification-receipt",
+          "implementation": "joan",
+          "normalized_output_bytes": 237,
+          "output_sha256": "fff2e5249b9f2230e804f510d8d32b1b3236e32b74038ab7c3258d1df096db89",
+          "peak_rss_bytes": 2113536,
+          "preparation": {
+            "max_ns": 1877125,
+            "min_ns": 1416125,
+            "p50_ns": 1578333,
+            "p95_ns": 1877125,
+            "p99_ns": 1877125,
+            "samples_ns": [
+              1877125,
+              1578333,
+              1416125
+            ]
+          },
+          "runtime": {
+            "max_ns": 1532458,
+            "min_ns": 1313041,
+            "p50_ns": 1365500,
+            "p95_ns": 1502708,
+            "p99_ns": 1532458,
+            "samples_ns": [
+              1378000,
+              1367041,
+              1377417,
+              1417542,
+              1351625,
+              1399042,
+              1369791,
+              1338708,
+              1360834,
+              1502708,
+              1384125,
+              1362458,
+              1356500,
+              1342958,
+              1364333,
+              1365500,
+              1335458,
+              1334500,
+              1313041,
+              1532458,
+              1377750
+            ]
+          },
+          "source_bytes": 529,
+          "source_sha256": "5043e7e83091d6a81c38067884def8b6b21bd424530ee3ed90b5f28b023aa716"
+        },
+        {
+          "actual_stdout_bytes": 238,
+          "artifact_bytes": 33490,
+          "artifact_scope": "native-executable",
+          "implementation": "c",
+          "normalized_output_bytes": 237,
+          "output_sha256": "fff2e5249b9f2230e804f510d8d32b1b3236e32b74038ab7c3258d1df096db89",
+          "peak_rss_bytes": 983040,
+          "preparation": {
+            "max_ns": 38273167,
+            "min_ns": 35754833,
+            "p50_ns": 36304041,
+            "p95_ns": 38273167,
+            "p99_ns": 38273167,
+            "samples_ns": [
+              38273167,
+              36304041,
+              35754833
+            ]
+          },
+          "runtime": {
+            "max_ns": 1552083,
+            "min_ns": 578875,
+            "p50_ns": 656000,
+            "p95_ns": 1291000,
+            "p99_ns": 1552083,
+            "samples_ns": [
+              1291000,
+              1552083,
+              1074834,
+              1069375,
+              1146541,
+              1001209,
+              698959,
+              754542,
+              622584,
+              631458,
+              582542,
+              739917,
+              578875,
+              592917,
+              607542,
+              656000,
+              633917,
+              629208,
+              704208,
+              625000,
+              592375
+            ]
+          },
+          "source_bytes": 1033,
+          "source_sha256": "a8b9cc5b6f2fecd4eef420839becabbc1131852e49fdd86ba169dd59dc672db1"
+        },
+        {
+          "actual_stdout_bytes": 238,
+          "artifact_bytes": 488037,
+          "artifact_scope": "native-executable",
+          "implementation": "rust",
+          "normalized_output_bytes": 237,
+          "output_sha256": "fff2e5249b9f2230e804f510d8d32b1b3236e32b74038ab7c3258d1df096db89",
+          "peak_rss_bytes": 1114112,
+          "preparation": {
+            "max_ns": 93154125,
+            "min_ns": 77846916,
+            "p50_ns": 81013333,
+            "p95_ns": 93154125,
+            "p99_ns": 93154125,
+            "samples_ns": [
+              93154125,
+              77846916,
+              81013333
+            ]
+          },
+          "runtime": {
+            "max_ns": 2386667,
+            "min_ns": 921416,
+            "p50_ns": 999750,
+            "p95_ns": 2069875,
+            "p99_ns": 2386667,
+            "samples_ns": [
+              2386667,
+              2069875,
+              1381791,
+              1265458,
+              1147291,
+              1096375,
+              1020167,
+              970708,
+              1048500,
+              985083,
+              987167,
+              1182250,
+              999750,
+              928792,
+              921416,
+              1010333,
+              983916,
+              936542,
+              954750,
+              991250,
+              968500
+            ]
+          },
+          "source_bytes": 971,
+          "source_sha256": "b417e88b5895cee27a232cd3072a72aa7103cde136d8068fa4a5ea575cc36d74"
+        },
+        {
+          "actual_stdout_bytes": 238,
+          "artifact_bytes": 646,
+          "artifact_scope": "typescript-source-native-strip-runtime",
+          "implementation": "typescript",
+          "normalized_output_bytes": 237,
+          "output_sha256": "fff2e5249b9f2230e804f510d8d32b1b3236e32b74038ab7c3258d1df096db89",
+          "peak_rss_bytes": 62980096,
+          "preparation": {
+            "max_ns": 46922916,
+            "min_ns": 45905167,
+            "p50_ns": 46506958,
+            "p95_ns": 46922916,
+            "p99_ns": 46922916,
+            "samples_ns": [
+              46922916,
+              46506958,
+              45905167
+            ]
+          },
+          "runtime": {
+            "max_ns": 44712041,
+            "min_ns": 32445958,
+            "p50_ns": 37266333,
+            "p95_ns": 44650666,
+            "p99_ns": 44712041,
+            "samples_ns": [
+              44650666,
+              39276250,
+              44712041,
+              44600292,
+              43836250,
+              42258750,
+              42884916,
+              37347416,
+              37246833,
+              37092083,
+              37262917,
+              37266333,
+              32451750,
+              33494083,
+              39374375,
+              37166000,
+              38540333,
+              32445958,
+              36825208,
+              37106292,
+              32911708
+            ]
+          },
+          "source_bytes": 646,
+          "source_sha256": "ef57984f69db8456c0d3183a11f4fb8d29156766930000fbc7b7e01bc9306ee1"
+        }
+      ]
+    }
+  ]
+}

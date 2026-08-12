@@ -2,14 +2,14 @@
   "schema": "joan.evidence-index.v2",
   "version": "0.1.0-alpha.1",
   "status": "local-verification-passed-with-receipts",
-  "generated_at": "2026-08-12T17:19:53.190Z",
+  "generated_at": "2026-08-12T18:31:23.598Z",
   "source": {
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "4c182e84c43eaac9105dba4fc7ac11be679749aa722d48dc57352a573d89687b"
+      "value": "88ccbaf2b794ecdb99fe80a9bf414eace17ac9e4a3421a40a4d331524c3119ea"
     },
-    "file_count": 223,
+    "file_count": 255,
     "excludes": [
       ".git",
       "target",
@@ -20,8 +20,8 @@
   },
   "inventory": {
     "workspace_crates": 21,
-    "json_schemas": 55,
-    "rust_tests": 173
+    "json_schemas": 57,
+    "rust_tests": 174
   },
   "conformance": {
     "jce1": {
@@ -96,35 +96,35 @@
     "runs": [
       {
         "ordinal": 1,
-        "run_id": "36ff64e9-3b76-440f-bec7-3eb478041942",
+        "run_id": "af105b53-a17f-4118-b0ae-b91b14f627d1",
         "path": ".joan/evidence/runs/run-1.json",
-        "file_sha256": "99f57ce7f8de04de1c38fdd88a97b87388bc8128df66a0b18bcb78714254fea6",
+        "file_sha256": "7191813f5e694eccbe924fdc5bc93e2b770b2d8af3b225b09d03247c102d48e7",
         "status": "passed",
-        "started_at": "2026-08-12T16:56:22.657Z",
-        "completed_at": "2026-08-12T17:02:48.286Z",
-        "source_digest": "4c182e84c43eaac9105dba4fc7ac11be679749aa722d48dc57352a573d89687b",
+        "started_at": "2026-08-12T18:10:32.988Z",
+        "completed_at": "2026-08-12T18:17:01.967Z",
+        "source_digest": "88ccbaf2b794ecdb99fe80a9bf414eace17ac9e4a3421a40a4d331524c3119ea",
         "gate_count": 10
       },
       {
         "ordinal": 2,
-        "run_id": "fa3de1d6-f040-4064-ade8-fc7b298e7d20",
+        "run_id": "272a8921-d057-4a4c-850f-0c0a8c2c724a",
         "path": ".joan/evidence/runs/run-2.json",
-        "file_sha256": "e276221a5cd00ae44397a460f8bad182a0ffc68479e6bb7865ba8c39dcba387a",
+        "file_sha256": "bf199df5ce9985d83be2a3c38e450919bc62a77bad512d535e0da2b0cf3b30c7",
         "status": "passed",
-        "started_at": "2026-08-12T17:04:48.578Z",
-        "completed_at": "2026-08-12T17:10:28.265Z",
-        "source_digest": "4c182e84c43eaac9105dba4fc7ac11be679749aa722d48dc57352a573d89687b",
+        "started_at": "2026-08-12T18:17:56.229Z",
+        "completed_at": "2026-08-12T18:23:32.756Z",
+        "source_digest": "88ccbaf2b794ecdb99fe80a9bf414eace17ac9e4a3421a40a4d331524c3119ea",
         "gate_count": 10
       },
       {
         "ordinal": 3,
-        "run_id": "4a9446f3-b630-4f95-85ef-a493a8bbdaf2",
+        "run_id": "27f6eb32-d44d-4c8e-bfac-42f11edd6f68",
         "path": ".joan/evidence/runs/run-3.json",
-        "file_sha256": "b10bda6419bd37dcc07e321fec96e3b97696150a9ecf0889f3251b307c0ab248",
+        "file_sha256": "214343fea3736b25c3599f423668f3db096e6ffeadfc0c5487a5d3cedc5ad726",
         "status": "passed",
-        "started_at": "2026-08-12T17:11:44.304Z",
-        "completed_at": "2026-08-12T17:18:21.094Z",
-        "source_digest": "4c182e84c43eaac9105dba4fc7ac11be679749aa722d48dc57352a573d89687b",
+        "started_at": "2026-08-12T18:24:32.040Z",
+        "completed_at": "2026-08-12T18:30:16.244Z",
+        "source_digest": "88ccbaf2b794ecdb99fe80a9bf414eace17ac9e4a3421a40a4d331524c3119ea",
         "gate_count": 10
       }
     ],
@@ -142,6 +142,16 @@
     "status": "equivalent-output",
     "faster_observed": "c-system-crypto",
     "language_superiority_claim": false,
+    "agent_scorecard": {
+      "path": "benchmarks/results/2026-08-12-mac15-4-agent-scorecard.json",
+      "file_sha256": "7433cc4d9457a74d0013964de6cdcd8bd5bdccd546f1de4d799dc624fb395a69",
+      "status": "baseline-only-not-qualified",
+      "workload_count": 2,
+      "joan_safety_cases_protected": 4,
+      "joan_safety_cases_total": 4,
+      "broad_language_superiority_claim": false,
+      "universal_language_superiority_claim": false
+    },
     "payment_cost": {
       "path": "vectors/payment-cost/report-v0.json",
       "file_sha256": "37e816bf6fa0d3bcd785fe8bfa974d0327d84a03d5318d3162a16b8c8334c53a",
@@ -156,6 +166,7 @@
     "No official remote, public adoption, native-code backend, distributed network or real payment exists",
     "JDR1 synthetic results do not authorize effects; JDR2 remains unimplemented",
     "The recorded digest benchmark does not establish language superiority",
+    "The two-workload agent scorecard is baseline-only and does not establish language superiority",
     "The payment-cost vector proves local integer accounting only, not universal market superiority"
   ]
 }

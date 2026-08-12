@@ -1,0 +1,5 @@
+module scorecard_i64_overflow;
+
+fn main() -> i64 effects [] {
+  return 9223372036854775807 + 1;
+}

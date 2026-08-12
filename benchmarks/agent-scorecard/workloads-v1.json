@@ -1,0 +1,121 @@
+{
+  "schema": "joan.agent-scorecard-workloads.v1",
+  "profile": "ai-agent-task-path-v1",
+  "implementation_order": ["joan", "c", "rust", "typescript"],
+  "workloads": [
+    {
+      "id": "tool-memory-workflow",
+      "description": "Compute a tool result, consume one-shot API and memory authorities, and emit two inert effect requests.",
+      "expected_output": {
+        "effect_requests": [
+          {
+            "arguments": [
+              {"type": "string", "value": "model"},
+              {"type": "i64", "value": "42"}
+            ],
+            "authority_slot": "api_once",
+            "effect": "api_call",
+            "information": {"class": "public"}
+          },
+          {
+            "arguments": [
+              {"type": "string", "value": "session"},
+              {"type": "i64", "value": "42"}
+            ],
+            "authority_slot": "memory_once",
+            "effect": "memory_write",
+            "information": {"class": "public"}
+          }
+        ],
+        "result": {"type": "i64", "value": "42"}
+      },
+      "sources": {
+        "joan": "benchmarks/agent-scorecard/joan/tool-memory-workflow.joan",
+        "c": "benchmarks/agent-scorecard/c/tool-memory-workflow.c",
+        "rust": "benchmarks/agent-scorecard/rust/tool-memory-workflow.rs",
+        "typescript": "benchmarks/agent-scorecard/typescript/tool-memory-workflow.ts"
+      }
+    },
+    {
+      "id": "tenant-safe-handoff",
+      "description": "Relay tenant-purpose-bound context, consume one network authority, and emit an inert handoff request.",
+      "expected_output": {
+        "effect_requests": [
+          {
+            "arguments": [
+              {"type": "string", "value": "bounded-agent-context"}
+            ],
+            "authority_slot": "send_once",
+            "effect": "network_send",
+            "information": {
+              "class": "secret",
+              "purpose": "handoff",
+              "tenant": "agent_a"
+            }
+          }
+        ],
+        "result": {"type": "unit"}
+      },
+      "sources": {
+        "joan": "benchmarks/agent-scorecard/joan/tenant-safe-handoff.joan",
+        "c": "benchmarks/agent-scorecard/c/tenant-safe-handoff.c",
+        "rust": "benchmarks/agent-scorecard/rust/tenant-safe-handoff.rs",
+        "typescript": "benchmarks/agent-scorecard/typescript/tenant-safe-handoff.ts"
+      }
+    }
+  ],
+  "safety_cases": [
+    {
+      "id": "authority-replay",
+      "rule": "one-shot authority cannot be consumed twice",
+      "probes": {
+        "joan": {"path": "benchmarks/agent-scorecard/safety/joan/authority-replay.joan", "stage": "check", "expected_status": "rejected", "evidence_contains": ["J2056"]},
+        "c": {"path": "benchmarks/agent-scorecard/safety/c/authority-replay.c", "stage": "compile", "expected_status": "accepted", "evidence_contains": []},
+        "rust": {"path": "benchmarks/agent-scorecard/safety/rust/authority-replay.rs", "stage": "compile", "expected_status": "rejected", "evidence_contains": ["use of moved value"]},
+        "typescript": {"path": "benchmarks/agent-scorecard/safety/typescript/authority-replay.ts", "stage": "strip-check", "expected_status": "accepted", "evidence_contains": []}
+      }
+    },
+    {
+      "id": "tenant-crossing",
+      "rule": "secret context cannot become public or cross tenant-purpose boundaries",
+      "probes": {
+        "joan": {"path": "benchmarks/agent-scorecard/safety/joan/tenant-crossing.joan", "stage": "check", "expected_status": "rejected", "evidence_contains": ["J2062"]},
+        "c": {"path": "benchmarks/agent-scorecard/safety/c/tenant-crossing.c", "stage": "compile", "expected_status": "accepted", "evidence_contains": []},
+        "rust": {"path": "benchmarks/agent-scorecard/safety/rust/tenant-crossing.rs", "stage": "compile", "expected_status": "accepted", "evidence_contains": []},
+        "typescript": {"path": "benchmarks/agent-scorecard/safety/typescript/tenant-crossing.ts", "stage": "strip-check", "expected_status": "accepted", "evidence_contains": []}
+      }
+    },
+    {
+      "id": "unbounded-recursion",
+      "rule": "unproven recursive call cycles are rejected",
+      "probes": {
+        "joan": {"path": "benchmarks/agent-scorecard/safety/joan/unbounded-recursion.joan", "stage": "check", "expected_status": "rejected", "evidence_contains": ["J2040"]},
+        "c": {"path": "benchmarks/agent-scorecard/safety/c/unbounded-recursion.c", "stage": "compile", "expected_status": "accepted", "evidence_contains": []},
+        "rust": {"path": "benchmarks/agent-scorecard/safety/rust/unbounded-recursion.rs", "stage": "compile", "expected_status": "accepted", "evidence_contains": []},
+        "typescript": {"path": "benchmarks/agent-scorecard/safety/typescript/unbounded-recursion.ts", "stage": "strip-check", "expected_status": "accepted", "evidence_contains": []}
+      }
+    },
+    {
+      "id": "i64-overflow",
+      "rule": "signed 64-bit addition overflow fails instead of wrapping or continuing",
+      "probes": {
+        "joan": {"path": "benchmarks/agent-scorecard/safety/joan/i64-overflow.joan", "stage": "run", "expected_status": "rejected", "evidence_contains": ["integer addition failed"]},
+        "c": {"path": "benchmarks/agent-scorecard/safety/c/i64-overflow.c", "stage": "compile", "expected_status": "accepted", "evidence_contains": []},
+        "rust": {"path": "benchmarks/agent-scorecard/safety/rust/i64-overflow.rs", "stage": "run", "expected_status": "rejected", "evidence_contains": ["attempt to add with overflow"]},
+        "typescript": {"path": "benchmarks/agent-scorecard/safety/typescript/i64-overflow.ts", "stage": "run", "expected_status": "accepted", "evidence_contains": []}
+      }
+    }
+  ],
+  "qualification_policy": {
+    "minimum_workloads": 5,
+    "minimum_recorded_samples": 21,
+    "maximum_runtime_ratio_ppm": 1050000,
+    "maximum_peak_rss_ratio_ppm": 1100000,
+    "material_win_ratio_ppm": 900000,
+    "minimum_material_wins": 2,
+    "require_equivalent_outputs": true,
+    "require_joan_safety_protection_ppm": 1000000,
+    "require_native_backend": true,
+    "require_independent_rerun": true
+  }
+}

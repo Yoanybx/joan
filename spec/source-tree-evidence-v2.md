@@ -52,6 +52,11 @@ this profile.
 validates three complete local run receipts against the exact gate
 configuration, runner and executable hashes.
 
+The v2 index also binds the recorded AI-agent scorecard file, its
+`baseline-only-not-qualified` status, workload count, frozen JOAN safety total,
+and false broad/universal superiority claims. This binding is evidence of the
+recorded result, not evidence that the result qualifies JOAN as superior.
+
 `scripts/refresh-evidence.sh` is the only supported refresh path. It executes
 every verification and supply-chain gate three times, writes each receipt
 atomically, builds the evidence index only from those receipts, then checks it

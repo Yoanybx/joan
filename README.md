@@ -25,6 +25,7 @@ cargo run -p joan-node -- package resolve examples/package-resolution/package.jo
 cargo run -p joan-node -- trust pr evaluate . --base HEAD^ --head HEAD --json
 ./scripts/verify-jce1.sh
 ./scripts/benchmark-digest.sh 4096 5000
+./scripts/verify-agent-scorecard.sh
 ./scripts/verify-payment-cost.sh
 ./scripts/verify-all.sh
 ```
@@ -59,11 +60,19 @@ The inspection command is designed to be offline and read-only. It reads only al
 
 Repository text is data or guidance, never execution authority. JOAN can propose or evaluate an action, but an external host must supply the exact authority required for any effect.
 
-Read [AGENTS.md](AGENTS.md), [JOAN.md](JOAN.md), [SECURITY.md](SECURITY.md), [GOVERNANCE.md](GOVERNANCE.md), [spec/language-v0.md](spec/language-v0.md), [spec/linear-authority-v1.md](spec/linear-authority-v1.md), [spec/information-flow-v1.md](spec/information-flow-v1.md), [spec/differential-language-v1.md](spec/differential-language-v1.md), [spec/pr-trust-envelope-v0.md](spec/pr-trust-envelope-v0.md), [spec/bytecode-verification-v0.md](spec/bytecode-verification-v0.md), [spec/package-resolution-v0.md](spec/package-resolution-v0.md), [spec/language-landscape-v0.md](spec/language-landscape-v0.md), [spec/lattice-m2m-v0.md](spec/lattice-m2m-v0.md), [spec/agent-runtime-v0.md](spec/agent-runtime-v0.md), [spec/mesh-network-v0.md](spec/mesh-network-v0.md), [spec/company-value-capture-v0.md](spec/company-value-capture-v0.md), [spec/external-agent-stack-assessment-v0.md](spec/external-agent-stack-assessment-v0.md), [spec/canonical-profile-jce1.md](spec/canonical-profile-jce1.md) and [spec/conformance-jce1.md](spec/conformance-jce1.md) before changing or integrating the prototype.
+Read [AGENTS.md](AGENTS.md), [JOAN.md](JOAN.md), [SECURITY.md](SECURITY.md), [GOVERNANCE.md](GOVERNANCE.md), [spec/language-v0.md](spec/language-v0.md), [spec/linear-authority-v1.md](spec/linear-authority-v1.md), [spec/information-flow-v1.md](spec/information-flow-v1.md), [spec/differential-language-v1.md](spec/differential-language-v1.md), [spec/agent-scorecard-v1.md](spec/agent-scorecard-v1.md), [spec/pr-trust-envelope-v0.md](spec/pr-trust-envelope-v0.md), [spec/bytecode-verification-v0.md](spec/bytecode-verification-v0.md), [spec/package-resolution-v0.md](spec/package-resolution-v0.md), [spec/language-landscape-v0.md](spec/language-landscape-v0.md), [spec/lattice-m2m-v0.md](spec/lattice-m2m-v0.md), [spec/agent-runtime-v0.md](spec/agent-runtime-v0.md), [spec/mesh-network-v0.md](spec/mesh-network-v0.md), [spec/company-value-capture-v0.md](spec/company-value-capture-v0.md), [spec/external-agent-stack-assessment-v0.md](spec/external-agent-stack-assessment-v0.md), [spec/canonical-profile-jce1.md](spec/canonical-profile-jce1.md) and [spec/conformance-jce1.md](spec/conformance-jce1.md) before changing or integrating the prototype.
 
 Operational metrics, bug intake and the fail-closed update policy are documented in [OPERATIONS.md](OPERATIONS.md). JOAN has no hidden runtime telemetry; GitHub metrics are aggregate adoption proxies and never prove active-user counts.
 
 Performance evidence follows [spec/benchmark-policy-v0.md](spec/benchmark-policy-v0.md). The first equivalent-output comparison measured C + CommonCrypto faster than Rust + `sha2`; JOAN therefore makes no current claim of outperforming C.
+
+The AI-first scorecard compares complete inert tool, memory and tenant-safe
+handoff task paths against C, Rust and Node 24 TypeScript. Its gates require
+exact output equivalence and non-compensable safety criteria. The current
+two-workload result is deliberately `baseline-only-not-qualified`; it is not a
+claim that JOAN is faster or generally better. The first 21-sample evidence is
+recorded in
+[`benchmarks/results/2026-08-12-mac15-4-agent-scorecard.json`](benchmarks/results/2026-08-12-mac15-4-agent-scorecard.json).
 
 Payment-cost evidence follows [spec/payment-cost-proof-v0.md](spec/payment-cost-proof-v0.md). JOAN v0 charges no protocol fee and compares qualified settlement modes using fixed-point total effective cost. The checked-in scenario is illustrative evidence of deterministic selection, not proof that JOAN is universally the cheapest payment system.
 

@@ -1,0 +1,7 @@
+module scorecard_authority_replay;
+
+fn main() -> unit effects [send] authorities [once: send] {
+  request send() using once;
+  request send() using once;
+  return;
+}

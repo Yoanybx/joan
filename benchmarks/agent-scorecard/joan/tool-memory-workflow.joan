@@ -1,0 +1,12 @@
+module tool_memory_workflow flow;
+
+fn compute(base: i64 flow [public], multiplier: i64 flow [public]) -> i64 flow [public] effects [] authorities [] {
+  return base * multiplier;
+}
+
+fn main() -> i64 flow [public] effects [api_call, memory_write] authorities [api_once: api_call, memory_once: memory_write] {
+  let result: i64 flow [public] = compute(6, 7);
+  request api_call("model", result) using api_once flow [public];
+  request memory_write("session", result) using memory_once flow [public];
+  return result;
+}

@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/agent-scorecard-workloads.v1.schema.json",
+  "title": "JOAN Agent Scorecard Workloads v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "profile",
+    "implementation_order",
+    "workloads",
+    "safety_cases",
+    "qualification_policy"
+  ],
+  "properties": {
+    "schema": {"const": "joan.agent-scorecard-workloads.v1"},
+    "profile": {"const": "ai-agent-task-path-v1"},
+    "implementation_order": {
+      "const": ["joan", "c", "rust", "typescript"]
+    },
+    "workloads": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 64,
+      "items": {"$ref": "#/$defs/workload"}
+    },
+    "safety_cases": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 64,
+      "items": {"$ref": "#/$defs/safetyCase"}
+    },
+    "qualification_policy": {"$ref": "#/$defs/qualificationPolicy"}
+  },
+  "$defs": {
+    "identifier": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+    "relativePath": {
+      "type": "string",
+      "pattern": "^benchmarks/agent-scorecard/[A-Za-z0-9_./-]+$"
+    },
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["joan", "c", "rust", "typescript"],
+      "properties": {
+        "joan": {"$ref": "#/$defs/relativePath"},
+        "c": {"$ref": "#/$defs/relativePath"},
+        "rust": {"$ref": "#/$defs/relativePath"},
+        "typescript": {"$ref": "#/$defs/relativePath"}
+      }
+    },
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "expected_output", "sources"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "description": {"type": "string", "minLength": 1, "maxLength": 512},
+        "expected_output": {"type": "object"},
+        "sources": {"$ref": "#/$defs/sources"}
+      }
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "stage", "expected_status", "evidence_contains"],
+      "properties": {
+        "path": {"$ref": "#/$defs/relativePath"},
+        "stage": {"enum": ["check", "compile", "run", "strip-check"]},
+        "expected_status": {"enum": ["accepted", "rejected"]},
+        "evidence_contains": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {"type": "string", "minLength": 1, "maxLength": 128}
+        }
+      }
+    },
+    "probes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["joan", "c", "rust", "typescript"],
+      "properties": {
+        "joan": {"$ref": "#/$defs/probe"},
+        "c": {"$ref": "#/$defs/probe"},
+        "rust": {"$ref": "#/$defs/probe"},
+        "typescript": {"$ref": "#/$defs/probe"}
+      }
+    },
+    "safetyCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "rule", "probes"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "rule": {"type": "string", "minLength": 1, "maxLength": 256},
+        "probes": {"$ref": "#/$defs/probes"}
+      }
+    },
+    "qualificationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimum_workloads",
+        "minimum_recorded_samples",
+        "maximum_runtime_ratio_ppm",
+        "maximum_peak_rss_ratio_ppm",
+        "material_win_ratio_ppm",
+        "minimum_material_wins",
+        "require_equivalent_outputs",
+        "require_joan_safety_protection_ppm",
+        "require_native_backend",
+        "require_independent_rerun"
+      ],
+      "properties": {
+        "minimum_workloads": {"type": "integer", "minimum": 2, "maximum": 64},
+        "minimum_recorded_samples": {"type": "integer", "minimum": 3, "maximum": 101},
+        "maximum_runtime_ratio_ppm": {"type": "integer", "minimum": 1, "maximum": 10000000},
+        "maximum_peak_rss_ratio_ppm": {"type": "integer", "minimum": 1, "maximum": 10000000},
+        "material_win_ratio_ppm": {"type": "integer", "minimum": 1, "maximum": 1000000},
+        "minimum_material_wins": {"type": "integer", "minimum": 1, "maximum": 128},
+        "require_equivalent_outputs": {"const": true},
+        "require_joan_safety_protection_ppm": {"const": 1000000},
+        "require_native_backend": {"const": true},
+        "require_independent_rerun": {"const": true}
+      }
+    }
+  }
+}

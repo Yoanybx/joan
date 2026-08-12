@@ -32,3 +32,14 @@ Future claims must separately measure:
 6. effect authorization and recovery overhead.
 
 Memory, startup, binary size, energy, adversarial worst case and cross-platform variance must be reported alongside throughput before any broad comparison.
+
+## AI-agent task paths
+
+`spec/agent-scorecard-v1.md` defines a non-compensable comparison against C,
+Rust, and TypeScript for complete agent workflows. It measures preparation,
+process launch, exact semantic output, inert tool/memory/handoff requests,
+resident memory, artifact size, output bytes, and four scoped safety probes.
+
+The scorecard has no weighted aggregate. Incorrect output or a failed JOAN
+safety invariant invalidates qualification regardless of speed. The initial
+two-workload corpus is a baseline only; it cannot support a language-wide claim.

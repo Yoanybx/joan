@@ -1,0 +1,159 @@
+{
+  "schema": "joan.evidence-index.v2",
+  "version": "0.1.0-alpha.1",
+  "status": "local-verification-passed-with-receipts",
+  "generated_at": "2026-08-12T05:08:59.001Z",
+  "source": {
+    "tree_digest": {
+      "algorithm": "sha256",
+      "profile": "joan-source-tree-v1",
+      "value": "0ce7f62126c557be04b3a388454405178c47115f566ead6d57c21c6d2e21cd5b"
+    },
+    "file_count": 176,
+    "excludes": [
+      ".git",
+      "target",
+      ".joan/evidence"
+    ]
+  },
+  "inventory": {
+    "workspace_crates": 18,
+    "json_schemas": 36,
+    "rust_tests": 107
+  },
+  "conformance": {
+    "jce1": {
+      "status": "passed-local-cross-implementation",
+      "total": 27,
+      "passed": 27,
+      "suite_digest": {
+        "algorithm": "sha256",
+        "profile": "joan-hash-v1",
+        "domain": "joan.conformance-vector.v1",
+        "value": "49dd5a047dcf936ac445ad820a761c0a994a02ff08fcc458743ff5a81ca27975"
+      },
+      "specification": {
+        "path": "spec/canonical-profile-jce1.md",
+        "file_sha256": "5302a9c9870cf8e5607b1361971baf3cc1346d2b6ecdd0c76c5a175db02485cb",
+        "declared_sha256": "5302a9c9870cf8e5607b1361971baf3cc1346d2b6ecdd0c76c5a175db02485cb",
+        "binding": "matched"
+      },
+      "implementations": [
+        "rust-joan-canonical",
+        "node-independent-reference"
+      ]
+    },
+    "jdr1": {
+      "status": "current-source-test-bound",
+      "cases": 10000,
+      "seed": 144,
+      "test_path": "crates/joan-sim/tests/corpus.rs",
+      "test_file_sha256": "7a51a7fb62bf1f6691f1192bd87793a3d70e43db2debd5fd71d8edd319e63cd5"
+    }
+  },
+  "supply_chain": {
+    "cargo_audit": {
+      "advisory_database_commit": "d0861df1eab469d3c58d6b836ce48b5766e5f217",
+      "dependency_count": 151,
+      "status": "passed",
+      "tool_version": "cargo-audit 0.22.2",
+      "vulnerabilities_found": 0
+    },
+    "cargo_deny": {
+      "checks": [
+        "advisories",
+        "bans",
+        "licenses",
+        "sources"
+      ],
+      "status": "passed",
+      "tool_version": "cargo-deny 0.20.2"
+    }
+  },
+  "verification": {
+    "runner": {
+      "path": "tools/verification-runner.mjs",
+      "file_sha256": "8d5849c40ac4c58b7bbb58542ace640cb8b3ffb2e0617c1b28e548294339aab4"
+    },
+    "gate_config": {
+      "path": "tools/verification-gates.v1.json",
+      "file_sha256": "c3c8637243e407ca52331e1d8cf685681900022e358c169c4897e61086bea2ef"
+    },
+    "required_gate_ids": [
+      "format",
+      "clippy",
+      "tests",
+      "doc-tests",
+      "release-build",
+      "jce1",
+      "c-digest-smoke",
+      "payment-cost-vector",
+      "cargo-deny",
+      "cargo-audit"
+    ],
+    "runs": [
+      {
+        "ordinal": 1,
+        "run_id": "be463c92-60fd-49a5-89f2-dcb6c204225b",
+        "path": ".joan/evidence/runs/run-1.json",
+        "file_sha256": "f31377a316b4124261bdb633cecc553cacd2610756428c9ef35f5b05ac545f6b",
+        "status": "passed",
+        "started_at": "2026-08-12T04:59:18.421Z",
+        "completed_at": "2026-08-12T05:02:12.576Z",
+        "source_digest": "0ce7f62126c557be04b3a388454405178c47115f566ead6d57c21c6d2e21cd5b",
+        "gate_count": 10
+      },
+      {
+        "ordinal": 2,
+        "run_id": "9089240a-0630-4930-b9b1-da16c103c09d",
+        "path": ".joan/evidence/runs/run-2.json",
+        "file_sha256": "02c10e9e3597b3fb4fe7080357d81731cbbf1e379e26520249accf34d9d5905e",
+        "status": "passed",
+        "started_at": "2026-08-12T05:02:31.524Z",
+        "completed_at": "2026-08-12T05:05:13.005Z",
+        "source_digest": "0ce7f62126c557be04b3a388454405178c47115f566ead6d57c21c6d2e21cd5b",
+        "gate_count": 10
+      },
+      {
+        "ordinal": 3,
+        "run_id": "bb92da26-cca4-4b49-817f-899839c05fd3",
+        "path": ".joan/evidence/runs/run-3.json",
+        "file_sha256": "74a62bd7e87a780e4eaac002ae77d72fb9d5cf84c4043594fc4b024f32353b7a",
+        "status": "passed",
+        "started_at": "2026-08-12T05:05:31.500Z",
+        "completed_at": "2026-08-12T05:08:48.965Z",
+        "source_digest": "0ce7f62126c557be04b3a388454405178c47115f566ead6d57c21c6d2e21cd5b",
+        "gate_count": 10
+      }
+    ],
+    "repeatability": {
+      "required_runs": 3,
+      "completed_runs": 3,
+      "unique_run_ids": 3,
+      "same_source": true,
+      "same_observations": true
+    }
+  },
+  "benchmark": {
+    "path": "benchmarks/results/2026-08-11-mac15-4-jce1-digest.json",
+    "file_sha256": "91ed8a63d7c067362ae562775ddb0d29a2a9dca830fec55aeb70e7f236bcebd7",
+    "status": "equivalent-output",
+    "faster_observed": "c-system-crypto",
+    "language_superiority_claim": false,
+    "payment_cost": {
+      "path": "vectors/payment-cost/report-v0.json",
+      "file_sha256": "37e816bf6fa0d3bcd785fe8bfa974d0327d84a03d5318d3162a16b8c8334c53a",
+      "status": "illustrative-local-only",
+      "selected_candidate_id": "multilateral-netting",
+      "universal_cheapest_claim": false
+    }
+  },
+  "limitations": [
+    "Three local receipts on one host and operator are not independent external attestations",
+    "Local evidence is not an official release, external audit or hostile reproduction",
+    "No official remote, public adoption, native-code backend, distributed network or real payment exists",
+    "JDR1 synthetic results do not authorize effects; JDR2 remains unimplemented",
+    "The recorded digest benchmark does not establish language superiority",
+    "The payment-cost vector proves local integer accounting only, not universal market superiority"
+  ]
+}

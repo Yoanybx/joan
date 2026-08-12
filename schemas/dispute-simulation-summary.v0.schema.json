@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/dispute-simulation-summary.v0.schema.json",
+  "title": "JOAN Dispute Simulation Summary v0",
+  "type": "object",
+  "required": ["schema", "seed", "cases_requested", "cases_completed", "calibration_cases", "holdout_cases", "adversarial_cases", "provider_fault_cases", "invalid_claim_cases", "ambiguous_cases", "appeals_executed", "final_correct", "final_incorrect", "binding_attacks_blocked", "replay_attacks_blocked", "collusion_cases_corrected", "ledger_invariant_failures", "corpus_digest", "summary_digest"],
+  "properties": {
+    "schema": {"const": "joan.dispute-simulation-summary.v0"},
+    "seed": {"type": "integer", "minimum": 0},
+    "cases_requested": {"type": "integer", "minimum": 1},
+    "cases_completed": {"type": "integer", "minimum": 0},
+    "calibration_cases": {"type": "integer", "minimum": 0},
+    "holdout_cases": {"type": "integer", "minimum": 0},
+    "adversarial_cases": {"type": "integer", "minimum": 0},
+    "provider_fault_cases": {"type": "integer", "minimum": 0},
+    "invalid_claim_cases": {"type": "integer", "minimum": 0},
+    "ambiguous_cases": {"type": "integer", "minimum": 0},
+    "appeals_executed": {"type": "integer", "minimum": 0},
+    "final_correct": {"type": "integer", "minimum": 0},
+    "final_incorrect": {"type": "integer", "minimum": 0},
+    "binding_attacks_blocked": {"type": "integer", "minimum": 0},
+    "replay_attacks_blocked": {"type": "integer", "minimum": 0},
+    "collusion_cases_corrected": {"type": "integer", "minimum": 0},
+    "ledger_invariant_failures": {"type": "integer", "minimum": 0},
+    "corpus_digest": {"$ref": "digest.v0.schema.json"},
+    "summary_digest": {"$ref": "digest.v0.schema.json"}
+  },
+  "additionalProperties": false
+}

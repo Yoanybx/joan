@@ -1,0 +1,51 @@
+[workspace]
+resolver = "3"
+members = [
+  "crates/joan-ast",
+  "crates/joan-canonical",
+  "crates/joan-check",
+  "crates/joan-compiler",
+  "crates/joan-conformance",
+  "crates/joan-identity",
+  "crates/joan-patch",
+  "crates/joan-runtime",
+  "crates/joan-guardian",
+  "crates/joan-instruction",
+  "crates/joan-lattice",
+  "crates/joan-case",
+  "crates/joan-evidence",
+  "crates/joan-dispute",
+  "crates/joan-mock-ledger",
+  "crates/joan-sim",
+  "crates/joan-node",
+  "crates/joan-syntax",
+]
+
+[workspace.package]
+version = "0.1.0-alpha.1"
+edition = "2024"
+rust-version = "1.94.1"
+license-file = "LICENSE"
+authors = ["Joan Alberto Barrios Cruz"]
+publish = false
+
+[workspace.dependencies]
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+sha2 = "=0.11.0"
+thiserror = "=2.0.20"
+proptest = "=1.11.0"
+tempfile = "=3.27.0"
+jsonschema = { version = "=0.49.9", default-features = false }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+missing_errors_doc = "allow"
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"

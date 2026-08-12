@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/machine-finding.v0.schema.json",
+  "title": "JOAN Machine Finding v0",
+  "type": "object",
+  "required": ["schema", "adjudicator_id", "phase", "case_digest", "evidence_root", "policy_digest", "disposition", "evidence_refs"],
+  "properties": {
+    "schema": {"const": "joan.machine-finding.v0"},
+    "adjudicator_id": {"type": "string", "minLength": 1},
+    "phase": {"enum": ["primary", "appeal"]},
+    "case_digest": {"$ref": "digest.v0.schema.json"},
+    "evidence_root": {"$ref": "digest.v0.schema.json"},
+    "policy_digest": {"$ref": "digest.v0.schema.json"},
+    "disposition": {"enum": ["supports-claim", "rejects-claim", "abstain"]},
+    "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  },
+  "additionalProperties": false
+}

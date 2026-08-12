@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/origin-manifest.v0.schema.json",
+  "title": "JOAN Origin Manifest v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "project",
+    "original_creator",
+    "corporate_owner",
+    "assignment_instrument_recorded",
+    "genesis_year",
+    "genesis_branch",
+    "public_release",
+    "remote_configured",
+    "signing_identity_bound",
+    "copyright_registration_recorded",
+    "tool_assistance",
+    "authority_rule"
+  ],
+  "properties": {
+    "schema": {"const": "joan.origin.v0"},
+    "project": {"const": "JOAN Language and JOAN Network"},
+    "original_creator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["display_name", "role"],
+      "properties": {
+        "display_name": {"const": "Joan Alberto Barrios Cruz"},
+        "role": {"const": "original-creator-and-founder"}
+      }
+    },
+    "corporate_owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["display_name", "jurisdiction", "document_number", "role"],
+      "properties": {
+        "display_name": {"const": "LED ACTION LLC"},
+        "jurisdiction": {"const": "Florida"},
+        "document_number": {"const": "L23000299152"},
+        "role": {"const": "project-designated-copyright-owner"}
+      }
+    },
+    "assignment_instrument_recorded": {"const": false},
+    "genesis_year": {"const": "2026"},
+    "genesis_branch": {"const": "codex/joan-genesis"},
+    "public_release": {"const": false},
+    "remote_configured": {"const": false},
+    "signing_identity_bound": {"const": false},
+    "copyright_registration_recorded": {"const": false},
+    "tool_assistance": {"type": "string", "minLength": 1},
+    "authority_rule": {"type": "string", "minLength": 1}
+  }
+}

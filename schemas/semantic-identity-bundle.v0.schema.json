@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/semantic-identity-bundle.v0.schema.json",
+  "title": "JOAN Semantic Identity Bundle v0",
+  "type": "object",
+  "required": ["schema", "package_id", "symbol_id", "components", "program_root"],
+  "properties": {
+    "schema": {"const": "joan.semantic-identity-bundle.v0"},
+    "package_id": {"$ref": "digest.v0.schema.json"},
+    "symbol_id": {"$ref": "digest.v0.schema.json"},
+    "program_root": {"$ref": "digest.v0.schema.json"},
+    "components": {
+      "type": "object",
+      "required": ["source", "token", "structural", "interface", "behavior", "effect", "policy", "dependency"],
+      "properties": {
+        "source": {"$ref": "digest.v0.schema.json"},
+        "token": {"$ref": "digest.v0.schema.json"},
+        "structural": {"$ref": "digest.v0.schema.json"},
+        "interface": {"$ref": "digest.v0.schema.json"},
+        "behavior": {"$ref": "digest.v0.schema.json"},
+        "effect": {"$ref": "digest.v0.schema.json"},
+        "policy": {"$ref": "digest.v0.schema.json"},
+        "dependency": {"$ref": "digest.v0.schema.json"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

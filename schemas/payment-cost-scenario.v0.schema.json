@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/payment-cost-scenario.v0.schema.json",
+  "title": "JOAN Payment Cost Scenario v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "observed_at", "currency", "scenario", "candidates"],
+  "properties": {
+    "schema": {"const": "joan.payment-cost-scenario.v0"},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "currency": {"const": "USD"},
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "gross_item_count", "gross_volume_micro_usd", "requirements"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+        "gross_item_count": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+        "gross_volume_micro_usd": {"$ref": "#/$defs/safeInteger"},
+        "requirements": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/candidate"}
+    }
+  },
+  "$defs": {
+    "safeInteger": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+    "ppm": {"type": "integer", "minimum": 0, "maximum": 1000000},
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "mode",
+        "qualified",
+        "qualification",
+        "provenance",
+        "settlement_item_count",
+        "settlement_volume_micro_usd",
+        "fixed_fee_per_settlement_micro_usd",
+        "variable_fee_ppm",
+        "fx_slippage_ppm_on_settlement_volume",
+        "verification_fee_per_gross_item_micro_usd",
+        "infrastructure_cost_per_gross_item_micro_usd",
+        "dispute_probability_ppm",
+        "dispute_case_cost_micro_usd",
+        "annual_capital_cost_ppm",
+        "settlement_delay_seconds",
+        "expected_loss_ppm_on_gross_volume",
+        "failure_probability_ppm",
+        "joan_protocol_fee_per_gross_item_micro_usd",
+        "explicit_subsidy_micro_usd"
+      ],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+        "mode": {
+          "enum": ["direct", "bilateral-netting", "multilateral-netting", "receivable-aggregation", "channel", "external-batch"]
+        },
+        "qualified": {"type": "boolean"},
+        "qualification": {"type": "string", "minLength": 1},
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "observed_at", "expires_at", "source"],
+          "properties": {
+            "kind": {"enum": ["declared-fixture", "official-fixed-fee", "measured-live-quote"]},
+            "observed_at": {"type": "string", "format": "date-time"},
+            "expires_at": {"type": ["string", "null"], "format": "date-time"},
+            "source": {"type": "string", "minLength": 1}
+          }
+        },
+        "settlement_item_count": {"$ref": "#/$defs/safeInteger"},
+        "settlement_volume_micro_usd": {"$ref": "#/$defs/safeInteger"},
+        "fixed_fee_per_settlement_micro_usd": {"$ref": "#/$defs/safeInteger"},
+        "variable_fee_ppm": {"$ref": "#/$defs/ppm"},
+        "fx_slippage_ppm_on_settlement_volume": {"$ref": "#/$defs/ppm"},
+        "verification_fee_per_gross_item_micro_usd": {"$ref": "#/$defs/safeInteger"},
+        "infrastructure_cost_per_gross_item_micro_usd": {"$ref": "#/$defs/safeInteger"},
+        "dispute_probability_ppm": {"$ref": "#/$defs/ppm"},
+        "dispute_case_cost_micro_usd": {"$ref": "#/$defs/safeInteger"},
+        "annual_capital_cost_ppm": {"$ref": "#/$defs/ppm"},
+        "settlement_delay_seconds": {"$ref": "#/$defs/safeInteger"},
+        "expected_loss_ppm_on_gross_volume": {"$ref": "#/$defs/ppm"},
+        "failure_probability_ppm": {"$ref": "#/$defs/ppm"},
+        "joan_protocol_fee_per_gross_item_micro_usd": {"const": 0},
+        "explicit_subsidy_micro_usd": {"$ref": "#/$defs/safeInteger"}
+      }
+    }
+  }
+}

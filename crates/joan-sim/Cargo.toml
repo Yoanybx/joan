@@ -1,0 +1,20 @@
+[package]
+name = "joan-sim"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+joan-canonical = { path = "../joan-canonical" }
+joan-case = { path = "../joan-case" }
+joan-evidence = { path = "../joan-evidence" }
+joan-dispute = { path = "../joan-dispute" }
+joan-mock-ledger = { path = "../joan-mock-ledger" }
+serde.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

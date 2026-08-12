@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/instruction-decision-receipt.v0.schema.json",
+  "title": "JOAN Instruction Decision Receipt v0",
+  "type": "object",
+  "required": ["schema", "authority_envelope_digest", "instruction_digests", "authority_ceiling", "repository_denies", "effective_authority", "requested_effects", "decision", "diagnostics", "receipt_digest"],
+  "properties": {
+    "schema": {"const": "joan.instruction-decision-receipt.v0"},
+    "authority_envelope_digest": {"$ref": "digest.v0.schema.json"},
+    "instruction_digests": {"type": "array", "items": {"$ref": "digest.v0.schema.json"}},
+    "authority_ceiling": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "repository_denies": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "effective_authority": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "requested_effects": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "decision": {"enum": ["data", "advise", "allow", "deny", "ask", "conflict"]},
+    "diagnostics": {"type": "array", "items": {"type": "object"}},
+    "receipt_digest": {"$ref": "digest.v0.schema.json"}
+  },
+  "additionalProperties": false
+}

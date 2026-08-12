@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/dispute-evaluation-bundle.v0.schema.json",
+  "title": "JOAN Dispute Evaluation Bundle v0",
+  "type": "object",
+  "required": ["schema", "case", "evidence", "claim", "profile", "findings", "prior_decision"],
+  "properties": {
+    "schema": {"const": "joan.dispute-evaluation-bundle.v0"},
+    "case": {"$ref": "dispute-case.v0.schema.json"},
+    "evidence": {"$ref": "evidence-graph.v0.schema.json"},
+    "claim": {"$ref": "dispute-claim.v0.schema.json"},
+    "profile": {"$ref": "automatic-resolution-profile.v0.schema.json"},
+    "findings": {"type": "array", "items": {"$ref": "machine-finding.v0.schema.json"}},
+    "prior_decision": {"oneOf": [{"$ref": "automatic-decision-receipt.v0.schema.json"}, {"type": "null"}]}
+  },
+  "additionalProperties": false
+}

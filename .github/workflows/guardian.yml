@@ -1,0 +1,30 @@
+name: guardian
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  local-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Show pinned Rust toolchain
+        run: rustc --version --verbose && cargo --version --verbose
+      - name: Install pinned Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24.8.0
+          package-manager-cache: false
+      - name: Install pinned supply-chain gates
+        run: cargo install --locked cargo-audit@0.22.2 cargo-deny@0.20.2
+      - name: Require complete local verification gate
+        run: ./scripts/verify-all.sh

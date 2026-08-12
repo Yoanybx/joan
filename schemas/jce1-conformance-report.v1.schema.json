@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/jce1-conformance-report.v1.schema.json",
+  "title": "JOAN JCE1 Conformance Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "implementation",
+    "suite_digest",
+    "total",
+    "passed",
+    "failed",
+    "results"
+  ],
+  "properties": {
+    "schema": {
+      "const": "joan.jce1-conformance-report.v1"
+    },
+    "implementation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "suite_digest": {
+      "$ref": "digest.v1.schema.json"
+    },
+    "total": {
+      "const": 27
+    },
+    "passed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 27
+    },
+    "failed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 27
+    },
+    "results": {
+      "type": "array",
+      "minItems": 27,
+      "maxItems": 27,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[JNHS][0-9]{3}$"
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "failed"
+            ]
+          },
+          "observation": {},
+          "error_class": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

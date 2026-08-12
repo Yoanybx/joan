@@ -1,0 +1,281 @@
+{
+  "schema": "joan.jce1-conformance-suite.v1",
+  "spec_freeze_sha256": "5302a9c9870cf8e5607b1361971baf3cc1346d2b6ecdd0c76c5a175db02485cb",
+  "cases": [
+    {
+      "id": "J001",
+      "operation": "canonicalize",
+      "inputs": [
+        "{\"€\":\"Euro Sign\",\"\\r\":\"Carriage Return\",\"דּ\":\"Hebrew Letter Dalet With Dagesh\",\"1\":\"One\",\"😀\":\"Emoji: Grinning Face\",\"\":\"Control\",\"ö\":\"Latin Small Letter O With Diaeresis\"}"
+      ],
+      "expected_output": "{\"\\r\":\"Carriage Return\",\"1\":\"One\",\"\":\"Control\",\"ö\":\"Latin Small Letter O With Diaeresis\",\"€\":\"Euro Sign\",\"😀\":\"Emoji: Grinning Face\",\"דּ\":\"Hebrew Letter Dalet With Dagesh\"}"
+    },
+    {
+      "id": "J002",
+      "operation": "canonicalize",
+      "inputs": [
+        "{\"\":1,\"😀\":2}"
+      ],
+      "expected_output": "{\"😀\":2,\"\":1}"
+    },
+    {
+      "id": "J003",
+      "operation": "canonicalize",
+      "inputs": [
+        "{\"outer\":[{\"z\":0,\"a\":1},{\"b\":2,\"a\":3}]}",
+        "{\"outer\":[{\"a\":1,\"z\":0},{\"a\":3,\"b\":2}]}"
+      ],
+      "expected_output": "{\"outer\":[{\"a\":1,\"z\":0},{\"a\":3,\"b\":2}]}"
+    },
+    {
+      "id": "J004",
+      "operation": "canonicalize",
+      "inputs": [
+        "{\"s\":\"\\b\\t\\n\\f\\r\\\"\\\\\\u0000\"}"
+      ],
+      "expected_output": "{\"s\":\"\\b\\t\\n\\f\\r\\\"\\\\\\u0000\"}"
+    },
+    {
+      "id": "J005",
+      "operation": "canonicalize",
+      "inputs": [
+        "{\"x\":\"\\u0061\"}",
+        "{\"x\":\"a\"}"
+      ],
+      "expected_output": "{\"x\":\"a\"}"
+    },
+    {
+      "id": "J006",
+      "operation": "canonicalize-distinct",
+      "inputs": [
+        "{\"x\":\"é\"}",
+        "{\"x\":\"é\"}"
+      ],
+      "expected_outputs": [
+        "{\"x\":\"é\"}",
+        "{\"x\":\"é\"}"
+      ]
+    },
+    {
+      "id": "J007",
+      "operation": "canonicalize-distinct",
+      "inputs": [
+        "9007199254740991",
+        "-9007199254740991"
+      ],
+      "expected_outputs": [
+        "9007199254740991",
+        "-9007199254740991"
+      ]
+    },
+    {
+      "id": "J008",
+      "operation": "canonicalize",
+      "inputs": [
+        "{\"c\":3,\"a\":1,\"b\":2}",
+        "{\"b\":2,\"c\":3,\"a\":1}",
+        "{\"a\":1,\"b\":2,\"c\":3}"
+      ],
+      "expected_output": "{\"a\":1,\"b\":2,\"c\":3}"
+    },
+    {
+      "id": "N001",
+      "operation": "reject",
+      "inputs": [
+        "9007199254740992"
+      ],
+      "expected_error": "unsafe-integer"
+    },
+    {
+      "id": "N002",
+      "operation": "reject",
+      "inputs": [
+        "-9007199254740992"
+      ],
+      "expected_error": "unsafe-integer"
+    },
+    {
+      "id": "N003",
+      "operation": "reject",
+      "inputs": [
+        "1.0",
+        "1e0",
+        "1E+0"
+      ],
+      "expected_error": "canonical-json"
+    },
+    {
+      "id": "N004",
+      "operation": "reject",
+      "inputs": [
+        "-0"
+      ],
+      "expected_error": "canonical-json"
+    },
+    {
+      "id": "N005",
+      "operation": "reject",
+      "inputs": [
+        "NaN",
+        "Infinity",
+        "-Infinity"
+      ],
+      "expected_error": "canonical-json"
+    },
+    {
+      "id": "N006",
+      "operation": "reject",
+      "inputs": [
+        "\"\\ud800\""
+      ],
+      "expected_error": "canonical-json"
+    },
+    {
+      "id": "N007",
+      "operation": "reject",
+      "inputs": [
+        "\"\\udc00\""
+      ],
+      "expected_error": "canonical-json"
+    },
+    {
+      "id": "N008",
+      "operation": "reject",
+      "inputs": [
+        "{\"a\":1,\"a\":2}"
+      ],
+      "expected_error": "canonical-json"
+    },
+    {
+      "id": "N009",
+      "operation": "schema-reject",
+      "input": "{\"schema\":\"example.v1\",\"known\":true,\"unexpected\":0}",
+      "allowed_fields": [
+        "schema",
+        "known"
+      ],
+      "expected_unknown": [
+        "unexpected"
+      ]
+    },
+    {
+      "id": "N010",
+      "operation": "resource-bounds"
+    },
+    {
+      "id": "H001",
+      "operation": "domain-distinct",
+      "domains": [
+        "joan.source.v1",
+        "joan.dispute-case.v1",
+        "joan.conformance-vector.v1"
+      ],
+      "payload": "same payload"
+    },
+    {
+      "id": "H002",
+      "operation": "fixed-digest",
+      "domain": "joan.conformance-vector.v1",
+      "payload_hex": "4a4f414e204a434531206669786564207061796c6f61640a",
+      "expected_value": "d03ac76923137a6ca6fcaa7c0f8bbe540d924df9738b0452943025266d93e51c"
+    },
+    {
+      "id": "H003",
+      "operation": "typed-digest-reject",
+      "domain": "joan.conformance-vector.v1",
+      "payload": "typed payload"
+    },
+    {
+      "id": "H004",
+      "operation": "domain-reject",
+      "domains": [
+        "joan:source:v1",
+        "JOAN.SOURCE.V1",
+        "joan.source.v2",
+        ""
+      ]
+    },
+    {
+      "id": "H005",
+      "operation": "payload-bound",
+      "domain": "joan.source.v1",
+      "accepted_bytes": 1048576,
+      "rejected_bytes": 1048577
+    },
+    {
+      "id": "S001",
+      "operation": "set-permutations",
+      "sets": [
+        [
+          "non-delivery",
+          "acceptance-failure",
+          "budget-exceeded"
+        ],
+        [
+          "budget-exceeded",
+          "non-delivery",
+          "acceptance-failure"
+        ],
+        [
+          "acceptance-failure",
+          "budget-exceeded",
+          "non-delivery"
+        ]
+      ],
+      "expected_output": "[\"budget-exceeded\",\"acceptance-failure\",\"non-delivery\"]"
+    },
+    {
+      "id": "S002",
+      "operation": "set-duplicate",
+      "values": [
+        "same",
+        "same"
+      ]
+    },
+    {
+      "id": "S003",
+      "operation": "synthetic-set-tie",
+      "records": [
+        {
+          "label": "second",
+          "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bytes_hex": "62"
+        },
+        {
+          "label": "first",
+          "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bytes_hex": "61"
+        }
+      ],
+      "expected_labels": [
+        "first",
+        "second"
+      ]
+    },
+    {
+      "id": "S004",
+      "operation": "set-permutations",
+      "sets": [
+        [
+          "",
+          "😀",
+          "a",
+          {
+            "z": 1,
+            "a": 2
+          }
+        ],
+        [
+          {
+            "a": 2,
+            "z": 1
+          },
+          "a",
+          "😀",
+          ""
+        ]
+      ],
+      "expected_output": "[\"😀\",\"a\",\"\",{\"a\":2,\"z\":1}]"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/node-manifest.v0.schema.json",
+  "title": "JOAN Node Manifest v0",
+  "type": "object",
+  "required": ["schema", "node_id", "roles", "network", "effects", "build_digest"],
+  "properties": {
+    "schema": {"const": "joan.node-manifest.v0"},
+    "node_id": {"type": "string", "minLength": 1},
+    "roles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+    "network": {"enum": ["denied", "allowlisted"]},
+    "effects": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "build_digest": {"$ref": "digest.v0.schema.json"}
+  },
+  "additionalProperties": false
+}

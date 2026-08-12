@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/conformance-manifest.v1.schema.json",
+  "title": "JOAN Conformance Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "implementation",
+    "version",
+    "status",
+    "profiles",
+    "independence",
+    "claims",
+    "unexecuted_gates"
+  ],
+  "properties": {
+    "schema": {"const": "joan.conformance-manifest.v1"},
+    "implementation": {"const": "joan-rust-reference"},
+    "version": {"const": "0.1.0-alpha.1"},
+    "status": {"const": "local-candidate-no-public-conformance-claim"},
+    "profiles": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/profile"},
+      "required": ["JCE", "JBC", "JAD", "JIA", "JGM", "JSH", "JNODE", "JDR", "JME"]
+    },
+    "independence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "scope", "limitations"],
+      "properties": {
+        "level": {"const": "I1-structural-one-host"},
+        "scope": {"type": "string", "minLength": 1},
+        "limitations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "unexecuted_gates": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "$defs": {
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "status", "evidence"],
+      "properties": {
+        "level": {"type": "string", "minLength": 1},
+        "status": {"enum": ["design-only", "local-candidate", "passed-local"]},
+        "evidence": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

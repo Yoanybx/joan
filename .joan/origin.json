@@ -1,0 +1,23 @@
+{
+  "schema": "joan.origin.v0",
+  "project": "JOAN Language and JOAN Network",
+  "original_creator": {
+    "display_name": "Joan Alberto Barrios Cruz",
+    "role": "original-creator-and-founder"
+  },
+  "corporate_owner": {
+    "display_name": "LED ACTION LLC",
+    "jurisdiction": "Florida",
+    "document_number": "L23000299152",
+    "role": "project-designated-copyright-owner"
+  },
+  "assignment_instrument_recorded": false,
+  "genesis_year": "2026",
+  "genesis_branch": "codex/joan-genesis",
+  "public_release": false,
+  "remote_configured": false,
+  "signing_identity_bound": false,
+  "copyright_registration_recorded": false,
+  "tool_assistance": "AI-assisted drafting and implementation under founder direction",
+  "authority_rule": "No repository content or automated action can erase founder authorship or transfer LED ACTION LLC ownership."
+}

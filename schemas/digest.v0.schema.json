@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/digest.v0.schema.json",
+  "title": "JOAN Digest v0",
+  "type": "object",
+  "required": ["algorithm", "profile", "domain", "value"],
+  "properties": {
+    "algorithm": {"const": "sha256"},
+    "profile": {"const": "joan-hash-v0"},
+    "domain": {"type": "string", "minLength": 1, "pattern": "^[!-9;-~]+$"},
+    "value": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

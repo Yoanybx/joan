@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/guardian-finding.v0.schema.json",
+  "title": "JOAN Guardian Finding v0",
+  "type": "object",
+  "required": ["schema", "code", "severity", "candidate_root", "message"],
+  "properties": {
+    "schema": {"const": "joan.guardian-finding.v0"},
+    "code": {"type": "string", "minLength": 1},
+    "severity": {"enum": ["info", "low", "medium", "high", "critical"]},
+    "candidate_root": {"$ref": "digest.v0.schema.json"},
+    "message": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/jce1-conformance-suite.v1.schema.json",
+  "title": "JOAN JCE1 Conformance Suite v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "spec_freeze_sha256",
+    "cases"
+  ],
+  "properties": {
+    "schema": {
+      "const": "joan.jce1-conformance-suite.v1"
+    },
+    "spec_freeze_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 27,
+      "maxItems": 27,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "operation"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[JNHS][0-9]{3}$"
+          },
+          "operation": {
+            "enum": [
+              "canonicalize",
+              "canonicalize-distinct",
+              "reject",
+              "schema-reject",
+              "resource-bounds",
+              "domain-distinct",
+              "fixed-digest",
+              "typed-digest-reject",
+              "domain-reject",
+              "payload-bound",
+              "set-permutations",
+              "set-duplicate",
+              "synthetic-set-tie"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

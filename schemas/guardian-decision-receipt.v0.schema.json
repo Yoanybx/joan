@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/guardian-decision-receipt.v0.schema.json",
+  "title": "JOAN Guardian Decision Receipt v0",
+  "type": "object",
+  "required": ["schema", "candidate_root", "outcome", "approvals", "approved_roles", "missing_roles", "denying_guardians", "independence_profile", "receipt_digest"],
+  "properties": {
+    "schema": {"const": "joan.guardian-decision-receipt.v0"},
+    "candidate_root": {"$ref": "digest.v0.schema.json"},
+    "outcome": {"enum": ["approved", "denied", "pending"]},
+    "approvals": {"type": "integer", "minimum": 0},
+    "approved_roles": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "missing_roles": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "denying_guardians": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "independence_profile": {"const": "one-host-logical-only"},
+    "receipt_digest": {"$ref": "digest.v0.schema.json"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,11 @@
+module agent_handoff;
+
+fn score(base: i64, confidence: i64) -> i64 effects [] {
+  return base * confidence;
+}
+
+fn main() -> i64 effects [network_send] {
+  let result: i64 = score(6, 7);
+  request network_send("agent-b", result);
+  return result;
+}

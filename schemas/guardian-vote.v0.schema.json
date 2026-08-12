@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/guardian-vote.v0.schema.json",
+  "title": "JOAN Guardian Vote v0",
+  "type": "object",
+  "required": ["guardian_id", "role", "candidate_root", "decision", "evidence"],
+  "properties": {
+    "guardian_id": {"type": "string", "minLength": 1},
+    "role": {"enum": ["semantic-verifier", "test-guardian", "policy-gatekeeper", "archivist", "repair-proposer"]},
+    "candidate_root": {"$ref": "digest.v0.schema.json"},
+    "decision": {"enum": ["approve", "deny", "abstain"]},
+    "evidence": {"type": "array", "items": {"$ref": "digest.v0.schema.json"}}
+  },
+  "additionalProperties": false
+}

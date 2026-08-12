@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/mock-ledger.v0.schema.json",
+  "title": "JOAN Mock Ledger v0",
+  "type": "object",
+  "required": ["schema", "balances", "holds", "consumed_idempotency_keys", "revision", "initial_total_microunits", "ledger_root"],
+  "properties": {
+    "schema": {"const": "joan.mock-ledger.v0"},
+    "balances": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+    "holds": {"type": "object", "additionalProperties": {"$ref": "#/$defs/hold"}},
+    "consumed_idempotency_keys": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "revision": {"type": "integer", "minimum": 0},
+    "initial_total_microunits": {"type": "integer", "minimum": 0},
+    "ledger_root": {"$ref": "digest.v0.schema.json"}
+  },
+  "$defs": {
+    "hold": {
+      "type": "object",
+      "required": ["hold_id", "buyer_id", "provider_id", "contract_digest", "original_amount_microunits", "locked_amount_microunits", "status", "decision_digest"],
+      "properties": {
+        "hold_id": {"type": "string", "minLength": 1},
+        "buyer_id": {"type": "string", "minLength": 1},
+        "provider_id": {"type": "string", "minLength": 1},
+        "contract_digest": {"$ref": "digest.v0.schema.json"},
+        "original_amount_microunits": {"type": "integer", "minimum": 1},
+        "locked_amount_microunits": {"type": "integer", "minimum": 0},
+        "status": {"enum": ["reserved", "settled", "refunded", "split", "repair-pending", "quarantined"]},
+        "decision_digest": {"oneOf": [{"$ref": "digest.v0.schema.json"}, {"type": "null"}]}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

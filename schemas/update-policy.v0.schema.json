@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/update-policy.v0.schema.json",
+  "title": "JOAN Update Policy v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "official_repository",
+    "enabled",
+    "channel",
+    "automatic_updates",
+    "explicit_tag_required",
+    "github_attestation_required",
+    "checksum_required",
+    "self_check_required",
+    "rollback_binary_required",
+    "authority"
+  ],
+  "properties": {
+    "schema": {
+      "const": "joan.update-policy.v0"
+    },
+    "official_repository": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "channel": {
+      "enum": [
+        "genesis",
+        "alpha",
+        "beta",
+        "stable"
+      ]
+    },
+    "automatic_updates": {
+      "const": false
+    },
+    "explicit_tag_required": {
+      "const": true
+    },
+    "github_attestation_required": {
+      "const": true
+    },
+    "checksum_required": {
+      "const": true
+    },
+    "self_check_required": {
+      "const": true
+    },
+    "rollback_binary_required": {
+      "const": true
+    },
+    "authority": {
+      "const": "LED ACTION LLC"
+    }
+  }
+}

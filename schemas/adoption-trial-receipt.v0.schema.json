@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/adoption-trial-receipt.v0.schema.json",
+  "title": "JOAN Adoption Trial Receipt v0",
+  "type": "object",
+  "required": ["schema", "repository_identity", "task_class", "artifact_verified", "applicable", "safety_passed", "correctness_passed", "reproducible", "evidence_complete", "utility_observed", "conflict_of_interest", "baseline", "joan", "evidence_digests", "valid_until"],
+  "properties": {
+    "schema": {"const": "joan.adoption-trial-receipt.v0"},
+    "repository_identity": {"type": "string", "minLength": 1},
+    "task_class": {"type": "string", "minLength": 1},
+    "artifact_verified": {"type": "boolean"},
+    "applicable": {"type": "boolean"},
+    "safety_passed": {"type": "boolean"},
+    "correctness_passed": {"type": "boolean"},
+    "reproducible": {"type": "boolean"},
+    "evidence_complete": {"type": "boolean"},
+    "utility_observed": {"type": "boolean"},
+    "conflict_of_interest": {"type": "boolean"},
+    "baseline": {"$ref": "#/$defs/observation"},
+    "joan": {"$ref": "#/$defs/observation"},
+    "evidence_digests": {"type": "array", "items": {"$ref": "digest.v0.schema.json"}},
+    "valid_until": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "observation": {
+      "type": "object",
+      "required": ["completed", "duration_ms", "tokens", "tool_calls", "interventions", "cost_microunits", "safety_violations"],
+      "properties": {
+        "completed": {"type": "boolean"},
+        "duration_ms": {"type": "integer", "minimum": 0},
+        "tokens": {"type": "integer", "minimum": 0},
+        "tool_calls": {"type": "integer", "minimum": 0},
+        "interventions": {"type": "integer", "minimum": 0},
+        "cost_microunits": {"type": "integer", "minimum": 0},
+        "safety_violations": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

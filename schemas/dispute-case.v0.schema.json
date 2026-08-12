@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/dispute-case.v0.schema.json",
+  "title": "JOAN Dispute Case v0",
+  "type": "object",
+  "required": ["schema", "case_id", "contract_digest", "transaction_digest", "claimant_id", "respondent_id", "policy_digest", "value_microunits", "state", "revision", "consumed_idempotency_keys", "case_digest"],
+  "properties": {
+    "schema": {"const": "joan.dispute-case.v0"},
+    "case_id": {"type": "string", "minLength": 1},
+    "contract_digest": {"$ref": "digest.v0.schema.json"},
+    "transaction_digest": {"$ref": "digest.v0.schema.json"},
+    "claimant_id": {"type": "string", "minLength": 1},
+    "respondent_id": {"type": "string", "minLength": 1},
+    "policy_digest": {"$ref": "digest.v0.schema.json"},
+    "value_microunits": {"type": "integer", "minimum": 1},
+    "state": {"enum": ["submitted", "intake-validation", "rejected-out-of-scope", "awaiting-cure", "accepted", "preservation-hold", "notice-served", "response-window", "evidence-collection", "evidence-locked", "deterministic-evaluation", "automated-settlement-offered", "settled-by-agreement", "review-assigned", "proposed-decision", "challenge-window", "final-decision", "appeal-window", "appealed", "appeal-decision", "repair-pending", "reverification", "remedy-execution", "execution-reconciliation", "quarantined", "expired", "closed"]},
+    "revision": {"type": "integer", "minimum": 0},
+    "consumed_idempotency_keys": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "case_digest": {"$ref": "digest.v0.schema.json"}
+  },
+  "additionalProperties": false
+}

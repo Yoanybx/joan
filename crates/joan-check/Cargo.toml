@@ -1,0 +1,18 @@
+[package]
+name = "joan-check"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+joan-ast = { path = "../joan-ast" }
+serde.workspace = true
+
+[dev-dependencies]
+joan-syntax = { path = "../joan-syntax" }
+
+[lints]
+workspace = true

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/evidence-graph.v0.schema.json",
+  "title": "JOAN Evidence Graph v0",
+  "type": "object",
+  "required": ["schema", "case_id", "items", "relations", "locked", "revision", "consumed_idempotency_keys", "graph_root"],
+  "properties": {
+    "schema": {"const": "joan.evidence-graph.v0"},
+    "case_id": {"type": "string", "minLength": 1},
+    "items": {"type": "object", "additionalProperties": {"$ref": "#/$defs/item"}},
+    "relations": {"type": "object", "additionalProperties": {"$ref": "#/$defs/relation"}},
+    "locked": {"type": "boolean"},
+    "revision": {"type": "integer", "minimum": 0},
+    "consumed_idempotency_keys": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "graph_root": {"$ref": "digest.v0.schema.json"}
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "required": ["evidence_id", "issuer_id", "content_digest", "source", "acquired_at_epoch_seconds", "content_type", "relevance_code", "confidentiality", "verification"],
+      "properties": {
+        "evidence_id": {"type": "string", "minLength": 1},
+        "issuer_id": {"type": "string", "minLength": 1},
+        "content_digest": {"$ref": "digest.v0.schema.json"},
+        "source": {"type": "string", "minLength": 1},
+        "acquired_at_epoch_seconds": {"type": "integer", "minimum": 0},
+        "content_type": {"type": "string", "minLength": 1},
+        "relevance_code": {"type": "string", "minLength": 1},
+        "confidentiality": {"enum": ["public", "restricted", "secret-reference"]},
+        "verification": {"enum": ["unverified", "verified", "rejected"]}
+      },
+      "additionalProperties": false
+    },
+    "relation": {
+      "type": "object",
+      "required": ["relation_id", "from_evidence_id", "to_evidence_id", "kind"],
+      "properties": {
+        "relation_id": {"type": "string", "minLength": 1},
+        "from_evidence_id": {"type": "string", "minLength": 1},
+        "to_evidence_id": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["supports", "contradicts", "derived-from", "reproduces", "supersedes", "redacts", "invalidates", "corroborates"]}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

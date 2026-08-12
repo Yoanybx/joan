@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/automatic-resolution-profile.v0.schema.json",
+  "title": "JOAN Automatic Resolution Profile v0",
+  "type": "object",
+  "required": ["schema", "policy_digest", "eligible_claim_codes", "allowed_remedies", "max_value_microunits", "primary_adjudicators", "appeal_adjudicators", "primary_threshold", "appeal_threshold", "ambiguity_fallback", "automatic_finality"],
+  "properties": {
+    "schema": {"const": "joan.automatic-resolution-profile.v0"},
+    "policy_digest": {"$ref": "digest.v0.schema.json"},
+    "eligible_claim_codes": {"type": "array", "uniqueItems": true, "items": {"enum": ["non-delivery", "acceptance-failure", "duplicate-charge", "budget-exceeded", "unauthorized-scope", "settlement-mismatch", "repair-failure"]}},
+    "allowed_remedies": {"type": "array", "uniqueItems": true, "items": {"enum": ["full-refund", "release-provider", "split", "repair", "quarantine"]}},
+    "max_value_microunits": {"type": "integer", "minimum": 1},
+    "primary_adjudicators": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "appeal_adjudicators": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "primary_threshold": {"type": "integer", "minimum": 1},
+    "appeal_threshold": {"type": "integer", "minimum": 1},
+    "ambiguity_fallback": {"$ref": "#/$defs/fallback"},
+    "automatic_finality": {"const": true}
+  },
+  "$defs": {
+    "fallback": {
+      "oneOf": [
+        {"type": "object", "required": ["kind"], "properties": {"kind": {"enum": ["full-refund", "release-provider", "repair", "quarantine"]}}, "additionalProperties": false},
+        {"type": "object", "required": ["kind", "buyer_refund_bps"], "properties": {"kind": {"const": "split"}, "buyer_refund_bps": {"type": "integer", "minimum": 0, "maximum": 10000}}, "additionalProperties": false}
+      ]
+    }
+  },
+  "additionalProperties": false
+}

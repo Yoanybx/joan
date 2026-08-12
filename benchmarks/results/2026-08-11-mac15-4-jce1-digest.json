@@ -1,0 +1,37 @@
+{
+  "schema": "joan.digest-benchmark-evidence.v1",
+  "recorded_on": "2026-08-11",
+  "environment": {
+    "architecture": "arm64",
+    "operating_system": "macOS 13.5",
+    "machine_model": "Mac15,4",
+    "processor": "Apple M3",
+    "logical_cpus": 8,
+    "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
+    "c_compiler": "Apple clang 14.0.3 (clang-1403.0.22.14.1)",
+    "node": "v24.11.1"
+  },
+  "comparison": {
+    "schema": "joan.digest-benchmark-comparison.v1",
+    "status": "equivalent-output",
+    "payload_bytes": 4096,
+    "iterations": 5000,
+    "samples_per_implementation": 5,
+    "rust_median_elapsed_ns": 10753000,
+    "c_median_elapsed_ns": 9280000,
+    "rust_to_c_elapsed_parts_per_million": 1158728,
+    "digest": {
+      "algorithm": "sha256",
+      "domain": "joan.source.v1",
+      "profile": "joan-hash-v1",
+      "value": "4ba24fab2270c46fcc8aae286695aff06191e69b109a02210c9b9df0c291bc39"
+    },
+    "faster_observed_implementation": "c-system-crypto",
+    "language_superiority_claim": false,
+    "limitations": [
+      "This compares two implementations and cryptographic backends, not entire languages.",
+      "Results are valid only for the recorded machine, toolchains, payload and sample count.",
+      "A faster result does not establish safety, utility, adoption or total-system superiority."
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "schema": "joan.project.v0",
+  "project": "JOAN Language and JOAN Network",
+  "version": "0.1.0-alpha.1",
+  "original_creator": "Joan Alberto Barrios Cruz",
+  "corporate_owner": "LED ACTION LLC",
+  "corporate_owner_jurisdiction": "Florida",
+  "corporate_owner_document_number": "L23000299152",
+  "assignment_instrument_recorded": false,
+  "repository_state": "private-local-genesis",
+  "entrypoint": "cargo run -p joan-node -- node self-check",
+  "safe_first_trial": "cargo run -p joan-node -- repo inspect . --json",
+  "network_service": false,
+  "public_release": false,
+  "remote_configured": false,
+  "license_profile": "all-rights-reserved-genesis",
+  "artifacts": [
+    "AGENTS.md",
+    "JOAN.md",
+    "OWNERSHIP.md",
+    "schemas",
+    "vectors",
+    "spec",
+    ".joan/update-policy.json",
+    "OPERATIONS.md",
+    "benchmarks",
+    "crates/joan-dispute",
+    "crates/joan-sim"
+  ]
+}

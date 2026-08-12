@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/github-metrics-snapshot.v1.schema.json",
+  "title": "JOAN GitHub Metrics Snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "repository",
+    "generated_at",
+    "source",
+    "privacy",
+    "adoption_proxies",
+    "quality",
+    "delivery",
+    "traffic_window",
+    "limitations"
+  ],
+  "properties": {
+    "schema": {
+      "const": "joan.github-metrics-snapshot.v1"
+    },
+    "repository": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "const": "github-rest-api"
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hidden_runtime_telemetry",
+        "personal_identifiers_collected",
+        "scope"
+      ],
+      "properties": {
+        "hidden_runtime_telemetry": {
+          "const": false
+        },
+        "personal_identifiers_collected": {
+          "const": false
+        },
+        "scope": {
+          "const": "repository-level aggregate signals"
+        }
+      }
+    },
+    "adoption_proxies": {
+      "$ref": "#/$defs/counts"
+    },
+    "quality": {
+      "$ref": "#/$defs/counts"
+    },
+    "delivery": {
+      "type": "object"
+    },
+    "traffic_window": {
+      "type": "object"
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 0
+      }
+    }
+  }
+}

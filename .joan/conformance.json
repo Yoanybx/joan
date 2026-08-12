@@ -1,0 +1,77 @@
+{
+  "schema": "joan.conformance-manifest.v1",
+  "implementation": "joan-rust-reference",
+  "version": "0.1.0-alpha.1",
+  "status": "local-candidate-no-public-conformance-claim",
+  "profiles": {
+    "JCE": {
+      "level": "JCE1-cross-language-local",
+      "status": "passed-local",
+      "evidence": "27/27 shared vectors agree between Rust and the independent Node reference"
+    },
+    "JBC": {
+      "level": "JBC0-partial-digest-baseline",
+      "status": "local-candidate",
+      "evidence": "one equivalent-output digest workload is measured; the full benchmark matrix is not implemented"
+    },
+    "JAD": {
+      "level": "JAD1-local-candidate",
+      "status": "local-candidate",
+      "evidence": "offline read-only repository inspection and synthetic adoption receipt"
+    },
+    "JIA": {
+      "level": "JIA1-local-candidate",
+      "status": "local-candidate",
+      "evidence": "typed instruction authority resolution and allowlisted discovery on one host"
+    },
+    "JGM": {
+      "level": "JGM1-one-host-logical",
+      "status": "local-candidate",
+      "evidence": "deterministic logical guardian gate; no machine or operator independence"
+    },
+    "JSH": {
+      "level": "JSH1-local-candidate",
+      "status": "local-candidate",
+      "evidence": "semantic identity and atomic flat-graph patches; no compiler AST"
+    },
+    "JNODE": {
+      "level": "JNODE1-local-candidate",
+      "status": "local-candidate",
+      "evidence": "offline CLI self-check, repository inspection, conformance and simulation commands"
+    },
+    "JDR": {
+      "level": "JDR1-local-candidate",
+      "status": "local-candidate",
+      "evidence": "current source-bound test executes 10,000 cases at seed 144; prior 30,000-case runs are historical and not machine-bound; JDR2 effect authority is not implemented"
+    },
+    "JME": {
+      "level": "JME0",
+      "status": "design-only",
+      "evidence": "mock ledger only; no real payment, custody, marketplace or transaction"
+    }
+  },
+  "independence": {
+    "level": "I1-structural-one-host",
+    "scope": "Rust and Node JCE1 implementations use separate code paths on the same Mac and operator account",
+    "limitations": [
+      "No hostile process, host, key or operator independence is demonstrated",
+      "JDR1 adjudicators remain I0 logical components"
+    ]
+  },
+  "claims": [
+    "No public conformance level is claimed before official release and external verification",
+    "No blockchain consensus, payment network or distributed JOAN node is implemented",
+    "No universal performance, security, adjudication or adoption superiority is claimed",
+    "JCE0 remains a historical custom profile; JCE1 is additive"
+  ],
+  "unexecuted_gates": [
+    "JDR2 effect authority",
+    "crash and recovery matrix",
+    "independent host and operator verification",
+    "external security audit",
+    "official GitHub clean-clone CI",
+    "real dispute holdout",
+    "JOAN language compiler",
+    "payment rail sandbox"
+  ]
+}

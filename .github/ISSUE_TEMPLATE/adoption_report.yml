@@ -1,0 +1,58 @@
+name: Adoption report
+description: Voluntarily declare a real JOAN evaluation or deployment.
+title: "[Adoption] "
+labels:
+  - adoption-report
+body:
+  - type: markdown
+    attributes:
+      value: This report is public and optional. JOAN does not send runtime telemetry.
+  - type: dropdown
+    id: usage
+    attributes:
+      label: Usage stage
+      options:
+        - Evaluation
+        - Internal prototype
+        - Production
+    validations:
+      required: true
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Usage frequency
+      options:
+        - One-time evaluation
+        - Monthly
+        - Weekly
+        - Daily
+        - Continuous integration
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Primary component
+      options:
+        - JCE1 canonicalization
+        - Repository inspection
+        - Semantic patches
+        - Guardian evaluation
+        - Dispute simulation
+        - Other JOAN component
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Verified outcome
+      description: Describe evidence, limitations and the baseline used for comparison.
+    validations:
+      required: true
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: Publication
+      options:
+        - label: I understand this declaration is public and contains no confidential data.
+          required: true

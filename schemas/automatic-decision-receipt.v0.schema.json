@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/automatic-decision-receipt.v0.schema.json",
+  "title": "JOAN Automatic Decision Receipt v0",
+  "type": "object",
+  "required": ["schema", "phase", "case_digest", "evidence_root", "claim_digest", "profile_digest", "supersedes", "status", "support_count", "reject_count", "abstain_count", "participating_adjudicators", "remedy", "reason_codes", "finality_class", "decision_digest"],
+  "properties": {
+    "schema": {"const": "joan.automatic-decision-receipt.v0"},
+    "phase": {"enum": ["primary", "appeal"]},
+    "case_digest": {"$ref": "digest.v0.schema.json"},
+    "evidence_root": {"$ref": "digest.v0.schema.json"},
+    "claim_digest": {"$ref": "digest.v0.schema.json"},
+    "profile_digest": {"$ref": "digest.v0.schema.json"},
+    "supersedes": {"oneOf": [{"$ref": "digest.v0.schema.json"}, {"type": "null"}]},
+    "status": {"enum": ["claim-upheld", "claim-rejected", "fallback-applied"]},
+    "support_count": {"type": "integer", "minimum": 0},
+    "reject_count": {"type": "integer", "minimum": 0},
+    "abstain_count": {"type": "integer", "minimum": 0},
+    "participating_adjudicators": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "remedy": {"$ref": "#/$defs/remedy"},
+    "reason_codes": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "finality_class": {"enum": ["automatic-primary-appealable", "automatic-appeal-final"]},
+    "decision_digest": {"$ref": "digest.v0.schema.json"}
+  },
+  "$defs": {
+    "remedy": {
+      "type": "object",
+      "required": ["kind", "buyer_refund_microunits", "provider_release_microunits", "retained_microunits"],
+      "properties": {
+        "kind": {"enum": ["full-refund", "release-provider", "split", "repair", "quarantine"]},
+        "buyer_refund_microunits": {"type": "integer", "minimum": 0},
+        "provider_release_microunits": {"type": "integer", "minimum": 0},
+        "retained_microunits": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

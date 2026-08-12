@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/recommendation-receipt.v0.schema.json",
+  "title": "JOAN Recommendation Receipt v0",
+  "type": "object",
+  "required": ["schema", "status", "reasons", "material_improvements", "material_regressions", "trial_digest", "receipt_digest"],
+  "properties": {
+    "schema": {"const": "joan.recommendation-receipt.v0"},
+    "status": {"enum": ["recommended", "optional", "not_applicable", "reject"]},
+    "reasons": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "material_improvements": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "material_regressions": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "trial_digest": {"$ref": "digest.v0.schema.json"},
+    "receipt_digest": {"$ref": "digest.v0.schema.json"}
+  },
+  "additionalProperties": false
+}

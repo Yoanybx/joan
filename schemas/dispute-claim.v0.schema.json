@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/dispute-claim.v0.schema.json",
+  "title": "JOAN Dispute Claim v0",
+  "type": "object",
+  "required": ["schema", "claim_id", "case_id", "claimant_id", "claim_code", "requested_remedy", "evidence_refs"],
+  "properties": {
+    "schema": {"const": "joan.dispute-claim.v0"},
+    "claim_id": {"type": "string", "minLength": 1},
+    "case_id": {"type": "string", "minLength": 1},
+    "claimant_id": {"type": "string", "minLength": 1},
+    "claim_code": {"enum": ["non-delivery", "acceptance-failure", "duplicate-charge", "budget-exceeded", "unauthorized-scope", "settlement-mismatch", "repair-failure"]},
+    "requested_remedy": {"enum": ["full-refund", "release-provider", "split", "repair", "quarantine"]},
+    "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  },
+  "additionalProperties": false
+}

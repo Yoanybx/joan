@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/digest.v1.schema.json",
+  "title": "JOAN Typed Digest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "algorithm",
+    "profile",
+    "domain",
+    "value"
+  ],
+  "properties": {
+    "algorithm": {
+      "const": "sha256"
+    },
+    "profile": {
+      "const": "joan-hash-v1"
+    },
+    "domain": {
+      "enum": [
+        "joan.canonical-set-element.v1",
+        "joan.conformance-vector.v1",
+        "joan.source.v1",
+        "joan.dispute-case.v1",
+        "joan.dispute-claim.v1",
+        "joan.resolution-profile.v1",
+        "joan.evidence-graph.v1",
+        "joan.machine-finding.v1",
+        "joan.decision-authorization-proof.v1",
+        "joan.effect-application.v1",
+        "joan.mock-ledger.v1",
+        "joan.benchmark-manifest.v1"
+      ]
+    },
+    "value": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

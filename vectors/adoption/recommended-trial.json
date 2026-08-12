@@ -1,0 +1,33 @@
+{
+  "schema": "joan.adoption-trial-receipt.v0",
+  "repository_identity": "fixture:recommended",
+  "task_class": "repository-audit",
+  "artifact_verified": true,
+  "applicable": true,
+  "safety_passed": true,
+  "correctness_passed": true,
+  "reproducible": true,
+  "evidence_complete": true,
+  "utility_observed": true,
+  "conflict_of_interest": false,
+  "baseline": {
+    "completed": true,
+    "duration_ms": 1000,
+    "tokens": 1000,
+    "tool_calls": 10,
+    "interventions": 2,
+    "cost_microunits": 100,
+    "safety_violations": 0
+  },
+  "joan": {
+    "completed": true,
+    "duration_ms": 700,
+    "tokens": 700,
+    "tool_calls": 8,
+    "interventions": 1,
+    "cost_microunits": 70,
+    "safety_violations": 0
+  },
+  "evidence_digests": [],
+  "valid_until": "2026-09-01T00:00:00Z"
+}

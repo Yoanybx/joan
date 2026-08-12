@@ -1,0 +1,18 @@
+{
+  "schema": "joan.adoption.v0",
+  "project": "JOAN Language and JOAN Network",
+  "release": "0.1.0-alpha.1-local",
+  "entrypoint": "cargo run -p joan-node -- repo inspect . --json",
+  "mode": "read-only-offline",
+  "network": "denied-by-design-no-network-client",
+  "telemetry": "none",
+  "secrets": "not-required",
+  "account": "not-required",
+  "wallet": "not-required",
+  "protocol_fee": "none",
+  "writes": [],
+  "expected_outputs": ["joan.repository-inspection-report.v0"],
+  "timeout_seconds": "30",
+  "rollback": "remove only explicitly created JOAN build artifacts after separate authorization",
+  "evidence": "./evidence/latest.json"
+}

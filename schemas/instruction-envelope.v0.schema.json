@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/instruction-envelope.v0.schema.json",
+  "title": "JOAN Instruction Envelope v0",
+  "type": "object",
+  "required": ["schema", "source_class", "source_uri", "content_digest", "scope", "statements"],
+  "properties": {
+    "schema": {"const": "joan.instruction-envelope.v0"},
+    "source_class": {"enum": ["repository_governance", "path_guidance", "referenced_specification", "untrusted_content"]},
+    "source_uri": {"type": "string", "minLength": 1},
+    "content_digest": {"$ref": "digest.v0.schema.json"},
+    "scope": {
+      "type": "object",
+      "required": ["path_prefixes", "task_kinds"],
+      "properties": {
+        "path_prefixes": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "task_kinds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "statements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["statement_id", "kind", "subject", "action", "value", "capabilities", "risk"],
+        "properties": {
+          "statement_id": {"type": "string", "minLength": 1},
+          "kind": {"enum": ["fact", "procedure", "constraint", "request", "grant_claim", "opaque"]},
+          "subject": {"type": "string"},
+          "action": {"type": "string"},
+          "value": {"type": ["string", "null"]},
+          "capabilities": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+          "risk": {"enum": ["pure", "local_read", "local_write", "external", "critical"]}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

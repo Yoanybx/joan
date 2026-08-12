@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/semantic-patch.v0.schema.json",
+  "title": "JOAN Semantic Patch v0",
+  "type": "object",
+  "required": ["schema", "base_root", "operations"],
+  "properties": {
+    "schema": {"const": "joan.semantic-patch.v0"},
+    "base_root": {"$ref": "digest.v0.schema.json"},
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["operation", "key", "value"],
+            "properties": {"operation": {"const": "insert"}, "key": {"type": "string", "minLength": 1, "maxLength": 1024}, "value": {}},
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["operation", "key", "expected_digest", "value"],
+            "properties": {"operation": {"const": "replace"}, "key": {"type": "string", "minLength": 1, "maxLength": 1024}, "expected_digest": {"$ref": "digest.v0.schema.json"}, "value": {}},
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["operation", "key", "expected_digest"],
+            "properties": {"operation": {"const": "remove"}, "key": {"type": "string", "minLength": 1, "maxLength": 1024}, "expected_digest": {"$ref": "digest.v0.schema.json"}},
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}

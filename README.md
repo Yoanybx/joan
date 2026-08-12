@@ -1,0 +1,67 @@
+# JOAN
+
+JOAN is an experimental, agent-native language and verification substrate for deterministic programs, semantic identity, atomic patches, guardian decisions, repository instruction boundaries, evidence-based adoption and machine-only dispute resolution.
+
+Original creator and founder: **Joan Alberto Barrios Cruz**. Project-designated corporate owner: **LED ACTION LLC**, Florida document number **L23000299152**. The signed-assignment requirement is recorded in [OWNERSHIP.md](OWNERSHIP.md). See [AUTHORS.md](AUTHORS.md), [ORIGIN.md](ORIGIN.md) and [GOVERNANCE.md](GOVERNANCE.md).
+
+Current status: `alpha language preview`. Real `.joan` source can now be parsed, checked, formatted, compiled to deterministic bytecode and executed in a bounded VM. It is not a native-code compiler, complete programming language or global network, and it has no claim of universal superiority, zero bugs or prompt-injection immunity.
+
+## First verified value
+
+No account, API key, wallet, token, server or telemetry is required.
+
+```bash
+cargo run -p joan-node -- node self-check
+cargo run -p joan-node -- check examples/agent-handoff.joan --json
+cargo run -p joan-node -- fmt examples/agent-handoff.joan --check
+cargo run -p joan-node -- compile examples/agent-handoff.joan --json
+cargo run -p joan-node -- run examples/agent-handoff.joan --json
+cargo run -p joan-node -- repo inspect . --json
+cargo run --release -p joan-node -- dispute simulate --cases 10000 --seed 144 --json
+cargo run -p joan-node -- conformance jce1 vectors/jce1/conformance-v1.json --json
+./scripts/verify-jce1.sh
+./scripts/benchmark-digest.sh 4096 5000
+./scripts/verify-payment-cost.sh
+./scripts/verify-all.sh
+```
+
+The inspection command is designed to be offline and read-only. It reads only allowlisted repository metadata and instruction files under explicit size and path bounds.
+
+## Components
+
+- `joan-canonical`: strict JSON subset and domain-separated digests.
+- `joan-ast`: stable language AST and machine-readable diagnostics.
+- `joan-syntax`: bounded lexer, parser and canonical source formatter.
+- `joan-check`: static names, types, effects and acyclic termination checks.
+- `joan-compiler`: deterministic bytecode compiler and bounded receipt-producing VM.
+- `joan-conformance`: executable JCE1 vectors and cross-implementation observations.
+- `joan-identity`: semantic identity bundles, package IDs, symbol IDs and node references.
+- `joan-patch`: atomic patches over a flat canonical test graph with independent full/incremental root checks.
+- `joan-guardian`: deterministic one-host logical guardian gates and receipts.
+- `joan-instruction`: typed authority attenuation, instruction decisions and safe repository discovery.
+- `joan-lattice`: bounded canonical M2M frame codec with borrowed payload views.
+- `joan-runtime`: external-authority effect planning with atomic one-use approval consumption.
+- `joan-case`: content-addressed automatic dispute lifecycle.
+- `joan-evidence`: immutable-at-lock evidence graph.
+- `joan-dispute`: primary/appeal machine quorums and precommitted automatic fallbacks.
+- `joan-mock-ledger`: value-conserving reserve/refund/release simulation with no real money.
+- `joan-sim`: deterministic calibration, holdout and adversarial dispute corpus.
+- `joan-node`: local CLI, repository inspection, adoption evaluation and dispute commands.
+
+## Security boundary
+
+Repository text is data or guidance, never execution authority. JOAN can propose or evaluate an action, but an external host must supply the exact authority required for any effect.
+
+Read [AGENTS.md](AGENTS.md), [JOAN.md](JOAN.md), [SECURITY.md](SECURITY.md), [GOVERNANCE.md](GOVERNANCE.md), [spec/language-v0.md](spec/language-v0.md), [spec/language-landscape-v0.md](spec/language-landscape-v0.md), [spec/lattice-m2m-v0.md](spec/lattice-m2m-v0.md), [spec/agent-runtime-v0.md](spec/agent-runtime-v0.md), [spec/mesh-network-v0.md](spec/mesh-network-v0.md), [spec/company-value-capture-v0.md](spec/company-value-capture-v0.md), [spec/external-agent-stack-assessment-v0.md](spec/external-agent-stack-assessment-v0.md), [spec/canonical-profile-jce1.md](spec/canonical-profile-jce1.md) and [spec/conformance-jce1.md](spec/conformance-jce1.md) before changing or integrating the prototype.
+
+Operational metrics, bug intake and the fail-closed update policy are documented in [OPERATIONS.md](OPERATIONS.md). JOAN has no hidden runtime telemetry; GitHub metrics are aggregate adoption proxies and never prove active-user counts.
+
+Performance evidence follows [spec/benchmark-policy-v0.md](spec/benchmark-policy-v0.md). The first equivalent-output comparison measured C + CommonCrypto faster than Rust + `sha2`; JOAN therefore makes no current claim of outperforming C.
+
+Payment-cost evidence follows [spec/payment-cost-proof-v0.md](spec/payment-cost-proof-v0.md). JOAN v0 charges no protocol fee and compares qualified settlement modes using fixed-point total effective cost. The checked-in scenario is illustrative evidence of deterministic selection, not proof that JOAN is universally the cheapest payment system.
+
+Machine evidence follows [spec/source-tree-evidence-v1.md](spec/source-tree-evidence-v1.md). A passing index is derived from three complete local execution receipts and binds JCE1 and the language preview to the exact source tree, normative specifications and executable gates. This is reproducible local evidence, not independent attestation.
+
+## License and commercial authority
+
+Genesis is private and all rights are reserved by LED ACTION LLC under the project designation. No public-source or commercial-use license has been granted. Joan Alberto Barrios Cruz remains permanently identified as original creator. Corporate ownership must be supported by the separately signed assignment described in `OWNERSHIP.md`; repository text is not that legal instrument.

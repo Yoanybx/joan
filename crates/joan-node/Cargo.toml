@@ -1,0 +1,34 @@
+[package]
+name = "joan-node"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "joan"
+path = "src/main.rs"
+
+[dependencies]
+joan-canonical = { path = "../joan-canonical" }
+joan-conformance = { path = "../joan-conformance" }
+joan-compiler = { path = "../joan-compiler" }
+joan-dispute = { path = "../joan-dispute" }
+joan-guardian = { path = "../joan-guardian" }
+joan-identity = { path = "../joan-identity" }
+joan-instruction = { path = "../joan-instruction" }
+joan-patch = { path = "../joan-patch" }
+joan-sim = { path = "../joan-sim" }
+joan-syntax = { path = "../joan-syntax" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+jsonschema.workspace = true
+
+[lints]
+workspace = true

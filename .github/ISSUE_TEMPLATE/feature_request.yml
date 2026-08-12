@@ -1,0 +1,31 @@
+name: Feature request
+description: Propose a bounded capability with evidence and compatibility constraints.
+title: "[Feature] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: State the concrete agent or operator problem without prescribing a solution.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and baseline
+      description: Provide a reproducible example and current alternative.
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Proposed observable contract
+      description: Define inputs, outputs, failure behavior and compatibility requirements.
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Security and migration risks
+    validations:
+      required: true

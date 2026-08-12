@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/adoption-manifest.v0.schema.json",
+  "title": "JOAN Adoption Manifest v0",
+  "type": "object",
+  "required": ["schema", "project", "release", "entrypoint", "mode", "network", "telemetry", "secrets", "account", "wallet", "protocol_fee", "writes", "expected_outputs", "timeout_seconds", "rollback", "evidence"],
+  "properties": {
+    "schema": {"const": "joan.adoption.v0"},
+    "project": {"type": "string", "minLength": 1},
+    "release": {"type": "string", "minLength": 1},
+    "entrypoint": {"type": "string", "minLength": 1},
+    "mode": {"const": "read-only-offline"},
+    "network": {"type": "string", "minLength": 1},
+    "telemetry": {"const": "none"},
+    "secrets": {"const": "not-required"},
+    "account": {"const": "not-required"},
+    "wallet": {"const": "not-required"},
+    "protocol_fee": {"const": "none"},
+    "writes": {"type": "array", "maxItems": 0},
+    "expected_outputs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+    "timeout_seconds": {"type": "string", "pattern": "^[1-9][0-9]*$"},
+    "rollback": {"type": "string", "minLength": 1},
+    "evidence": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false
+}

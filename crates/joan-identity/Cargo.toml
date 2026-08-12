@@ -1,0 +1,16 @@
+[package]
+name = "joan-identity"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+joan-canonical = { path = "../joan-canonical" }
+serde.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,152 @@
+{
+  "schema": "joan.payment-cost-scenario.v0",
+  "observed_at": "2026-08-11T00:00:00Z",
+  "currency": "USD",
+  "scenario": {
+    "id": "one-hundred-thousand-microtasks",
+    "gross_item_count": 100000,
+    "gross_volume_micro_usd": 1000000000,
+    "requirements": [
+      "no-joan-custody",
+      "deterministic-cost-accounting",
+      "qualified-settlement-rail-required"
+    ]
+  },
+  "candidates": [
+    {
+      "id": "direct-per-instruction",
+      "mode": "direct",
+      "qualified": true,
+      "qualification": "Illustrative direct settlement baseline with every input exposed",
+      "provenance": {
+        "kind": "declared-fixture",
+        "observed_at": "2026-08-11T00:00:00Z",
+        "expires_at": null,
+        "source": "JOAN deterministic test fixture; not a live provider quote"
+      },
+      "settlement_item_count": 100000,
+      "settlement_volume_micro_usd": 1000000000,
+      "fixed_fee_per_settlement_micro_usd": 3500,
+      "variable_fee_ppm": 0,
+      "fx_slippage_ppm_on_settlement_volume": 0,
+      "verification_fee_per_gross_item_micro_usd": 3,
+      "infrastructure_cost_per_gross_item_micro_usd": 1,
+      "dispute_probability_ppm": 10,
+      "dispute_case_cost_micro_usd": 2000000,
+      "annual_capital_cost_ppm": 80000,
+      "settlement_delay_seconds": 86400,
+      "expected_loss_ppm_on_gross_volume": 20,
+      "failure_probability_ppm": 100,
+      "joan_protocol_fee_per_gross_item_micro_usd": 0,
+      "explicit_subsidy_micro_usd": 0
+    },
+    {
+      "id": "bilateral-netting",
+      "mode": "bilateral-netting",
+      "qualified": true,
+      "qualification": "Illustrative repeated-counterparty netting under bounded credit",
+      "provenance": {
+        "kind": "declared-fixture",
+        "observed_at": "2026-08-11T00:00:00Z",
+        "expires_at": null,
+        "source": "JOAN deterministic test fixture; not a live provider quote"
+      },
+      "settlement_item_count": 100,
+      "settlement_volume_micro_usd": 100000000,
+      "fixed_fee_per_settlement_micro_usd": 3500,
+      "variable_fee_ppm": 0,
+      "fx_slippage_ppm_on_settlement_volume": 0,
+      "verification_fee_per_gross_item_micro_usd": 3,
+      "infrastructure_cost_per_gross_item_micro_usd": 1,
+      "dispute_probability_ppm": 10,
+      "dispute_case_cost_micro_usd": 2000000,
+      "annual_capital_cost_ppm": 80000,
+      "settlement_delay_seconds": 86400,
+      "expected_loss_ppm_on_gross_volume": 20,
+      "failure_probability_ppm": 100,
+      "joan_protocol_fee_per_gross_item_micro_usd": 0,
+      "explicit_subsidy_micro_usd": 0
+    },
+    {
+      "id": "multilateral-netting",
+      "mode": "multilateral-netting",
+      "qualified": true,
+      "qualification": "Illustrative many-party netting after policy and exposure limits pass",
+      "provenance": {
+        "kind": "declared-fixture",
+        "observed_at": "2026-08-11T00:00:00Z",
+        "expires_at": null,
+        "source": "JOAN deterministic test fixture; not a live provider quote"
+      },
+      "settlement_item_count": 10,
+      "settlement_volume_micro_usd": 50000000,
+      "fixed_fee_per_settlement_micro_usd": 3500,
+      "variable_fee_ppm": 0,
+      "fx_slippage_ppm_on_settlement_volume": 0,
+      "verification_fee_per_gross_item_micro_usd": 5,
+      "infrastructure_cost_per_gross_item_micro_usd": 1,
+      "dispute_probability_ppm": 10,
+      "dispute_case_cost_micro_usd": 2000000,
+      "annual_capital_cost_ppm": 80000,
+      "settlement_delay_seconds": 172800,
+      "expected_loss_ppm_on_gross_volume": 25,
+      "failure_probability_ppm": 100,
+      "joan_protocol_fee_per_gross_item_micro_usd": 0,
+      "explicit_subsidy_micro_usd": 0
+    },
+    {
+      "id": "receivable-aggregation",
+      "mode": "receivable-aggregation",
+      "qualified": true,
+      "qualification": "Illustrative signed receivables accumulated to a minimum rail threshold",
+      "provenance": {
+        "kind": "declared-fixture",
+        "observed_at": "2026-08-11T00:00:00Z",
+        "expires_at": null,
+        "source": "JOAN deterministic test fixture; not a live provider quote"
+      },
+      "settlement_item_count": 1000,
+      "settlement_volume_micro_usd": 500000000,
+      "fixed_fee_per_settlement_micro_usd": 3500,
+      "variable_fee_ppm": 0,
+      "fx_slippage_ppm_on_settlement_volume": 0,
+      "verification_fee_per_gross_item_micro_usd": 2,
+      "infrastructure_cost_per_gross_item_micro_usd": 1,
+      "dispute_probability_ppm": 10,
+      "dispute_case_cost_micro_usd": 2000000,
+      "annual_capital_cost_ppm": 80000,
+      "settlement_delay_seconds": 86400,
+      "expected_loss_ppm_on_gross_volume": 15,
+      "failure_probability_ppm": 100,
+      "joan_protocol_fee_per_gross_item_micro_usd": 0,
+      "explicit_subsidy_micro_usd": 0
+    },
+    {
+      "id": "unpriced-gas-free-batch",
+      "mode": "external-batch",
+      "qualified": false,
+      "qualification": "Excluded because gas-free signing alone is not an all-in provider price",
+      "provenance": {
+        "kind": "declared-fixture",
+        "observed_at": "2026-08-11T00:00:00Z",
+        "expires_at": null,
+        "source": "No complete live quote supplied"
+      },
+      "settlement_item_count": 0,
+      "settlement_volume_micro_usd": 0,
+      "fixed_fee_per_settlement_micro_usd": 0,
+      "variable_fee_ppm": 0,
+      "fx_slippage_ppm_on_settlement_volume": 0,
+      "verification_fee_per_gross_item_micro_usd": 0,
+      "infrastructure_cost_per_gross_item_micro_usd": 0,
+      "dispute_probability_ppm": 0,
+      "dispute_case_cost_micro_usd": 0,
+      "annual_capital_cost_ppm": 0,
+      "settlement_delay_seconds": 0,
+      "expected_loss_ppm_on_gross_volume": 0,
+      "failure_probability_ppm": 0,
+      "joan_protocol_fee_per_gross_item_micro_usd": 0,
+      "explicit_subsidy_micro_usd": 0
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/project-manifest.v0.schema.json",
+  "title": "JOAN Project Manifest v0",
+  "type": "object",
+  "required": ["schema", "project", "version", "original_creator", "corporate_owner", "corporate_owner_jurisdiction", "corporate_owner_document_number", "assignment_instrument_recorded", "repository_state", "entrypoint", "safe_first_trial", "network_service", "public_release", "remote_configured", "license_profile", "artifacts"],
+  "properties": {
+    "schema": {"const": "joan.project.v0"},
+    "project": {"type": "string", "minLength": 1},
+    "version": {"type": "string", "minLength": 1},
+    "original_creator": {"const": "Joan Alberto Barrios Cruz"},
+    "corporate_owner": {"const": "LED ACTION LLC"},
+    "corporate_owner_jurisdiction": {"const": "Florida"},
+    "corporate_owner_document_number": {"const": "L23000299152"},
+    "assignment_instrument_recorded": {"const": false},
+    "repository_state": {"type": "string"},
+    "entrypoint": {"type": "string", "minLength": 1},
+    "safe_first_trial": {"type": "string", "minLength": 1},
+    "network_service": {"type": "boolean"},
+    "public_release": {"type": "boolean"},
+    "remote_configured": {"type": "boolean"},
+    "license_profile": {"type": "string", "minLength": 1},
+    "artifacts": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

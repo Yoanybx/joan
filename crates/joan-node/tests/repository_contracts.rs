@@ -109,6 +109,36 @@ fn main() -> i64 effects [audit] {
 }
 
 #[test]
+fn linear_compiler_artifacts_match_their_versioned_schemas()
+-> Result<(), Box<dyn std::error::Error>> {
+    let artifact = compile_source(
+        r#"module contract;
+fn main() -> unit effects [audit] authorities [audit_once: audit] {
+  request audit("schema") using audit_once;
+  return;
+}
+"#,
+    )?;
+    validate_instance(
+        &serde_json::to_value(&artifact.bytecode.canonical_ast)?,
+        "schemas/canonical-ast.v1.schema.json",
+    )?;
+    validate_instance(
+        &serde_json::to_value(&artifact.bytecode.semantic_identity)?,
+        "schemas/canonical-ast-identity.v1.schema.json",
+    )?;
+    validate_instance(
+        &serde_json::to_value(&artifact.bytecode)?,
+        "schemas/bytecode-program.v2.schema.json",
+    )?;
+    validate_instance(
+        &serde_json::to_value(&artifact.verification)?,
+        "schemas/bytecode-verification-receipt.v1.schema.json",
+    )?;
+    Ok(())
+}
+
+#[test]
 fn bytecode_and_verification_receipt_match_their_schemas() -> Result<(), Box<dyn std::error::Error>>
 {
     let artifact =

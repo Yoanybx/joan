@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/bytecode-verification-receipt.v1.schema.json",
+  "title": "JOAN Linear Bytecode Verification Receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "verifier", "bytecode_digest", "semantic_digest", "function_count", "instruction_count", "max_stack_depth", "codegen_binding", "effect_profile"],
+  "properties": {
+    "schema": {"const": "joan.bytecode-verification-receipt.v1"},
+    "status": {"const": "verified"},
+    "verifier": {"const": "joan-standalone-bytecode-verifier-v0"},
+    "bytecode_digest": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"type": "object", "properties": {"domain": {"const": "joan.bytecode-program.v2"}}}]},
+    "semantic_digest": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"type": "object", "properties": {"domain": {"const": "joan.language-canonical-ast.v2"}}}]},
+    "function_count": {"type": "integer", "minimum": 1, "maximum": 1024},
+    "instruction_count": {"type": "integer", "minimum": 1, "maximum": 1000000},
+    "max_stack_depth": {"type": "integer", "minimum": 0, "maximum": 65536},
+    "codegen_binding": {"const": "canonical-ast-v1-independent-emitter-exact-match"},
+    "effect_profile": {"const": "linear-authority-validated-never-executed"}
+  }
+}

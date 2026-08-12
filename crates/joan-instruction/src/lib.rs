@@ -127,6 +127,9 @@ pub struct OneShotApproval {
     pub task_id: String,
     /// Exact approved capabilities.
     pub capabilities: BTreeSet<String>,
+    /// Exact source authority slot for linear JOAN requests.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authority_slot: Option<String>,
 }
 
 /// Host-supplied authority ceiling and approval requirements.

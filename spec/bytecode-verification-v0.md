@@ -3,8 +3,9 @@
 ## Status
 
 This document freezes the first non-executing verifier for externally supplied
-JOAN bytecode. The accepted artifact is `joan.bytecode-program.v1`; successful
-verification emits `joan.bytecode-verification-receipt.v0`.
+JOAN bytecode. The legacy artifact is `joan.bytecode-program.v1`; the additive
+linear-authority artifact is `joan.bytecode-program.v2`. Successful verification
+emits the matching v0 or v1 receipt.
 
 The verifier reduces trust in serialized bytecode. It does not prove that the
 verifier, compiler, VM or specification has no defects, and it does not grant
@@ -14,14 +15,18 @@ authority for a requested effect.
 
 A v1 program contains:
 
-- the exact `joan.canonical-ast.v0` projection;
+- the exact legacy `joan.canonical-ast.v0` or linear `joan.canonical-ast.v1` projection;
 - its `joan.language-canonical-ast.v1` identity descriptor and compatibility digest;
 - sorted functions with parameter and local slot types;
 - deterministic instructions and one `main` entry index.
 
-The complete typed artifact identity is the JCE1 digest in domain
-`joan.bytecode-program.v1`. Bytecode `i64` constants use canonical decimal text,
-not JSON numbers, so the complete signed 64-bit range remains interoperable.
+The v2 profile additionally binds sorted effect-specific authority slots to
+every function and an exact slot name to every request instruction.
+
+The complete typed artifact identity is the JCE1 digest in matching domain
+`joan.bytecode-program.v1` or `joan.bytecode-program.v2`. Bytecode `i64`
+constants use canonical decimal text, not JSON numbers, so the complete signed
+64-bit range remains interoperable.
 
 ## Required verification
 
@@ -36,6 +41,8 @@ Before execution, an implementation must:
 7. prove the bytecode call graph is acyclic;
 8. independently emit bytecode from the embedded AST and require exact equality;
 9. hash the complete verified artifact and emit a receipt without executing it.
+10. for v2, abstractly consume every authority slot exactly once and reject
+    missing, unknown, wrong-effect, duplicate or unconsumed slots.
 
 `joan-compiler` and `joan-bytecode` contain separate emitters. Equality closes
 the previous boundary where valid AST metadata could be attached to arbitrary
@@ -68,7 +75,7 @@ offline, performs no writes and never executes bytecode or effects.
 
 ## Compatibility boundary
 
-This pre-alpha change replaces externally serialized `joan.bytecode-program.v0`
-with v1. Source commands remain `joan check`, `joan fmt`, `joan compile` and
-`joan run`. Old serialized v0 artifacts fail explicitly and must be recompiled
-from source; they are never upgraded silently.
+Legacy source still emits byte-for-byte compatible v0 canonical AST and v1
+bytecode shapes. A module that explicitly enables authority slots emits
+`joan.canonical-ast.v1`, `joan.bytecode-program.v2`, and separate digest domains.
+Schema/profile pairs cannot be mixed or upgraded silently.

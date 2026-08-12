@@ -307,6 +307,8 @@ pub enum Statement {
     Request {
         /// Declared effect name.
         effect: String,
+        /// Linear authority slot moved into this request, when enabled.
+        authority: Option<String>,
         /// Request arguments.
         arguments: Vec<Expression>,
         /// Source span.
@@ -349,6 +351,19 @@ pub struct Parameter {
     pub span: Span,
 }
 
+/// One externally supplied, per-invocation linear authority slot.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuthorityParameter {
+    /// Slot name used by exactly one request.
+    pub name: String,
+    /// Only effect this slot can authorize.
+    pub effect: String,
+    /// Source span.
+    #[serde(skip, default)]
+    pub span: Span,
+}
+
 /// Function declaration.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -361,6 +376,8 @@ pub struct Function {
     pub return_type: Type,
     /// Explicit effect row.
     pub effects: Vec<String>,
+    /// Explicit linear authority profile. `None` preserves the legacy request profile.
+    pub authorities: Option<Vec<AuthorityParameter>>,
     /// Ordered body statements.
     pub body: Vec<Statement>,
     /// Source span.
@@ -400,8 +417,24 @@ pub struct CanonicalProgram {
 }
 
 impl CanonicalProgram {
-    /// Exact schema identifier covered by the canonical digest.
-    pub const SCHEMA: &'static str = "joan.canonical-ast.v0";
+    /// Compatibility alias for the legacy schema.
+    pub const SCHEMA: &'static str = Self::LEGACY_SCHEMA;
+    /// Legacy receipt-only effect profile.
+    pub const LEGACY_SCHEMA: &'static str = "joan.canonical-ast.v0";
+    /// Linear one-shot authority profile.
+    pub const LINEAR_SCHEMA: &'static str = "joan.canonical-ast.v1";
+
+    /// Whether this canonical schema is supported by the language preview.
+    #[must_use]
+    pub fn supports_schema(schema: &str) -> bool {
+        matches!(schema, Self::LEGACY_SCHEMA | Self::LINEAR_SCHEMA)
+    }
+
+    /// Whether this program uses the linear authority profile.
+    #[must_use]
+    pub fn is_linear(&self) -> bool {
+        self.schema == Self::LINEAR_SCHEMA
+    }
 }
 
 /// One canonical function declaration.
@@ -416,8 +449,21 @@ pub struct CanonicalFunction {
     pub return_type: Type,
     /// Lexicographically sorted effect row.
     pub effects: Vec<String>,
+    /// Sorted per-invocation authority slots; absent only in the legacy profile.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authorities: Option<Vec<CanonicalAuthorityParameter>>,
     /// Ordered body statements.
     pub body: Vec<CanonicalStatement>,
+}
+
+/// One canonical linear authority slot.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CanonicalAuthorityParameter {
+    /// Slot name.
+    pub name: String,
+    /// Only effect this slot can authorize.
+    pub effect: String,
 }
 
 /// One canonical function parameter.
@@ -452,6 +498,9 @@ pub enum CanonicalStatement {
     Request {
         /// Declared effect name.
         effect: String,
+        /// Linear authority slot moved into this request.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        authority: Option<String>,
         /// Ordered request arguments.
         arguments: Vec<CanonicalExpression>,
     },
@@ -521,8 +570,25 @@ impl Program {
             .map(CanonicalFunction::from)
             .collect::<Vec<_>>();
         functions.sort_by(|left, right| left.name.cmp(&right.name));
+        let linear = self.functions.iter().any(|function| {
+            function.authorities.is_some()
+                || function.body.iter().any(|statement| {
+                    matches!(
+                        statement,
+                        Statement::Request {
+                            authority: Some(_),
+                            ..
+                        }
+                    )
+                })
+        });
         CanonicalProgram {
-            schema: CanonicalProgram::SCHEMA.to_owned(),
+            schema: if linear {
+                CanonicalProgram::LINEAR_SCHEMA
+            } else {
+                CanonicalProgram::LEGACY_SCHEMA
+            }
+            .to_owned(),
             module: self.module.clone(),
             functions,
         }
@@ -533,6 +599,14 @@ impl From<&Function> for CanonicalFunction {
     fn from(function: &Function) -> Self {
         let mut effects = function.effects.clone();
         effects.sort();
+        let authorities = function.authorities.as_ref().map(|items| {
+            let mut items = items
+                .iter()
+                .map(CanonicalAuthorityParameter::from)
+                .collect::<Vec<_>>();
+            items.sort_by(|left, right| left.name.cmp(&right.name));
+            items
+        });
         Self {
             name: function.name.clone(),
             parameters: function
@@ -542,7 +616,17 @@ impl From<&Function> for CanonicalFunction {
                 .collect(),
             return_type: function.return_type.clone(),
             effects,
+            authorities,
             body: function.body.iter().map(CanonicalStatement::from).collect(),
+        }
+    }
+}
+
+impl From<&AuthorityParameter> for CanonicalAuthorityParameter {
+    fn from(parameter: &AuthorityParameter) -> Self {
+        Self {
+            name: parameter.name.clone(),
+            effect: parameter.effect.clone(),
         }
     }
 }
@@ -573,9 +657,13 @@ impl From<&Statement> for CanonicalStatement {
                 value: value.as_ref().map(CanonicalExpression::from),
             },
             Statement::Request {
-                effect, arguments, ..
+                effect,
+                authority,
+                arguments,
+                ..
             } => Self::Request {
                 effect: effect.clone(),
+                authority: authority.clone(),
                 arguments: arguments.iter().map(CanonicalExpression::from).collect(),
             },
             Statement::Expression { expression, .. } => Self::Expression {

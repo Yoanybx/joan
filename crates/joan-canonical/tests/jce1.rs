@@ -92,6 +92,8 @@ fn domains_are_closed_and_typed() -> Result<(), Box<dyn std::error::Error>> {
 fn language_canonical_ast_domain_is_registered() -> Result<(), Box<dyn std::error::Error>> {
     let domain = RegisteredDomainV1::parse("joan.language-canonical-ast.v1")?;
     assert_eq!(domain, RegisteredDomainV1::LanguageCanonicalAst);
+    let linear = RegisteredDomainV1::parse("joan.language-canonical-ast.v2")?;
+    assert_eq!(linear, RegisteredDomainV1::LanguageCanonicalAstLinear);
     Ok(())
 }
 
@@ -106,6 +108,8 @@ fn package_manifest_domain_is_registered() -> Result<(), Box<dyn std::error::Err
 fn bytecode_program_domain_is_registered() -> Result<(), Box<dyn std::error::Error>> {
     let domain = RegisteredDomainV1::parse("joan.bytecode-program.v1")?;
     assert_eq!(domain, RegisteredDomainV1::BytecodeProgram);
+    let linear = RegisteredDomainV1::parse("joan.bytecode-program.v2")?;
+    assert_eq!(linear, RegisteredDomainV1::BytecodeProgramLinear);
     Ok(())
 }
 

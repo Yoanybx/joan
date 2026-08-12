@@ -19,6 +19,13 @@ struct FunctionSignature {
     span: Span,
 }
 
+struct RequestCheckContext<'a> {
+    locals: &'a HashMap<String, Type>,
+    authority_slots: &'a HashMap<String, String>,
+    available_authorities: &'a mut BTreeSet<String>,
+    function: &'a Function,
+}
+
 /// Successful static-check receipt.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -39,12 +46,27 @@ pub struct CheckReceipt {
     pub termination_profile: String,
     /// External effects are requests only.
     pub effect_profile: String,
+    /// Static authority discipline applied to requests.
+    pub authority_profile: String,
+    /// Number of declared per-invocation authority slots.
+    pub authority_slot_count: usize,
 }
 
 /// Validate types, names, effects, entrypoint, and the acyclic call graph.
 pub fn check(program: &Program) -> Result<CheckReceipt, DiagnosticReport> {
     let mut checker = Checker::new(program);
     checker.run()?;
+    let authority_profile = if checker.linear_profile {
+        "linear-one-shot-per-invocation"
+    } else {
+        "legacy-receipt-only"
+    };
+    let authority_slot_count = program
+        .functions
+        .iter()
+        .filter_map(|function| function.authorities.as_ref())
+        .map(Vec::len)
+        .sum();
     Ok(CheckReceipt {
         schema: "joan.check-receipt.v0".to_owned(),
         status: "accepted".to_owned(),
@@ -58,6 +80,8 @@ pub fn check(program: &Program) -> Result<CheckReceipt, DiagnosticReport> {
         declared_effects: checker.all_effects.into_iter().collect(),
         termination_profile: "no-loops-acyclic-call-graph-bounded-vm".to_owned(),
         effect_profile: "requests-recorded-never-executed".to_owned(),
+        authority_profile: authority_profile.to_owned(),
+        authority_slot_count,
     })
 }
 
@@ -66,16 +90,30 @@ struct Checker<'a> {
     signatures: HashMap<String, FunctionSignature>,
     calls: HashMap<String, Vec<(String, Span)>>,
     all_effects: BTreeSet<String>,
+    linear_profile: bool,
     diagnostics: Vec<Diagnostic>,
 }
 
 impl<'a> Checker<'a> {
     fn new(program: &'a Program) -> Self {
+        let linear_profile = program.functions.iter().any(|function| {
+            function.authorities.is_some()
+                || function.body.iter().any(|statement| {
+                    matches!(
+                        statement,
+                        Statement::Request {
+                            authority: Some(_),
+                            ..
+                        }
+                    )
+                })
+        });
         Self {
             program,
             signatures: HashMap::new(),
             calls: HashMap::new(),
             all_effects: BTreeSet::new(),
+            linear_profile,
             diagnostics: Vec::new(),
         }
     }
@@ -181,6 +219,10 @@ impl<'a> Checker<'a> {
 
     fn check_function(&mut self, function: &Function) {
         let mut locals = HashMap::new();
+        let Some((authority_slots, mut available_authorities)) = self.authority_state(function)
+        else {
+            return;
+        };
         for parameter in &function.parameters {
             if parameter.value_type == Type::Unit {
                 self.diagnostics.push(Diagnostic::error(
@@ -218,7 +260,13 @@ impl<'a> Checker<'a> {
                 ));
                 continue;
             }
-            returned = self.check_statement(statement, &mut locals, function);
+            returned = self.check_statement(
+                statement,
+                &mut locals,
+                &authority_slots,
+                &mut available_authorities,
+                function,
+            );
         }
         if !returned {
             self.diagnostics.push(Diagnostic::error(
@@ -227,12 +275,81 @@ impl<'a> Checker<'a> {
                 function.span,
             ));
         }
+        if self.linear_profile {
+            for authority in available_authorities {
+                self.diagnostics.push(
+                    Diagnostic::error(
+                        "J2057",
+                        format!("authority slot `{authority}` was not consumed"),
+                        function.span,
+                    )
+                    .with_note("linear authority slots must be moved exactly once"),
+                );
+            }
+        }
+    }
+
+    fn authority_state(
+        &mut self,
+        function: &Function,
+    ) -> Option<(HashMap<String, String>, BTreeSet<String>)> {
+        let mut authority_slots = HashMap::new();
+        let mut available_authorities = BTreeSet::new();
+        if self.linear_profile {
+            let Some(authorities) = &function.authorities else {
+                self.diagnostics.push(
+                    Diagnostic::error(
+                        "J2050",
+                        format!(
+                            "function `{}` must declare `authorities [...]` in a linear module",
+                            function.name
+                        ),
+                        function.span,
+                    )
+                    .with_note("authority profiles cannot be mixed inside one module"),
+                );
+                return None;
+            };
+            for authority in authorities {
+                if authority_slots
+                    .insert(authority.name.clone(), authority.effect.clone())
+                    .is_some()
+                {
+                    self.diagnostics.push(Diagnostic::error(
+                        "J2051",
+                        format!("duplicate authority slot `{}`", authority.name),
+                        authority.span,
+                    ));
+                }
+                available_authorities.insert(authority.name.clone());
+                if !function
+                    .effects
+                    .iter()
+                    .any(|declared| declared == &authority.effect)
+                {
+                    self.diagnostics.push(
+                        Diagnostic::error(
+                            "J2052",
+                            format!(
+                                "authority slot `{}` names undeclared effect `{}`",
+                                authority.name, authority.effect
+                            ),
+                            authority.span,
+                        )
+                        .with_note("authority cannot widen the function effect row"),
+                    );
+                }
+            }
+        }
+        Some((authority_slots, available_authorities))
     }
 
     fn check_statement(
         &mut self,
         statement: &Statement,
         locals: &mut HashMap<String, Type>,
+        authority_slots: &HashMap<String, String>,
+        available_authorities: &mut BTreeSet<String>,
         function: &Function,
     ) -> bool {
         match statement {
@@ -287,28 +404,94 @@ impl<'a> Checker<'a> {
             }
             Statement::Request {
                 effect,
+                authority,
                 arguments,
                 span,
             } => {
-                if !function.effects.iter().any(|declared| declared == effect) {
-                    self.diagnostics.push(
-                        Diagnostic::error(
-                            "J2028",
-                            format!("effect `{effect}` is not declared by this function"),
-                            *span,
-                        )
-                        .with_note("add the effect to `effects [...]` or remove the request"),
-                    );
-                }
-                for argument in arguments {
-                    self.expression_type(argument, locals, function);
-                }
+                let mut context = RequestCheckContext {
+                    locals,
+                    authority_slots,
+                    available_authorities,
+                    function,
+                };
+                self.check_request(effect, authority.as_deref(), arguments, *span, &mut context);
                 false
             }
             Statement::Expression { expression, .. } => {
                 self.expression_type(expression, locals, function);
                 false
             }
+        }
+    }
+
+    fn check_request(
+        &mut self,
+        effect: &str,
+        authority: Option<&str>,
+        arguments: &[Expression],
+        span: Span,
+        context: &mut RequestCheckContext<'_>,
+    ) {
+        if !context
+            .function
+            .effects
+            .iter()
+            .any(|declared| declared == effect)
+        {
+            self.diagnostics.push(
+                Diagnostic::error(
+                    "J2028",
+                    format!("effect `{effect}` is not declared by this function"),
+                    span,
+                )
+                .with_note("add the effect to `effects [...]` or remove the request"),
+            );
+        }
+        for argument in arguments {
+            self.expression_type(argument, context.locals, context.function);
+        }
+        if !self.linear_profile {
+            return;
+        }
+        let Some(name) = authority else {
+            self.diagnostics.push(
+                Diagnostic::error(
+                    "J2053",
+                    format!("effect `{effect}` request has no linear authority slot"),
+                    span,
+                )
+                .with_note("append `using <slot>` to move one declared authority"),
+            );
+            return;
+        };
+        let Some(allowed_effect) = context.authority_slots.get(name) else {
+            self.diagnostics.push(Diagnostic::error(
+                "J2054",
+                format!("unknown authority slot `{name}`"),
+                span,
+            ));
+            return;
+        };
+        if allowed_effect != effect {
+            self.diagnostics.push(
+                Diagnostic::error(
+                    "J2055",
+                    format!("authority slot `{name}` permits `{allowed_effect}`, not `{effect}`"),
+                    span,
+                )
+                .with_note("authority slots are effect-specific and cannot widen"),
+            );
+            return;
+        }
+        if !context.available_authorities.remove(name) {
+            self.diagnostics.push(
+                Diagnostic::error(
+                    "J2056",
+                    format!("authority slot `{name}` was already consumed"),
+                    span,
+                )
+                .with_note("one slot can authorize only one request per invocation"),
+            );
         }
     }
 

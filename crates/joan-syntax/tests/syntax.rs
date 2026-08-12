@@ -23,6 +23,38 @@ fn formatter_is_idempotent() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+fn linear_authority_syntax_formats_canonically() -> Result<(), Box<dyn std::error::Error>> {
+    let dense = r#"module linear;fn main()->unit effects[network_send]authorities[send_once:network_send]{request network_send("peer")using send_once;return;}"#;
+    let expected = r#"module linear;
+
+fn main() -> unit effects [network_send] authorities [send_once: network_send] {
+  request network_send("peer") using send_once;
+  return;
+}
+"#;
+    let formatted = format_source(dense)?;
+    assert_eq!(formatted, expected);
+    assert_eq!(format_source(&formatted)?, formatted);
+    Ok(())
+}
+
+#[test]
+fn linear_context_words_remain_valid_legacy_identifiers() -> Result<(), Box<dyn std::error::Error>>
+{
+    let source = r"module contextual;
+fn echo(authorities: i64) -> i64 effects [] {
+  let using: i64 = authorities;
+  return using;
+}
+fn main() -> i64 effects [] { return echo(42); }
+";
+    let formatted = format_source(source)?;
+    assert!(formatted.contains("echo(authorities: i64)"));
+    assert!(formatted.contains("let using: i64 = authorities;"));
+    Ok(())
+}
+
+#[test]
 fn malformed_source_has_a_stable_parse_diagnostic() -> Result<(), Box<dyn std::error::Error>> {
     let Err(report) = parse("module missing_semicolon") else {
         return Err("malformed source unexpectedly parsed".into());

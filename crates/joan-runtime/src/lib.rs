@@ -1,7 +1,11 @@
 //! Effect planning with external authority and atomic one-use approval consumption.
 
-use joan_canonical::{CanonicalError, Digest, digest_serializable};
+use joan_canonical::{
+    CanonicalError, Digest, Jce1Error, RegisteredDomainV1, digest_serializable,
+    digest_serializable_v1,
+};
 use joan_compiler::{ExecutionReceipt, Value};
+use joan_identity::{IdentityError, verify_canonical_ast_identity_descriptor};
 use joan_instruction::{
     AuthorityEnvelope, InstructionDecision, InstructionError, InstructionRequest,
     resolve_instructions,
@@ -51,6 +55,9 @@ pub struct PlannedEffect {
     pub function: String,
     /// Atomic capability/effect name.
     pub effect: String,
+    /// Source authority slot moved into this request, when linear.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authority_slot: Option<String>,
     /// Deterministically evaluated arguments.
     pub arguments: Vec<Value>,
     /// Exact consumed approval nonce.
@@ -81,12 +88,21 @@ pub enum RuntimePlanError {
     /// Canonical identity failed.
     #[error(transparent)]
     Canonical(#[from] CanonicalError),
+    /// Typed JCE1 request identity failed.
+    #[error(transparent)]
+    Jce1(#[from] Jce1Error),
+    /// Semantic identity descriptor failed validation.
+    #[error(transparent)]
+    Identity(#[from] IdentityError),
     /// Authority attenuation failed.
     #[error(transparent)]
     Instruction(#[from] InstructionError),
     /// Authority task identity is not the exact program identity.
     #[error("authority task_id must equal the program semantic digest")]
     TaskMismatch,
+    /// Execution receipt mixes or degrades legacy and linear authority profiles.
+    #[error("execution receipt has an inconsistent authority profile")]
+    ProfileMismatch,
     /// Authority resolver did not authorize the requested effect set.
     #[error("authority decision did not allow every requested effect")]
     AuthorityDenied,
@@ -109,6 +125,16 @@ struct EffectPlanCore<'a> {
     effects: &'a [PlannedEffect],
 }
 
+#[derive(Serialize)]
+struct LinearEffectRequestCore<'a> {
+    semantic_digest: &'a Digest,
+    request_index: u64,
+    function: &'a str,
+    effect: &'a str,
+    authority_slot: &'a str,
+    arguments: &'a [Value],
+}
+
 /// Validate all effect authority and atomically consume exact one-use approvals.
 ///
 /// This function performs no host effect. On any error, `ledger` is unchanged.
@@ -117,6 +143,7 @@ pub fn plan_effects(
     authority: Option<&AuthorityEnvelope>,
     ledger: &mut CapabilityLedger,
 ) -> Result<EffectPlanReceipt, RuntimePlanError> {
+    validate_execution_profile(execution)?;
     if execution.effect_requests.is_empty() {
         return build_receipt(execution, None, Vec::new());
     }
@@ -142,12 +169,14 @@ pub fn plan_effects(
 
     let mut pending_nonces = BTreeSet::new();
     let mut planned = Vec::with_capacity(execution.effect_requests.len());
-    for request in &execution.effect_requests {
-        let expected_id = format!(
-            "{}:{:016x}",
-            execution.semantic_digest.value, request.request_index
-        );
-        if request.request_id != expected_id || !pending_nonces.insert(request.request_id.clone()) {
+    for (position, request) in execution.effect_requests.iter().enumerate() {
+        let expected_index = u64::try_from(position)
+            .map_err(|_| RuntimePlanError::InvalidRequest(request.request_id.clone()))?;
+        let expected_id = derive_request_id(execution, request)?;
+        if request.request_index != expected_index
+            || request.request_id != expected_id
+            || !pending_nonces.insert(request.request_id.clone())
+        {
             return Err(RuntimePlanError::InvalidRequest(request.request_id.clone()));
         }
         if ledger.is_consumed(&request.request_id) {
@@ -161,6 +190,7 @@ pub fn plan_effects(
                     && approval.task_id == authority.task_id
                     && approval.capabilities.len() == 1
                     && approval.capabilities.contains(&request.effect)
+                    && approval.authority_slot == request.authority_slot
             })
             .count();
         if exact_count != 1 {
@@ -173,6 +203,7 @@ pub fn plan_effects(
             request_index: request.request_index,
             function: request.function.clone(),
             effect: request.effect.clone(),
+            authority_slot: request.authority_slot.clone(),
             arguments: request.arguments.clone(),
             approval_nonce: request.request_id.clone(),
         });
@@ -185,6 +216,78 @@ pub fn plan_effects(
     let receipt = build_receipt(execution, authority_digest, planned)?;
     ledger.consumed_nonces.extend(pending_nonces);
     Ok(receipt)
+}
+
+fn derive_request_id(
+    execution: &ExecutionReceipt,
+    request: &joan_compiler::EffectRequest,
+) -> Result<String, RuntimePlanError> {
+    if execution.schema == "joan.execution-receipt.v2" {
+        let authority_slot = request
+            .authority_slot
+            .as_deref()
+            .ok_or(RuntimePlanError::ProfileMismatch)?;
+        Ok(digest_serializable_v1(
+            RegisteredDomainV1::EffectApplication,
+            &LinearEffectRequestCore {
+                semantic_digest: &execution.semantic_digest,
+                request_index: request.request_index,
+                function: &request.function,
+                effect: &request.effect,
+                authority_slot,
+                arguments: &request.arguments,
+            },
+        )?
+        .value)
+    } else {
+        Ok(format!(
+            "{}:{:016x}",
+            execution.semantic_digest.value, request.request_index
+        ))
+    }
+}
+
+fn validate_execution_profile(execution: &ExecutionReceipt) -> Result<(), RuntimePlanError> {
+    verify_canonical_ast_identity_descriptor(&execution.semantic_identity)?;
+    if execution.semantic_digest != execution.semantic_identity.digest {
+        return Err(RuntimePlanError::ProfileMismatch);
+    }
+    let legacy = execution.status == "completed"
+        && execution.schema == "joan.execution-receipt.v1"
+        && execution.semantic_identity.schema == "joan.canonical-ast-identity.v0"
+        && execution.semantic_identity.ast_schema == "joan.canonical-ast.v0"
+        && execution.semantic_digest.domain == "joan.language-canonical-ast.v1"
+        && valid_bytecode_digest(&execution.bytecode_digest, "joan.bytecode-program.v1")
+        && execution
+            .effect_requests
+            .iter()
+            .all(|request| request.authority_slot.is_none());
+    let linear = execution.status == "completed"
+        && execution.schema == "joan.execution-receipt.v2"
+        && execution.semantic_identity.schema == "joan.canonical-ast-identity.v1"
+        && execution.semantic_identity.ast_schema == "joan.canonical-ast.v1"
+        && execution.semantic_digest.domain == "joan.language-canonical-ast.v2"
+        && valid_bytecode_digest(&execution.bytecode_digest, "joan.bytecode-program.v2")
+        && execution
+            .effect_requests
+            .iter()
+            .all(|request| request.authority_slot.is_some());
+    if legacy || linear {
+        Ok(())
+    } else {
+        Err(RuntimePlanError::ProfileMismatch)
+    }
+}
+
+fn valid_bytecode_digest(digest: &Digest, domain: &str) -> bool {
+    digest.algorithm == "sha256"
+        && digest.profile == "joan-hash-v1"
+        && digest.domain == domain
+        && digest.value.len() == 64
+        && digest
+            .value
+            .bytes()
+            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
 }
 
 fn build_receipt(

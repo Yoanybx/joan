@@ -63,7 +63,8 @@ globally unique without a prior-art review.
 ## Required experiment ladder
 
 1. Freeze source semantics and observable receipts.
-2. Implement linear authority values in the checker and bytecode verifier.
+2. Implement the first linear one-shot authority-slot profile in the checker,
+   bytecode verifier and runtime planner. General linear values remain deferred.
 3. Implement a borrowed JOAN Lattice frame codec with strict bounds.
 4. Compare bytes, allocations, encode/decode throughput, p50/p99 latency, schema
    negotiation, and end-to-end round trips against JSON, Protobuf, FlatBuffers,

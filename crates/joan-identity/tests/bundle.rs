@@ -84,6 +84,7 @@ fn canonical_ast_identity_rejects_noncanonical_or_modified_bytes()
             parameters: Vec::new(),
             return_type: Type::Unit,
             effects: Vec::new(),
+            authorities: None,
             body: vec![CanonicalStatement::Return { value: None }],
         }],
     })?;

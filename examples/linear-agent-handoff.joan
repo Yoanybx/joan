@@ -1,0 +1,11 @@
+module linear_agent_handoff;
+
+fn score(base: i64, confidence: i64) -> i64 effects [] authorities [] {
+  return base * confidence;
+}
+
+fn main() -> i64 effects [network_send] authorities [send_once: network_send] {
+  let result: i64 = score(6, 7);
+  request network_send("agent-b", result) using send_once;
+  return result;
+}

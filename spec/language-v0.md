@@ -4,7 +4,7 @@
 
 This document specifies the executable JOAN v0 preview implemented by
 `joan-syntax`, `joan-ast`, `joan-check`, `joan-compiler`, and the `joan` CLI.
-It is not a native-code compiler, a complete capability type system, or evidence
+It is not a native-code compiler, a complete ownership/type system, or evidence
 that JOAN outperforms C or any other language.
 
 ## Design contract
@@ -19,12 +19,22 @@ An effect declaration does not grant authority. `request network_send(...)`
 creates an `EffectRequest` in the execution receipt. A separate host policy must
 authorize and perform it. The preview VM never performs I/O.
 
+The additive linear profile declares external requirements with
+`authorities [send_once: network_send]` and moves one requirement with
+`request network_send(...) using send_once`. Repository source still cannot
+create authority: the slot is a semantic obligation that must match an exact
+host-supplied one-shot approval before any external executor can act.
+
 ## Source grammar
 
 ```text
 program       := "module" identifier ";" function+
 function      := "fn" identifier "(" parameters? ")"
-                 "->" type "effects" "[" effects? "]" block
+                 "->" type "effects" "[" effects? "]"
+                 authorities? block
+authorities   := "authorities" "[" authority-list? "]"
+authority-list:= authority ("," authority)*
+authority     := identifier ":" identifier
 parameters    := parameter ("," parameter)*
 parameter     := identifier ":" type
 effects       := identifier ("," identifier)*
@@ -32,7 +42,7 @@ type          := "i64" | "bool" | "string" | "unit"
 block         := "{" statement+ "}"
 statement     := "let" identifier ":" type "=" expression ";"
                | "return" expression? ";"
-               | "request" identifier arguments ";"
+               | "request" identifier arguments ("using" identifier)? ";"
                | expression ";"
 arguments     := "(" (expression ("," expression)*)? ")"
 expression    := literals, immutable locals, calls, unary operators,
@@ -52,6 +62,11 @@ to 1 MiB and 200,000 tokens.
 - Calls are statically resolved and argument types are checked.
 - A caller's effect row must include every effect of each callee.
 - A request must name an effect declared by its function.
+- A module either uses the legacy receipt-only profile throughout or every
+  function declares `authorities [...]` and every request moves one slot.
+- A linear authority slot names one declared effect and is consumed exactly
+  once on every invocation; reuse, omission, dropping, widening and mixed
+  profiles are static errors.
 - Loops and recursive call cycles are rejected in v0.
 - Unit parameters and unit local bindings are rejected.
 
@@ -68,8 +83,9 @@ UTF-8 source -> bounded lexer -> parser -> AST -> static checker
              -> bytecode compiler -> bounded deterministic VM -> receipt
 ```
 
-Source spans and trivia are excluded from `joan.canonical-ast.v0`. Function
-declarations and effect rows are sorted only for identity calculation, so
+Source spans and trivia are excluded from legacy `joan.canonical-ast.v0` and
+linear `joan.canonical-ast.v1`. Function declarations, effect rows and authority
+slots are sorted only for identity calculation, so
 equivalent whitespace, comments, formatting, function order, and effect order
 yield identical JCE1 bytes and the same `joan.language-canonical-ast.v1` typed
 digest. Execution order still follows compiled bytecode. Exact normalization,
@@ -104,13 +120,16 @@ Implemented in v0:
 - acyclic bounded termination profile;
 - deterministic bytecode compilation and VM execution;
 - standalone typed bytecode verification with exact independent-emitter binding;
+- additive linear one-shot authority slots checked in source, canonical AST,
+  bytecode, execution receipts and host approval planning;
 - versioned JCE1 canonical AST identities, structured diagnostics, and
   execution receipts bound to those identities.
 
 Not implemented in v0:
 
 - native AOT/JIT code generation, LLVM, Cranelift, Wasm, or C backends;
-- linear capability values and host authorization consumption;
+- general linear values, authority delegation through ordinary parameters, and
+  durable multi-process approval storage;
 - arrays, records, variants, generics, modules across files, loops, or recursion;
 - networked package manager, standard library, LSP, debugger, optimizer, or stable ABI;
 - cross-file imports (the separate offline package resolver verifies exact source graphs but does not link them yet);

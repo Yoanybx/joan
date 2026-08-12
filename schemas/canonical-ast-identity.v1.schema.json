@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/canonical-ast-identity.v1.schema.json",
+  "title": "JOAN Canonical AST Identity v1 Linear Authority",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "encoding", "ast_schema", "digest"],
+  "properties": {
+    "schema": {"const": "joan.canonical-ast-identity.v1"},
+    "encoding": {"const": "JCE1"},
+    "ast_schema": {"const": "joan.canonical-ast.v1"},
+    "digest": {
+      "allOf": [
+        {"$ref": "digest.v1.schema.json"},
+        {"type": "object", "properties": {"domain": {"const": "joan.language-canonical-ast.v2"}}}
+      ]
+    }
+  }
+}

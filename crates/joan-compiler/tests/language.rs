@@ -149,6 +149,106 @@ fn main() -> i64 effects [network_send] {
 }
 
 #[test]
+fn linear_authority_is_bound_through_identity_bytecode_and_receipt()
+-> Result<(), Box<dyn std::error::Error>> {
+    let source = r#"
+module linear;
+fn main() -> i64 effects [network_send] authorities [send_once: network_send] {
+  request network_send("agent-b", 7) using send_once;
+  return 7;
+}
+"#;
+    let artifact = compile_source(source)?;
+    assert_eq!(artifact.schema, "joan.compile-artifact.v2");
+    assert_eq!(artifact.bytecode.schema, "joan.bytecode-program.v2");
+    assert_eq!(
+        artifact.bytecode.canonical_ast.schema,
+        "joan.canonical-ast.v1"
+    );
+    assert_eq!(
+        artifact.bytecode.semantic_identity.schema,
+        "joan.canonical-ast-identity.v1"
+    );
+    assert_eq!(
+        artifact.bytecode.semantic_digest.domain,
+        "joan.language-canonical-ast.v2"
+    );
+    assert_eq!(
+        artifact.verification.schema,
+        "joan.bytecode-verification-receipt.v1"
+    );
+    assert_eq!(
+        artifact.verification.bytecode_digest.domain,
+        "joan.bytecode-program.v2"
+    );
+
+    let receipt = execute_source(source)?;
+    assert_eq!(receipt.schema, "joan.execution-receipt.v2");
+    assert_eq!(receipt.effect_requests[0].request_id.len(), 64);
+    assert!(
+        receipt.effect_requests[0]
+            .request_id
+            .bytes()
+            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+    );
+    assert_eq!(
+        receipt.effect_requests[0].authority_slot.as_deref(),
+        Some("send_once")
+    );
+    Ok(())
+}
+
+#[test]
+fn legacy_source_keeps_legacy_identity_and_omits_authority_fields()
+-> Result<(), Box<dyn std::error::Error>> {
+    let artifact = compile_source(
+        r#"module legacy;
+fn main() -> unit effects [audit] { request audit("event"); return; }
+"#,
+    )?;
+    assert_eq!(artifact.bytecode.schema, "joan.bytecode-program.v1");
+    assert_eq!(
+        artifact.bytecode.canonical_ast.schema,
+        "joan.canonical-ast.v0"
+    );
+    let encoded = serde_json::to_string(&artifact.bytecode)?;
+    assert!(!encoded.contains("authority_slots"));
+    assert!(!encoded.contains("\"authority\""));
+    Ok(())
+}
+
+#[test]
+fn bytecode_verifier_rejects_linear_authority_reuse() -> Result<(), Box<dyn std::error::Error>> {
+    let source = r#"
+module linear_replay;
+fn main() -> unit effects [network_send] authorities [first: network_send, second: network_send] {
+  request network_send("first") using first;
+  request network_send("second") using second;
+  return;
+}
+"#;
+    let mut bytecode = compile_source(source)?.bytecode;
+    let mut requests = bytecode
+        .functions
+        .iter_mut()
+        .flat_map(|function| function.instructions.iter_mut())
+        .filter_map(|instruction| match instruction {
+            Instruction::Request { authority, .. } => Some(authority),
+            _ => None,
+        });
+    let first = requests
+        .next()
+        .and_then(|authority| authority.clone())
+        .ok_or("missing first authority")?;
+    *requests.next().ok_or("missing second authority")? = Some(first);
+    let Err(error) = verify_bytecode(&bytecode) else {
+        return Err("reused linear authority verified".into());
+    };
+    assert!(error.to_string().contains("reuses linear authority"));
+    Ok(())
+}
+
+#[test]
 fn bytecode_with_inconsistent_semantic_identity_is_rejected()
 -> Result<(), Box<dyn std::error::Error>> {
     let mut artifact = compile_source(ARITHMETIC)?;

@@ -11,6 +11,7 @@ use std::str;
 use thiserror::Error;
 
 const CANONICAL_AST_IDENTITY_SCHEMA_V0: &str = "joan.canonical-ast-identity.v0";
+const CANONICAL_AST_IDENTITY_SCHEMA_V1: &str = "joan.canonical-ast-identity.v1";
 
 /// Source-independent package identity inputs.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -134,7 +135,7 @@ pub enum IdentityError {
     #[error("identity mismatch in field {0}")]
     Mismatch(&'static str),
     /// AST bytes were not exact canonical JCE1 or lacked the required schema.
-    #[error("canonical AST bytes are not an exact joan.canonical-ast.v0 JCE1 value")]
+    #[error("canonical AST bytes are not an exact supported JOAN JCE1 value")]
     NonCanonicalAst,
 }
 
@@ -183,16 +184,14 @@ pub fn build_bundle(
 
 /// Encode a canonical AST value and derive its typed JCE1 identity.
 pub fn encode_canonical_ast(ast: &CanonicalProgram) -> Result<EncodedCanonicalAst, IdentityError> {
-    if ast.schema != CanonicalProgram::SCHEMA {
-        return Err(IdentityError::UnsupportedSchema(ast.schema.clone()));
-    }
+    let (identity_schema, domain) = canonical_ast_profile(&ast.schema)?;
     let value = from_serializable_v1(ast)?;
     let bytes = to_canonical_bytes_v1(&value)?;
     let identity = CanonicalAstIdentity {
-        schema: CANONICAL_AST_IDENTITY_SCHEMA_V0.to_owned(),
+        schema: identity_schema.to_owned(),
         encoding: "JCE1".to_owned(),
-        ast_schema: CanonicalProgram::SCHEMA.to_owned(),
-        digest: digest_bytes_v1(RegisteredDomainV1::LanguageCanonicalAst, &bytes)?,
+        ast_schema: ast.schema.clone(),
+        digest: digest_bytes_v1(domain, &bytes)?,
     };
     verify_canonical_ast_identity(&identity, &bytes)?;
     Ok(EncodedCanonicalAst { bytes, identity })
@@ -202,20 +201,16 @@ pub fn encode_canonical_ast(ast: &CanonicalProgram) -> Result<EncodedCanonicalAs
 pub fn verify_canonical_ast_identity_descriptor(
     identity: &CanonicalAstIdentity,
 ) -> Result<(), IdentityError> {
-    if identity.schema != CANONICAL_AST_IDENTITY_SCHEMA_V0 {
-        return Err(IdentityError::UnsupportedSchema(identity.schema.clone()));
+    let (expected_identity_schema, expected_domain) = canonical_ast_profile(&identity.ast_schema)?;
+    if identity.schema != expected_identity_schema {
+        return Err(IdentityError::Mismatch("schema"));
     }
     if identity.encoding != "JCE1" {
         return Err(IdentityError::Mismatch("encoding"));
     }
-    if identity.ast_schema != CanonicalProgram::SCHEMA {
-        return Err(IdentityError::UnsupportedSchema(
-            identity.ast_schema.clone(),
-        ));
-    }
     if identity.digest.algorithm != "sha256"
         || identity.digest.profile != "joan-hash-v1"
-        || identity.digest.domain != RegisteredDomainV1::LanguageCanonicalAst.as_str()
+        || identity.digest.domain != expected_domain.as_str()
         || identity.digest.value.len() != 64
         || !identity
             .digest
@@ -239,18 +234,34 @@ pub fn verify_canonical_ast_identity(
     let CanonicalValue::Object(fields) = &value else {
         return Err(IdentityError::NonCanonicalAst);
     };
-    if fields.get("schema") != Some(&CanonicalValue::String(CanonicalProgram::SCHEMA.to_owned())) {
+    if fields.get("schema") != Some(&CanonicalValue::String(identity.ast_schema.clone())) {
         return Err(IdentityError::NonCanonicalAst);
     }
     if to_canonical_bytes_v1(&value)? != bytes {
         return Err(IdentityError::NonCanonicalAst);
     }
     verify_typed_digest_v1(
-        RegisteredDomainV1::LanguageCanonicalAst,
+        canonical_ast_profile(&identity.ast_schema)?.1,
         bytes,
         &identity.digest,
     )?;
     Ok(())
+}
+
+fn canonical_ast_profile(
+    ast_schema: &str,
+) -> Result<(&'static str, RegisteredDomainV1), IdentityError> {
+    match ast_schema {
+        CanonicalProgram::LEGACY_SCHEMA => Ok((
+            CANONICAL_AST_IDENTITY_SCHEMA_V0,
+            RegisteredDomainV1::LanguageCanonicalAst,
+        )),
+        CanonicalProgram::LINEAR_SCHEMA => Ok((
+            CANONICAL_AST_IDENTITY_SCHEMA_V1,
+            RegisteredDomainV1::LanguageCanonicalAstLinear,
+        )),
+        _ => Err(IdentityError::UnsupportedSchema(ast_schema.to_owned())),
+    }
 }
 
 /// Verify schema, digest shapes and the bundle root.

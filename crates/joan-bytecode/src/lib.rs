@@ -1,8 +1,9 @@
 //! Standalone, non-executing verification for JOAN bytecode artifacts.
 
 use joan_ast::{
-    BinaryOperator, CanonicalExpression, CanonicalFunction, CanonicalProgram, CanonicalStatement,
-    Expression, Function, Parameter, Program, Span, Statement, Type, UnaryOperator,
+    AuthorityParameter, BinaryOperator, CanonicalExpression, CanonicalFunction, CanonicalProgram,
+    CanonicalStatement, Expression, Function, Parameter, Program, Span, Statement, Type,
+    UnaryOperator,
 };
 use joan_canonical::{Digest, Jce1Error, RegisteredDomainV1, digest_serializable_v1};
 use joan_check::{CheckReceipt, check};
@@ -13,8 +14,13 @@ use thiserror::Error;
 
 /// Exact bytecode program schema accepted by this verifier.
 pub const BYTECODE_PROGRAM_SCHEMA: &str = "joan.bytecode-program.v1";
+/// Bytecode schema with linear authority slots.
+pub const BYTECODE_PROGRAM_LINEAR_SCHEMA: &str = "joan.bytecode-program.v2";
 /// Exact receipt schema emitted by this verifier.
 pub const BYTECODE_VERIFICATION_RECEIPT_SCHEMA: &str = "joan.bytecode-verification-receipt.v0";
+/// Verification receipt for linear bytecode.
+pub const BYTECODE_VERIFICATION_LINEAR_RECEIPT_SCHEMA: &str =
+    "joan.bytecode-verification-receipt.v1";
 
 const MAX_FUNCTIONS: usize = 1_024;
 const MAX_PARAMETERS: usize = 64;
@@ -147,11 +153,24 @@ pub enum Instruction {
     Request {
         /// Effect identifier.
         effect: String,
+        /// Linear authority slot moved into this request.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        authority: Option<String>,
         /// Number of arguments already on the value stack.
         argument_count: usize,
     },
     /// Return the only value on the frame stack.
     Return,
+}
+
+/// One effect-specific authority slot required for each function invocation.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BytecodeAuthoritySlot {
+    /// Slot name.
+    pub name: String,
+    /// Only effect this slot can authorize.
+    pub effect: String,
 }
 
 /// One typed compiled function.
@@ -172,6 +191,9 @@ pub struct BytecodeFunction {
     pub return_type: Type,
     /// Explicit sorted effect row.
     pub effects: Vec<String>,
+    /// Sorted linear authority slots; absent only in legacy bytecode.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authority_slots: Option<Vec<BytecodeAuthoritySlot>>,
     /// Ordered bytecode.
     pub instructions: Vec<Instruction>,
 }
@@ -246,12 +268,8 @@ pub enum BytecodeError {
 pub fn verify_bytecode(
     program: &BytecodeProgram,
 ) -> Result<BytecodeVerificationReceipt, BytecodeError> {
-    if program.schema != BYTECODE_PROGRAM_SCHEMA {
-        return Err(BytecodeError::Invalid(format!(
-            "unsupported schema {}",
-            program.schema
-        )));
-    }
+    let (digest_domain, receipt_schema, effect_profile, codegen_binding) =
+        bytecode_profile(&program.schema, &program.canonical_ast.schema)?;
     validate_canonical_shape(&program.canonical_ast)?;
     let check_receipt = check_canonical_ast(&program.canonical_ast)?;
     let encoded = encode_canonical_ast(&program.canonical_ast)?;
@@ -276,9 +294,9 @@ pub fn verify_bytecode(
     if program != &expected {
         return Err(BytecodeError::CodegenMismatch);
     }
-    let bytecode_digest = digest_serializable_v1(RegisteredDomainV1::BytecodeProgram, program)?;
+    let bytecode_digest = digest_serializable_v1(digest_domain, program)?;
     Ok(BytecodeVerificationReceipt {
-        schema: BYTECODE_VERIFICATION_RECEIPT_SCHEMA.to_owned(),
+        schema: receipt_schema.to_owned(),
         status: "verified".to_owned(),
         verifier: "joan-standalone-bytecode-verifier-v0".to_owned(),
         bytecode_digest,
@@ -288,9 +306,32 @@ pub fn verify_bytecode(
         instruction_count: observation.instruction_count,
         max_stack_depth: u64::try_from(observation.max_stack_depth)
             .map_err(|_| BytecodeError::Invalid("stack depth exceeds u64".to_owned()))?,
-        codegen_binding: "canonical-ast-v0-independent-emitter-exact-match".to_owned(),
-        effect_profile: "requests-validated-never-executed".to_owned(),
+        codegen_binding: codegen_binding.to_owned(),
+        effect_profile: effect_profile.to_owned(),
     })
+}
+
+fn bytecode_profile(
+    program_schema: &str,
+    ast_schema: &str,
+) -> Result<(RegisteredDomainV1, &'static str, &'static str, &'static str), BytecodeError> {
+    match (program_schema, ast_schema) {
+        (BYTECODE_PROGRAM_SCHEMA, CanonicalProgram::LEGACY_SCHEMA) => Ok((
+            RegisteredDomainV1::BytecodeProgram,
+            BYTECODE_VERIFICATION_RECEIPT_SCHEMA,
+            "requests-validated-never-executed",
+            "canonical-ast-v0-independent-emitter-exact-match",
+        )),
+        (BYTECODE_PROGRAM_LINEAR_SCHEMA, CanonicalProgram::LINEAR_SCHEMA) => Ok((
+            RegisteredDomainV1::BytecodeProgramLinear,
+            BYTECODE_VERIFICATION_LINEAR_RECEIPT_SCHEMA,
+            "linear-authority-validated-never-executed",
+            "canonical-ast-v1-independent-emitter-exact-match",
+        )),
+        _ => Err(BytecodeError::Invalid(format!(
+            "unsupported bytecode/canonical AST schema pair {program_schema} / {ast_schema}"
+        ))),
+    }
 }
 
 /// Reconstruct and statically check the source-equivalent canonical AST.
@@ -307,7 +348,7 @@ pub fn check_canonical_ast(ast: &CanonicalProgram) -> Result<CheckReceipt, Bytec
 }
 
 fn validate_canonical_shape(ast: &CanonicalProgram) -> Result<(), BytecodeError> {
-    if ast.schema != CanonicalProgram::SCHEMA {
+    if !CanonicalProgram::supports_schema(&ast.schema) {
         return Err(BytecodeError::Invalid(format!(
             "unsupported canonical AST schema {}",
             ast.schema
@@ -339,6 +380,7 @@ fn validate_canonical_shape(ast: &CanonicalProgram) -> Result<(), BytecodeError>
             validate_identifier("parameter", &parameter.name)?;
         }
         validate_sorted_effects(&function.effects)?;
+        validate_canonical_authorities(ast.is_linear(), function)?;
         statement_count = statement_count
             .checked_add(function.body.len())
             .ok_or_else(|| BytecodeError::Invalid("statement count overflow".to_owned()))?;
@@ -348,10 +390,78 @@ fn validate_canonical_shape(ast: &CanonicalProgram) -> Result<(), BytecodeError>
             )));
         }
         for statement in &function.body {
-            validate_statement(statement, &mut expression_count)?;
+            validate_statement(statement, ast.is_linear(), &mut expression_count)?;
         }
     }
     Ok(())
+}
+
+fn validate_bytecode_authorities(
+    linear: bool,
+    function: &BytecodeFunction,
+) -> Result<(), BytecodeError> {
+    match (linear, &function.authority_slots) {
+        (false, None) => Ok(()),
+        (false, Some(_)) => Err(BytecodeError::Invalid(format!(
+            "legacy function {} contains authority slots",
+            function.name
+        ))),
+        (true, None) => Err(BytecodeError::Invalid(format!(
+            "linear function {} has no authority slot table",
+            function.name
+        ))),
+        (true, Some(slots)) => {
+            let mut previous: Option<&str> = None;
+            for slot in slots {
+                validate_identifier("bytecode authority slot", &slot.name)?;
+                validate_identifier("bytecode authority effect", &slot.effect)?;
+                if previous.is_some_and(|item| item >= slot.name.as_str()) {
+                    return Err(BytecodeError::Invalid(format!(
+                        "function {} authority slots are not strictly sorted",
+                        function.name
+                    )));
+                }
+                if function.effects.binary_search(&slot.effect).is_err() {
+                    return Err(BytecodeError::Invalid(format!(
+                        "function {} authority slot {} widens undeclared effect {}",
+                        function.name, slot.name, slot.effect
+                    )));
+                }
+                previous = Some(&slot.name);
+            }
+            Ok(())
+        }
+    }
+}
+
+fn validate_canonical_authorities(
+    linear: bool,
+    function: &CanonicalFunction,
+) -> Result<(), BytecodeError> {
+    match (linear, &function.authorities) {
+        (false, None) => Ok(()),
+        (false, Some(_)) => Err(BytecodeError::Invalid(
+            "legacy canonical AST cannot contain authority slots".to_owned(),
+        )),
+        (true, None) => Err(BytecodeError::Invalid(format!(
+            "linear function {} has no authority slot declaration",
+            function.name
+        ))),
+        (true, Some(authorities)) => {
+            let mut previous: Option<&str> = None;
+            for authority in authorities {
+                validate_identifier("authority slot", &authority.name)?;
+                validate_identifier("authority effect", &authority.effect)?;
+                if previous.is_some_and(|item| item >= authority.name.as_str()) {
+                    return Err(BytecodeError::Invalid(
+                        "authority slots must be strictly sorted by name".to_owned(),
+                    ));
+                }
+                previous = Some(&authority.name);
+            }
+            Ok(())
+        }
+    }
 }
 
 fn validate_sorted_effects(effects: &[String]) -> Result<(), BytecodeError> {
@@ -370,6 +480,7 @@ fn validate_sorted_effects(effects: &[String]) -> Result<(), BytecodeError> {
 
 fn validate_statement(
     statement: &CanonicalStatement,
+    linear: bool,
     expression_count: &mut usize,
 ) -> Result<(), BytecodeError> {
     match statement {
@@ -381,9 +492,25 @@ fn validate_statement(
             validate_expression(expression, 0, expression_count)
         }),
         CanonicalStatement::Request {
-            effect, arguments, ..
+            effect,
+            authority,
+            arguments,
         } => {
             validate_identifier("requested effect", effect)?;
+            match (linear, authority) {
+                (false, None) => {}
+                (true, Some(authority)) => validate_identifier("request authority", authority)?,
+                (false, Some(_)) => {
+                    return Err(BytecodeError::Invalid(
+                        "legacy request cannot name an authority slot".to_owned(),
+                    ));
+                }
+                (true, None) => {
+                    return Err(BytecodeError::Invalid(
+                        "linear request must name an authority slot".to_owned(),
+                    ));
+                }
+            }
             for argument in arguments {
                 validate_expression(argument, 0, expression_count)?;
             }
@@ -487,6 +614,16 @@ fn function_from_canonical(function: &CanonicalFunction) -> Result<Function, Byt
             .collect(),
         return_type: function.return_type.clone(),
         effects: function.effects.clone(),
+        authorities: function.authorities.as_ref().map(|authorities| {
+            authorities
+                .iter()
+                .map(|authority| AuthorityParameter {
+                    name: authority.name.clone(),
+                    effect: authority.effect.clone(),
+                    span: Span::default(),
+                })
+                .collect()
+        }),
         body: function
             .body
             .iter()
@@ -513,8 +650,13 @@ fn statement_from_canonical(statement: &CanonicalStatement) -> Result<Statement,
             value: value.as_ref().map(expression_from_canonical).transpose()?,
             span,
         },
-        CanonicalStatement::Request { effect, arguments } => Statement::Request {
+        CanonicalStatement::Request {
+            effect,
+            authority,
+            arguments,
+        } => Statement::Request {
             effect: effect.clone(),
+            authority: authority.clone(),
             arguments: arguments
                 .iter()
                 .map(expression_from_canonical)
@@ -615,6 +757,7 @@ fn verify_structure(program: &BytecodeProgram) -> Result<VerificationObservation
             ));
         }
         validate_sorted_effects(&function.effects)?;
+        validate_bytecode_authorities(program.canonical_ast.is_linear(), function)?;
         if function.local_count > MAX_LOCALS_PER_FUNCTION {
             return Err(BytecodeError::Invalid(format!(
                 "function {} local count exceeds {MAX_LOCALS_PER_FUNCTION}",
@@ -690,6 +833,17 @@ fn verify_function(
     initialized[..function.parameter_count].fill(true);
     let mut stack = Vec::new();
     let mut max_depth = 0usize;
+    let authority_slots = function
+        .authority_slots
+        .as_ref()
+        .map(|slots| {
+            slots
+                .iter()
+                .map(|slot| (slot.name.as_str(), slot.effect.as_str()))
+                .collect::<BTreeMap<_, _>>()
+        })
+        .unwrap_or_default();
+    let mut consumed_authorities = BTreeSet::new();
     for (instruction_index, instruction) in function.instructions.iter().enumerate() {
         if matches!(instruction, Instruction::Return)
             && instruction_index + 1 != function.instructions.len()
@@ -792,6 +946,7 @@ fn verify_function(
             }
             Instruction::Request {
                 effect,
+                authority,
                 argument_count,
             } => {
                 validate_identifier("bytecode requested effect", effect)?;
@@ -805,6 +960,40 @@ fn verify_function(
                     return Err(BytecodeError::Invalid(
                         "effect argument stack underflow".to_owned(),
                     ));
+                }
+                match (program.canonical_ast.is_linear(), authority) {
+                    (false, None) => {}
+                    (true, Some(authority)) => {
+                        let allowed_effect =
+                            authority_slots.get(authority.as_str()).ok_or_else(|| {
+                                BytecodeError::Invalid(format!(
+                                    "function {} requests unknown authority slot {}",
+                                    function.name, authority
+                                ))
+                            })?;
+                        if *allowed_effect != effect {
+                            return Err(BytecodeError::Invalid(format!(
+                                "function {} authority slot {} permits {}, not {}",
+                                function.name, authority, allowed_effect, effect
+                            )));
+                        }
+                        if !consumed_authorities.insert(authority.as_str()) {
+                            return Err(BytecodeError::Invalid(format!(
+                                "function {} reuses linear authority slot {}",
+                                function.name, authority
+                            )));
+                        }
+                    }
+                    (false, Some(_)) => {
+                        return Err(BytecodeError::Invalid(
+                            "legacy bytecode request contains authority".to_owned(),
+                        ));
+                    }
+                    (true, None) => {
+                        return Err(BytecodeError::Invalid(
+                            "linear bytecode request has no authority".to_owned(),
+                        ));
+                    }
                 }
                 stack.truncate(stack.len() - argument_count);
             }
@@ -828,6 +1017,12 @@ fn verify_function(
     if !matches!(function.instructions.last(), Some(Instruction::Return)) {
         return Err(BytecodeError::Invalid(format!(
             "function {} does not end in return",
+            function.name
+        )));
+    }
+    if consumed_authorities.len() != authority_slots.len() {
+        return Err(BytecodeError::Invalid(format!(
+            "function {} does not consume every linear authority slot",
             function.name
         )));
     }
@@ -941,7 +1136,12 @@ fn independently_emit(
         .map(|function| independently_emit_function(function, &indexes))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(BytecodeProgram {
-        schema: BYTECODE_PROGRAM_SCHEMA.to_owned(),
+        schema: if ast.is_linear() {
+            BYTECODE_PROGRAM_LINEAR_SCHEMA
+        } else {
+            BYTECODE_PROGRAM_SCHEMA
+        }
+        .to_owned(),
         module: ast.module.clone(),
         semantic_digest: identity.digest.clone(),
         semantic_identity: identity,
@@ -994,7 +1194,11 @@ fn independently_emit_function(
                 }
                 instructions.push(Instruction::Return);
             }
-            CanonicalStatement::Request { effect, arguments } => {
+            CanonicalStatement::Request {
+                effect,
+                authority,
+                arguments,
+            } => {
                 for argument in arguments {
                     independently_emit_expression(
                         argument,
@@ -1005,6 +1209,7 @@ fn independently_emit_function(
                 }
                 instructions.push(Instruction::Request {
                     effect: effect.clone(),
+                    authority: authority.clone(),
                     argument_count: arguments.len(),
                 });
             }
@@ -1027,6 +1232,15 @@ fn independently_emit_function(
         local_types,
         return_type: function.return_type.clone(),
         effects: function.effects.clone(),
+        authority_slots: function.authorities.as_ref().map(|authorities| {
+            authorities
+                .iter()
+                .map(|authority| BytecodeAuthoritySlot {
+                    name: authority.name.clone(),
+                    effect: authority.effect.clone(),
+                })
+                .collect()
+        }),
         instructions,
     })
 }

@@ -13,7 +13,9 @@ receipt="$(mktemp "${TMPDIR:-/tmp}/joan-language-receipt.XXXXXX.json")"
 artifact="$(mktemp "${TMPDIR:-/tmp}/joan-language-artifact.XXXXXX.json")"
 bytecode="$(mktemp "${TMPDIR:-/tmp}/joan-language-bytecode.XXXXXX.json")"
 verification="$(mktemp "${TMPDIR:-/tmp}/joan-language-verification.XXXXXX.json")"
-trap 'rm -f "$receipt" "$artifact" "$bytecode" "$verification"' EXIT
+linear_receipt="$(mktemp "${TMPDIR:-/tmp}/joan-linear-language-receipt.XXXXXX.json")"
+linear_artifact="$(mktemp "${TMPDIR:-/tmp}/joan-linear-language-artifact.XXXXXX.json")"
+trap 'rm -f "$receipt" "$artifact" "$bytecode" "$verification" "$linear_receipt" "$linear_artifact"' EXIT
 
 cargo build --quiet --locked -p joan-node
 "$binary" fmt examples/agent-handoff.joan --check
@@ -23,12 +25,18 @@ cargo build --quiet --locked -p joan-node
 node -e 'process.stdout.write(JSON.stringify(JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).bytecode))' "$artifact" \
   | "$binary" canonicalize-v1 - >"$bytecode"
 "$binary" bytecode verify "$bytecode" --json >"$verification"
+"$binary" fmt examples/linear-agent-handoff.joan --check
+"$binary" check examples/linear-agent-handoff.joan --json >/dev/null
+"$binary" compile examples/linear-agent-handoff.joan --json >"$linear_artifact"
+"$binary" run examples/linear-agent-handoff.joan --json >"$linear_receipt"
 
-node - "$artifact" "$receipt" "$verification" <<'NODE'
+node - "$artifact" "$receipt" "$verification" "$linear_artifact" "$linear_receipt" <<'NODE'
 const { readFileSync } = require("node:fs");
 const artifact = JSON.parse(readFileSync(process.argv[2], "utf8"));
 const receipt = JSON.parse(readFileSync(process.argv[3], "utf8"));
 const verification = JSON.parse(readFileSync(process.argv[4], "utf8"));
+const linearArtifact = JSON.parse(readFileSync(process.argv[5], "utf8"));
+const linearReceipt = JSON.parse(readFileSync(process.argv[6], "utf8"));
 if (artifact.schema !== "joan.compile-artifact.v1" || artifact.status !== "compiled") {
   throw new Error("compile artifact contract failed");
 }
@@ -71,6 +79,22 @@ if (JSON.stringify(artifact.verification) !== JSON.stringify(verification)) {
 if (JSON.stringify(receipt.bytecode_digest) !== JSON.stringify(verification.bytecode_digest)) {
   throw new Error("execution receipt is not bound to the verified bytecode identity");
 }
+if (
+  linearArtifact.schema !== "joan.compile-artifact.v2" ||
+  linearArtifact.bytecode.schema !== "joan.bytecode-program.v2" ||
+  linearArtifact.bytecode.canonical_ast.schema !== "joan.canonical-ast.v1" ||
+  linearArtifact.bytecode.semantic_identity.schema !== "joan.canonical-ast-identity.v1" ||
+  linearArtifact.verification.schema !== "joan.bytecode-verification-receipt.v1" ||
+  linearReceipt.schema !== "joan.execution-receipt.v2"
+) {
+  throw new Error("linear authority artifact profile failed");
+}
+if (
+  linearReceipt.effect_requests.length !== 1 ||
+  linearReceipt.effect_requests[0].authority_slot !== "send_once"
+) {
+  throw new Error("linear authority slot was not bound to the effect request");
+}
 NODE
 
-printf '%s\n' 'JOAN language v0 compile and execution contract passed.'
+printf '%s\n' 'JOAN legacy and linear-authority compile and execution contracts passed.'

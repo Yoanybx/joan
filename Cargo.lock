@@ -570,6 +570,7 @@ version = "0.1.0-alpha.1"
 dependencies = [
  "joan-canonical",
  "joan-compiler",
+ "joan-identity",
  "joan-instruction",
  "serde",
  "thiserror",

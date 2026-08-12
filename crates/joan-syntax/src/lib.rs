@@ -1,8 +1,8 @@
 //! Bounded lexer, parser, and canonical formatter for JOAN source v0.
 
 use joan_ast::{
-    BinaryOperator, Diagnostic, DiagnosticReport, Expression, Function, Parameter, Position,
-    Program, Span, Statement, Type, UnaryOperator,
+    AuthorityParameter, BinaryOperator, Diagnostic, DiagnosticReport, Expression, Function,
+    Parameter, Position, Program, Span, Statement, Type, UnaryOperator,
 };
 use std::fmt::Write as _;
 
@@ -433,6 +433,14 @@ impl Parser {
         self.is(kind).then(|| self.advance())
     }
 
+    fn consume_contextual(&mut self, expected: &str) -> Option<Token> {
+        if matches!(&self.current().kind, TokenKind::Identifier(value) if value == expected) {
+            Some(self.advance())
+        } else {
+            None
+        }
+    }
+
     fn expect(
         &mut self,
         kind: &TokenKind,
@@ -561,15 +569,57 @@ impl Parser {
             "J1020",
             "expected `]` after effect row",
         )?;
+        let authorities = self.authority_parameters()?;
         let (body, body_span) = self.block()?;
         Ok(Function {
             name,
             parameters,
             return_type,
             effects,
+            authorities,
             body,
             span: start.join(body_span),
         })
+    }
+
+    fn authority_parameters(&mut self) -> Result<Option<Vec<AuthorityParameter>>, Diagnostic> {
+        if self.consume_contextual("authorities").is_some() {
+            self.expect(
+                &TokenKind::LeftBracket,
+                "J1022",
+                "expected `[` after `authorities`",
+            )?;
+            let mut authorities = Vec::new();
+            if !self.is(&TokenKind::RightBracket) {
+                loop {
+                    let (authority_name, authority_span) =
+                        self.identifier("J1023", "expected authority slot name")?;
+                    self.expect(
+                        &TokenKind::Colon,
+                        "J1024",
+                        "expected `:` after authority slot name",
+                    )?;
+                    let (effect, effect_span) =
+                        self.identifier("J1025", "expected authority effect name")?;
+                    authorities.push(AuthorityParameter {
+                        name: authority_name,
+                        effect,
+                        span: authority_span.join(effect_span),
+                    });
+                    if self.consume(&TokenKind::Comma).is_none() {
+                        break;
+                    }
+                }
+            }
+            self.expect(
+                &TokenKind::RightBracket,
+                "J1026",
+                "expected `]` after authority slots",
+            )?;
+            Ok(Some(authorities))
+        } else {
+            Ok(None)
+        }
     }
 
     fn value_type(&mut self) -> Result<(Type, Span), Diagnostic> {
@@ -677,6 +727,14 @@ impl Parser {
         let start = self.advance().span;
         let (effect, _) = self.identifier("J1046", "expected requested effect name")?;
         let (arguments, call_span) = self.arguments()?;
+        let authority = if self.consume_contextual("using").is_some() {
+            Some(
+                self.identifier("J1048", "expected authority slot after `using`")?
+                    .0,
+            )
+        } else {
+            None
+        };
         let end = self
             .expect(
                 &TokenKind::Semicolon,
@@ -686,6 +744,7 @@ impl Parser {
             .span;
         Ok(Statement::Request {
             effect,
+            authority,
             arguments,
             span: start.join(call_span).join(end),
         })
@@ -964,7 +1023,18 @@ fn format_function(output: &mut String, function: &Function) {
         }
         output.push_str(effect);
     }
-    output.push_str("] {\n");
+    output.push(']');
+    if let Some(authorities) = &function.authorities {
+        output.push_str(" authorities [");
+        for (index, authority) in authorities.iter().enumerate() {
+            if index > 0 {
+                output.push_str(", ");
+            }
+            let _ = write!(output, "{}: {}", authority.name, authority.effect);
+        }
+        output.push(']');
+    }
+    output.push_str(" {\n");
     for statement in &function.body {
         output.push_str("  ");
         format_statement(output, statement);
@@ -994,11 +1064,18 @@ fn format_statement(output: &mut String, statement: &Statement) {
             output.push(';');
         }
         Statement::Request {
-            effect, arguments, ..
+            effect,
+            authority,
+            arguments,
+            ..
         } => {
             let _ = write!(output, "request {effect}(");
             format_arguments(output, arguments);
-            output.push_str(");");
+            output.push(')');
+            if let Some(authority) = authority {
+                let _ = write!(output, " using {authority}");
+            }
+            output.push(';');
         }
         Statement::Expression { expression, .. } => {
             format_expression(output, expression, 0);

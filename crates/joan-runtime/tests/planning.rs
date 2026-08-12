@@ -1,6 +1,6 @@
 //! One-use effect authority and atomic planning tests.
 
-use joan_compiler::execute_source;
+use joan_compiler::{Value, execute_source};
 use joan_instruction::{AuthorityEnvelope, AuthorityRoot, OneShotApproval};
 use joan_runtime::{CapabilityLedger, RuntimePlanError, plan_effects};
 use std::collections::BTreeSet;
@@ -39,6 +39,7 @@ fn authority(execution: &joan_compiler::ExecutionReceipt) -> AuthorityEnvelope {
                 nonce: request.request_id.clone(),
                 task_id: execution.semantic_digest.value.clone(),
                 capabilities: BTreeSet::from([request.effect.clone()]),
+                authority_slot: request.authority_slot.clone(),
             })
             .collect(),
     }
@@ -95,6 +96,92 @@ fn main() -> i64 effects [] { return 42; }
     let receipt = plan_effects(&execution, None, &mut ledger)?;
     assert_eq!(receipt.status, "pure");
     assert!(receipt.effects.is_empty());
+    assert!(ledger.is_empty());
+    Ok(())
+}
+
+#[test]
+fn linear_slot_must_match_the_exact_one_shot_approval() -> Result<(), Box<dyn std::error::Error>> {
+    let execution = execute_source(
+        r#"
+module linear;
+fn main() -> unit effects [api_call] authorities [provider_once: api_call] {
+  request api_call("provider-a") using provider_once;
+  return;
+}
+"#,
+    )?;
+    let mut exact = authority(&execution);
+    let mut ledger = CapabilityLedger::default();
+    let receipt = plan_effects(&execution, Some(&exact), &mut ledger)?;
+    assert_eq!(
+        receipt.effects[0].authority_slot.as_deref(),
+        Some("provider_once")
+    );
+
+    exact.approvals[0].authority_slot = Some("different_slot".to_owned());
+    let mut fresh_ledger = CapabilityLedger::default();
+    let Err(error) = plan_effects(&execution, Some(&exact), &mut fresh_ledger) else {
+        return Err("mismatched linear slot unexpectedly authorized".into());
+    };
+    assert!(matches!(error, RuntimePlanError::MissingApproval(_)));
+    assert!(fresh_ledger.is_empty());
+    Ok(())
+}
+
+#[test]
+fn linear_receipt_cannot_be_downgraded_before_planning() -> Result<(), Box<dyn std::error::Error>> {
+    let mut execution = execute_source(
+        r#"
+module linear;
+fn main() -> unit effects [api_call] authorities [provider_once: api_call] {
+  request api_call("provider-a") using provider_once;
+  return;
+}
+"#,
+    )?;
+    execution.effect_requests[0].authority_slot = None;
+    let authority = authority(&execution);
+    let mut ledger = CapabilityLedger::default();
+    let Err(error) = plan_effects(&execution, Some(&authority), &mut ledger) else {
+        return Err("downgraded linear receipt unexpectedly planned".into());
+    };
+    assert!(matches!(error, RuntimePlanError::ProfileMismatch));
+    assert!(ledger.is_empty());
+    Ok(())
+}
+
+#[test]
+fn linear_approval_is_bound_to_payload_and_request_order() -> Result<(), Box<dyn std::error::Error>>
+{
+    let original = execute_source(
+        r#"
+module linear;
+fn main() -> unit effects [api_call] authorities [first: api_call, second: api_call] {
+  request api_call("provider-a") using first;
+  request api_call("provider-b") using second;
+  return;
+}
+"#,
+    )?;
+    let authority = authority(&original);
+
+    let mut tampered_payload = original.clone();
+    tampered_payload.effect_requests[0].arguments[0] = Value::String("changed".to_owned());
+    let mut ledger = CapabilityLedger::default();
+    let Err(error) = plan_effects(&tampered_payload, Some(&authority), &mut ledger) else {
+        return Err("tampered linear payload unexpectedly planned".into());
+    };
+    assert!(matches!(error, RuntimePlanError::InvalidRequest(_)));
+    assert!(ledger.is_empty());
+
+    let mut reordered = original;
+    reordered.effect_requests.swap(0, 1);
+    let mut ledger = CapabilityLedger::default();
+    let Err(error) = plan_effects(&reordered, Some(&authority), &mut ledger) else {
+        return Err("reordered linear requests unexpectedly planned".into());
+    };
+    assert!(matches!(error, RuntimePlanError::InvalidRequest(_)));
     assert!(ledger.is_empty());
     Ok(())
 }

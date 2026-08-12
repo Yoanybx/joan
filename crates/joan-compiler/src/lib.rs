@@ -4,9 +4,16 @@ use joan_ast::{
     BinaryOperator, CanonicalExpression, CanonicalFunction, CanonicalStatement, DiagnosticReport,
     Program, UnaryOperator,
 };
-use joan_bytecode::{BYTECODE_PROGRAM_SCHEMA, BytecodeVerificationReceipt, verify_bytecode};
-pub use joan_bytecode::{BytecodeFunction, BytecodeProgram, Instruction, Value};
-use joan_canonical::{CanonicalError, Digest};
+use joan_bytecode::{
+    BYTECODE_PROGRAM_LINEAR_SCHEMA, BYTECODE_PROGRAM_SCHEMA, BytecodeVerificationReceipt,
+    verify_bytecode,
+};
+pub use joan_bytecode::{
+    BytecodeAuthoritySlot, BytecodeFunction, BytecodeProgram, Instruction, Value,
+};
+use joan_canonical::{
+    CanonicalError, Digest, Jce1Error, RegisteredDomainV1, digest_serializable_v1,
+};
 use joan_check::{CheckReceipt, check};
 use joan_identity::{
     CanonicalAstIdentity, EncodedCanonicalAst, IdentityError, encode_canonical_ast,
@@ -46,8 +53,21 @@ pub struct EffectRequest {
     pub function: String,
     /// Effect identifier.
     pub effect: String,
+    /// Linear authority slot moved into this request, when enabled.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authority_slot: Option<String>,
     /// Evaluated request arguments.
     pub arguments: Vec<Value>,
+}
+
+#[derive(Serialize)]
+struct LinearEffectRequestCore<'a> {
+    semantic_digest: &'a Digest,
+    request_index: u64,
+    function: &'a str,
+    effect: &'a str,
+    authority_slot: &'a str,
+    arguments: &'a [Value],
 }
 
 /// Deterministic execution receipt.
@@ -81,6 +101,9 @@ pub enum LanguageError {
     /// Canonical semantic identity failed.
     #[error("semantic identity failed: {0}")]
     Canonical(#[from] CanonicalError),
+    /// Typed JCE1 request identity failed.
+    #[error("typed identity failed: {0}")]
+    Jce1(#[from] Jce1Error),
     /// Canonical AST identity construction failed.
     #[error("semantic identity failed: {0}")]
     Identity(#[from] IdentityError),
@@ -121,7 +144,12 @@ pub fn compile_source(source: &str) -> Result<CompileArtifact, LanguageError> {
     let bytecode = compile_program(&program)?;
     let verification = verify_bytecode(&bytecode)?;
     Ok(CompileArtifact {
-        schema: "joan.compile-artifact.v1".to_owned(),
+        schema: if bytecode.schema == BYTECODE_PROGRAM_LINEAR_SCHEMA {
+            "joan.compile-artifact.v2"
+        } else {
+            "joan.compile-artifact.v1"
+        }
+        .to_owned(),
         status: "compiled".to_owned(),
         check: receipt,
         verification,
@@ -154,7 +182,12 @@ pub fn execute_bytecode(
     };
     let result = machine.call(program.entry_function, Vec::new(), 0)?;
     Ok(ExecutionReceipt {
-        schema: "joan.execution-receipt.v1".to_owned(),
+        schema: if program.schema == BYTECODE_PROGRAM_LINEAR_SCHEMA {
+            "joan.execution-receipt.v2"
+        } else {
+            "joan.execution-receipt.v1"
+        }
+        .to_owned(),
         status: "completed".to_owned(),
         semantic_digest: program.semantic_digest.clone(),
         semantic_identity: program.semantic_identity.clone(),
@@ -183,7 +216,12 @@ fn compile_program(program: &Program) -> Result<BytecodeProgram, LanguageError> 
         .collect::<Result<Vec<_>, _>>()?;
     let semantic_ast = encode_canonical_ast(&canonical_ast)?;
     Ok(BytecodeProgram {
-        schema: BYTECODE_PROGRAM_SCHEMA.to_owned(),
+        schema: if canonical_ast.is_linear() {
+            BYTECODE_PROGRAM_LINEAR_SCHEMA
+        } else {
+            BYTECODE_PROGRAM_SCHEMA
+        }
+        .to_owned(),
         module: canonical_ast.module.clone(),
         semantic_digest: semantic_ast.identity.digest.clone(),
         semantic_identity: semantic_ast.identity,
@@ -235,12 +273,17 @@ fn compile_function(
                 }
                 instructions.push(Instruction::Return);
             }
-            CanonicalStatement::Request { effect, arguments } => {
+            CanonicalStatement::Request {
+                effect,
+                authority,
+                arguments,
+            } => {
                 for argument in arguments {
                     compile_expression(argument, &locals, function_indexes, &mut instructions)?;
                 }
                 instructions.push(Instruction::Request {
                     effect: effect.clone(),
+                    authority: authority.clone(),
                     argument_count: arguments.len(),
                 });
             }
@@ -258,6 +301,15 @@ fn compile_function(
         local_types,
         return_type: function.return_type.clone(),
         effects: function.effects.clone(),
+        authority_slots: function.authorities.as_ref().map(|authorities| {
+            authorities
+                .iter()
+                .map(|authority| BytecodeAuthoritySlot {
+                    name: authority.name.clone(),
+                    effect: authority.effect.clone(),
+                })
+                .collect()
+        }),
         instructions,
     })
 }
@@ -441,20 +493,43 @@ impl Machine<'_> {
                 }
                 Instruction::Request {
                     effect,
+                    authority,
                     argument_count,
                 } => {
                     let arguments = pop_arguments(&mut stack, *argument_count)?;
                     let request_index = u64::try_from(self.requests.len()).map_err(|_| {
                         LanguageError::Runtime("effect request count exceeds u64".to_owned())
                     })?;
-                    self.requests.push(EffectRequest {
-                        request_index,
-                        request_id: format!(
+                    let request_id = if self.program.schema == BYTECODE_PROGRAM_LINEAR_SCHEMA {
+                        let authority_slot = authority.as_deref().ok_or_else(|| {
+                            LanguageError::Runtime(
+                                "verified linear request has no authority slot".to_owned(),
+                            )
+                        })?;
+                        digest_serializable_v1(
+                            RegisteredDomainV1::EffectApplication,
+                            &LinearEffectRequestCore {
+                                semantic_digest: &self.program.semantic_digest,
+                                request_index,
+                                function: &function.name,
+                                effect,
+                                authority_slot,
+                                arguments: &arguments,
+                            },
+                        )?
+                        .value
+                    } else {
+                        format!(
                             "{}:{request_index:016x}",
                             self.program.semantic_digest.value
-                        ),
+                        )
+                    };
+                    self.requests.push(EffectRequest {
+                        request_index,
+                        request_id,
                         function: function.name.clone(),
                         effect: effect.clone(),
+                        authority_slot: authority.clone(),
                         arguments,
                     });
                 }

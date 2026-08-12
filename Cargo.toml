@@ -8,6 +8,7 @@ members = [
   "crates/joan-conformance",
   "crates/joan-identity",
   "crates/joan-patch",
+  "crates/joan-package",
   "crates/joan-runtime",
   "crates/joan-guardian",
   "crates/joan-instruction",

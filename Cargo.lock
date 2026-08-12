@@ -516,10 +516,23 @@ dependencies = [
  "joan-guardian",
  "joan-identity",
  "joan-instruction",
+ "joan-package",
  "joan-patch",
  "joan-sim",
  "joan-syntax",
  "jsonschema",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "joan-package"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "joan-canonical",
+ "joan-syntax",
  "serde",
  "serde_json",
  "tempfile",

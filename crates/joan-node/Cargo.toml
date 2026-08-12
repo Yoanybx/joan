@@ -20,6 +20,7 @@ joan-guardian = { path = "../joan-guardian" }
 joan-identity = { path = "../joan-identity" }
 joan-instruction = { path = "../joan-instruction" }
 joan-patch = { path = "../joan-patch" }
+joan-package = { path = "../joan-package" }
 joan-sim = { path = "../joan-sim" }
 joan-syntax = { path = "../joan-syntax" }
 serde.workspace = true

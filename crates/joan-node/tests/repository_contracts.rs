@@ -1,7 +1,12 @@
 //! Repository-level machine contract and founder-attribution tests.
 
 use joan_canonical::parse_strict;
+use joan_canonical::{RegisteredDomainV1, digest_bytes_v1};
 use joan_compiler::canonicalize_source_ast;
+use joan_package::{
+    PACKAGE_MANIFEST_SCHEMA, PackageCoordinate, PackageManifest, PackageModule, encode_manifest,
+    resolve_package,
+};
 use serde_json::Value;
 use std::fs;
 use std::io::Write as _;
@@ -99,6 +104,45 @@ fn main() -> i64 effects [audit] {
     if let Err(error) = validator.validate(&instance) {
         return Err(format!("compiler canonical AST does not match its schema: {error}").into());
     }
+    Ok(())
+}
+
+#[test]
+fn package_manifest_and_receipt_match_their_schemas() -> Result<(), Box<dyn std::error::Error>> {
+    let directory = tempfile::tempdir()?;
+    let store = directory.path();
+    let source = b"module contract;\nfn main() -> i64 effects [] {\n  return 1;\n}\n";
+    let source_digest = digest_bytes_v1(RegisteredDomainV1::Source, source)?;
+    let source_path = store
+        .join("sources")
+        .join("sha256")
+        .join(format!("{}.joan", source_digest.value));
+    fs::create_dir_all(source_path.parent().ok_or("source path has no parent")?)?;
+    fs::write(source_path, source)?;
+    let encoded = encode_manifest(&PackageManifest {
+        schema: PACKAGE_MANIFEST_SCHEMA.to_owned(),
+        package: PackageCoordinate {
+            namespace: "org.ledaction.joan".to_owned(),
+            name: "contract".to_owned(),
+            edition: "alpha-1".to_owned(),
+        },
+        root_module: "contract".to_owned(),
+        modules: vec![PackageModule {
+            module: "contract".to_owned(),
+            path: "src/contract.joan".to_owned(),
+            source_digest,
+        }],
+        dependencies: vec![],
+    })?;
+    let receipt = resolve_package(&encoded.bytes, store)?;
+    validate_instance(
+        &serde_json::from_slice(&encoded.bytes)?,
+        "schemas/package-manifest.v0.schema.json",
+    )?;
+    validate_instance(
+        &serde_json::to_value(receipt)?,
+        "schemas/package-resolution-receipt.v0.schema.json",
+    )?;
     Ok(())
 }
 
@@ -244,6 +288,18 @@ fn manifest_schema_pairs() -> [(&'static str, &'static str); 9] {
 
 fn read_json(path: &Path) -> Result<Value, Box<dyn std::error::Error>> {
     Ok(serde_json::from_str(&fs::read_to_string(path)?)?)
+}
+
+fn validate_instance(
+    instance: &Value,
+    schema_path: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let schema = read_json(&workspace_root().join(schema_path))?;
+    let validator = jsonschema::draft202012::options().build(&schema)?;
+    if let Err(error) = validator.validate(instance) {
+        return Err(format!("instance does not match {schema_path}: {error}").into());
+    }
+    Ok(())
 }
 
 fn source_snapshot(root: &Path) -> Result<Value, Box<dyn std::error::Error>> {

@@ -2,14 +2,14 @@
   "schema": "joan.evidence-index.v2",
   "version": "0.1.0-alpha.1",
   "status": "local-verification-passed-with-receipts",
-  "generated_at": "2026-08-12T07:11:03.890Z",
+  "generated_at": "2026-08-12T08:54:47.326Z",
   "source": {
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "c29142c41a21854d8748fa60a377eae3d8a368c82479689f59396eec3b4be1ea"
+      "value": "b5d2f41b1d29a9ecddc3809b24e050760664c080c68514d569a2819d7a685d83"
     },
-    "file_count": 180,
+    "file_count": 188,
     "excludes": [
       ".git",
       "target",
@@ -19,9 +19,9 @@
     ]
   },
   "inventory": {
-    "workspace_crates": 18,
-    "json_schemas": 38,
-    "rust_tests": 117
+    "workspace_crates": 19,
+    "json_schemas": 40,
+    "rust_tests": 131
   },
   "conformance": {
     "jce1": {
@@ -56,7 +56,7 @@
   "supply_chain": {
     "cargo_audit": {
       "advisory_database_commit": "d0861df1eab469d3c58d6b836ce48b5766e5f217",
-      "dependency_count": 151,
+      "dependency_count": 152,
       "status": "passed",
       "tool_version": "cargo-audit 0.22.2",
       "vulnerabilities_found": 0
@@ -96,35 +96,35 @@
     "runs": [
       {
         "ordinal": 1,
-        "run_id": "e663ae3a-3616-4714-bbfa-2ec9d917bbae",
+        "run_id": "c8f34fdd-f4ef-4e85-a6a0-995f0bba45e3",
         "path": ".joan/evidence/runs/run-1.json",
-        "file_sha256": "b95f022f48b94a5e50c562d0b4bdb6822abbac7caa5e1400bba2abedd42293fd",
+        "file_sha256": "0a5d9fdf9861f2cb72a241ed029752c7955660eda7347e6f589b40311d00ec07",
         "status": "passed",
-        "started_at": "2026-08-12T06:59:21.590Z",
-        "completed_at": "2026-08-12T07:02:43.791Z",
-        "source_digest": "c29142c41a21854d8748fa60a377eae3d8a368c82479689f59396eec3b4be1ea",
+        "started_at": "2026-08-12T08:35:57.784Z",
+        "completed_at": "2026-08-12T08:41:49.831Z",
+        "source_digest": "b5d2f41b1d29a9ecddc3809b24e050760664c080c68514d569a2819d7a685d83",
         "gate_count": 10
       },
       {
         "ordinal": 2,
-        "run_id": "d35fbc73-d2d6-4b8a-9019-adcb288493d3",
+        "run_id": "236130e4-784a-43d2-a0dd-0d101dfadbb7",
         "path": ".joan/evidence/runs/run-2.json",
-        "file_sha256": "abf00eed6d24e848436ef5cb3d1555bf8895fbd7d065df8c9a0e9a9becf3e12d",
+        "file_sha256": "b4446e3f45b3c448b1397450e181022d964d0ac5cd8c2718130daa4d2985e995",
         "status": "passed",
-        "started_at": "2026-08-12T07:03:14.424Z",
-        "completed_at": "2026-08-12T07:06:02.490Z",
-        "source_digest": "c29142c41a21854d8748fa60a377eae3d8a368c82479689f59396eec3b4be1ea",
+        "started_at": "2026-08-12T08:42:57.807Z",
+        "completed_at": "2026-08-12T08:48:32.363Z",
+        "source_digest": "b5d2f41b1d29a9ecddc3809b24e050760664c080c68514d569a2819d7a685d83",
         "gate_count": 10
       },
       {
         "ordinal": 3,
-        "run_id": "9b29bfba-e623-4bd9-8d41-d6a0e830fb64",
+        "run_id": "4bf2c0d5-d571-40b4-8e35-6bcb07adb584",
         "path": ".joan/evidence/runs/run-3.json",
-        "file_sha256": "7cecefaee81d3e84fff97b49d2f593d63c3ac838cdbc91af26937a4aeb0cf03c",
+        "file_sha256": "f5d7baaac54bd477ff77b7a4340f7c5372e4a302c4bfa12839c162a219934491",
         "status": "passed",
-        "started_at": "2026-08-12T07:06:22.372Z",
-        "completed_at": "2026-08-12T07:10:04.130Z",
-        "source_digest": "c29142c41a21854d8748fa60a377eae3d8a368c82479689f59396eec3b4be1ea",
+        "started_at": "2026-08-12T08:49:45.008Z",
+        "completed_at": "2026-08-12T08:54:11.689Z",
+        "source_digest": "b5d2f41b1d29a9ecddc3809b24e050760664c080c68514d569a2819d7a685d83",
         "gate_count": 10
       }
     ],

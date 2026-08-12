@@ -111,7 +111,8 @@ Not implemented in v0:
 - native AOT/JIT code generation, LLVM, Cranelift, Wasm, or C backends;
 - linear capability values and host authorization consumption;
 - arrays, records, variants, generics, modules across files, loops, or recursion;
-- package manager, standard library, LSP, debugger, optimizer, or stable ABI;
+- networked package manager, standard library, LSP, debugger, optimizer, or stable ABI;
+- cross-file imports (the separate offline package resolver verifies exact source graphs but does not link them yet);
 - JOAN Lattice transport, distributed execution, payments, or a global network.
 
 ## Claim boundary

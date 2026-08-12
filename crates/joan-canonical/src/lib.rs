@@ -88,6 +88,8 @@ pub enum RegisteredDomainV1 {
     ConformanceVector,
     /// Source-byte identity.
     Source,
+    /// Canonical package-manifest identity.
+    PackageManifest,
     /// Dispute case identity.
     DisputeCase,
     /// Dispute claim identity.
@@ -117,6 +119,7 @@ impl RegisteredDomainV1 {
             Self::LanguageCanonicalAst => "joan.language-canonical-ast.v1",
             Self::ConformanceVector => "joan.conformance-vector.v1",
             Self::Source => "joan.source.v1",
+            Self::PackageManifest => "joan.package-manifest.v1",
             Self::DisputeCase => "joan.dispute-case.v1",
             Self::DisputeClaim => "joan.dispute-claim.v1",
             Self::ResolutionProfile => "joan.resolution-profile.v1",
@@ -136,6 +139,7 @@ impl RegisteredDomainV1 {
             "joan.language-canonical-ast.v1" => Self::LanguageCanonicalAst,
             "joan.conformance-vector.v1" => Self::ConformanceVector,
             "joan.source.v1" => Self::Source,
+            "joan.package-manifest.v1" => Self::PackageManifest,
             "joan.dispute-case.v1" => Self::DisputeCase,
             "joan.dispute-claim.v1" => Self::DisputeClaim,
             "joan.resolution-profile.v1" => Self::ResolutionProfile,

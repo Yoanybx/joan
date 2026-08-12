@@ -4,6 +4,11 @@ use std::fs;
 use std::process::Command;
 use tempfile::tempdir;
 
+use joan_canonical::{RegisteredDomainV1, digest_bytes_v1};
+use joan_package::{
+    PACKAGE_MANIFEST_SCHEMA, PackageCoordinate, PackageManifest, PackageModule, encode_manifest,
+};
+
 #[test]
 fn self_check_reports_founder_and_passes() -> Result<(), Box<dyn std::error::Error>> {
     let output = Command::new(env!("CARGO_BIN_EXE_joan"))
@@ -162,5 +167,72 @@ fn language_diagnostics_are_machine_readable() -> Result<(), Box<dyn std::error:
     let stdout = String::from_utf8(output.stdout)?;
     assert!(stdout.contains(r#""schema":"joan.diagnostic-report.v0""#));
     assert!(stdout.contains(r#""code":"J2035""#));
+    Ok(())
+}
+
+#[test]
+fn package_resolution_is_available_offline_to_agents() -> Result<(), Box<dyn std::error::Error>> {
+    let directory = tempdir()?;
+    let store = directory.path().join("store");
+    let source = b"module app;\nfn main() -> i64 effects [] {\n  return 42;\n}\n";
+    let source_digest = digest_bytes_v1(RegisteredDomainV1::Source, source)?;
+    let source_path = store
+        .join("sources")
+        .join("sha256")
+        .join(format!("{}.joan", source_digest.value));
+    fs::create_dir_all(source_path.parent().ok_or("source path has no parent")?)?;
+    fs::write(source_path, source)?;
+    let manifest = encode_manifest(&PackageManifest {
+        schema: PACKAGE_MANIFEST_SCHEMA.to_owned(),
+        package: PackageCoordinate {
+            namespace: "org.ledaction.joan".to_owned(),
+            name: "agent-app".to_owned(),
+            edition: "alpha-1".to_owned(),
+        },
+        root_module: "app".to_owned(),
+        modules: vec![PackageModule {
+            module: "app".to_owned(),
+            path: "src/app.joan".to_owned(),
+            source_digest,
+        }],
+        dependencies: vec![],
+    })?;
+    let manifest_path = directory.path().join("package.joan.json");
+    fs::write(&manifest_path, manifest.bytes)?;
+
+    let output = Command::new(env!("CARGO_BIN_EXE_joan"))
+        .arg("package")
+        .arg("resolve")
+        .arg(manifest_path)
+        .arg("--store")
+        .arg(store)
+        .arg("--json")
+        .output()?;
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout)?;
+    assert!(stdout.contains(r#""schema":"joan.package-resolution-receipt.v0""#));
+    assert!(stdout.contains(r#""network_policy":"denied-no-network-client""#));
+    assert!(stdout.contains(r#""module_count":1"#));
+    Ok(())
+}
+
+#[test]
+fn package_resolution_rejects_oversized_root_before_decode()
+-> Result<(), Box<dyn std::error::Error>> {
+    let directory = tempdir()?;
+    let manifest = directory.path().join("oversized.json");
+    let store = directory.path().join("store");
+    fs::create_dir(&store)?;
+    fs::write(&manifest, vec![b' '; 1_048_578])?;
+    let output = Command::new(env!("CARGO_BIN_EXE_joan"))
+        .arg("package")
+        .arg("resolve")
+        .arg(manifest)
+        .arg("--store")
+        .arg(store)
+        .arg("--json")
+        .output()?;
+    assert!(!output.status.success());
+    assert!(String::from_utf8(output.stderr)?.contains("1048577 byte limit"));
     Ok(())
 }

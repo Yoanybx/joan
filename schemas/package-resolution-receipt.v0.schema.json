@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/package-resolution-receipt.v0.schema.json",
+  "title": "JOAN Package Resolution Receipt v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "resolver", "network_policy", "store_mode", "root_manifest_digest", "packages", "source_digests", "module_count", "total_source_bytes"],
+  "properties": {
+    "schema": {"const": "joan.package-resolution-receipt.v0"},
+    "status": {"const": "resolved"},
+    "resolver": {"const": "joan-content-addressed-offline-v0"},
+    "network_policy": {"const": "denied-no-network-client"},
+    "store_mode": {"const": "read-only"},
+    "root_manifest_digest": {"$ref": "#/$defs/manifestDigest"},
+    "packages": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["package", "manifest_digest"],
+        "properties": {
+          "package": {"$ref": "#/$defs/coordinate"},
+          "manifest_digest": {"$ref": "#/$defs/manifestDigest"}
+        }
+      }
+    },
+    "source_digests": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4096,
+      "items": {"$ref": "#/$defs/sourceDigest"}
+    },
+    "module_count": {"type": "integer", "minimum": 1, "maximum": 4096},
+    "total_source_bytes": {"type": "integer", "minimum": 1, "maximum": 67108864}
+  },
+  "$defs": {
+    "coordinate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["namespace", "name", "edition"],
+      "properties": {
+        "namespace": {"type": "string", "minLength": 1, "maxLength": 255, "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)*$"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z][a-z0-9-]*$"},
+        "edition": {"type": "string", "minLength": 1, "maxLength": 32, "pattern": "^[a-z0-9][a-z0-9.-]*$"}
+      }
+    },
+    "sourceDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "profile", "domain", "value"],
+      "properties": {
+        "algorithm": {"const": "sha256"},
+        "profile": {"const": "joan-hash-v1"},
+        "domain": {"const": "joan.source.v1"},
+        "value": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "manifestDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "profile", "domain", "value"],
+      "properties": {
+        "algorithm": {"const": "sha256"},
+        "profile": {"const": "joan-hash-v1"},
+        "domain": {"const": "joan.package-manifest.v1"},
+        "value": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    }
+  }
+}

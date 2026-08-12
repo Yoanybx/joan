@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/package-manifest.v0.schema.json",
+  "title": "JOAN Package Manifest v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "package", "root_module", "modules", "dependencies"],
+  "properties": {
+    "schema": {"const": "joan.package-manifest.v0"},
+    "package": {"$ref": "#/$defs/coordinate"},
+    "root_module": {"$ref": "#/$defs/moduleName"},
+    "modules": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {"$ref": "#/$defs/module"}
+    },
+    "dependencies": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {"$ref": "#/$defs/dependency"}
+    }
+  },
+  "$defs": {
+    "coordinate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["namespace", "name", "edition"],
+      "properties": {
+        "namespace": {"type": "string", "minLength": 1, "maxLength": 255, "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)*$"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z][a-z0-9-]*$"},
+        "edition": {"type": "string", "minLength": 1, "maxLength": 32, "pattern": "^[a-z0-9][a-z0-9.-]*$"}
+      }
+    },
+    "moduleName": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
+    "sourceDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "profile", "domain", "value"],
+      "properties": {
+        "algorithm": {"const": "sha256"},
+        "profile": {"const": "joan-hash-v1"},
+        "domain": {"const": "joan.source.v1"},
+        "value": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "manifestDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "profile", "domain", "value"],
+      "properties": {
+        "algorithm": {"const": "sha256"},
+        "profile": {"const": "joan-hash-v1"},
+        "domain": {"const": "joan.package-manifest.v1"},
+        "value": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["module", "path", "source_digest"],
+      "properties": {
+        "module": {"$ref": "#/$defs/moduleName"},
+        "path": {"type": "string", "minLength": 6, "maxLength": 1024, "pattern": "^[A-Za-z0-9_./-]+\\.joan$"},
+        "source_digest": {"$ref": "#/$defs/sourceDigest"}
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alias", "manifest_digest"],
+      "properties": {
+        "alias": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z][a-z0-9_-]*$"},
+        "manifest_digest": {"$ref": "#/$defs/manifestDigest"}
+      }
+    }
+  }
+}

@@ -96,6 +96,13 @@ fn language_canonical_ast_domain_is_registered() -> Result<(), Box<dyn std::erro
 }
 
 #[test]
+fn package_manifest_domain_is_registered() -> Result<(), Box<dyn std::error::Error>> {
+    let domain = RegisteredDomainV1::parse("joan.package-manifest.v1")?;
+    assert_eq!(domain, RegisteredDomainV1::PackageManifest);
+    Ok(())
+}
+
+#[test]
 fn typed_digest_rejects_profile_domain_and_payload_substitution()
 -> Result<(), Box<dyn std::error::Error>> {
     let payload = b"JOAN JCE1 fixed payload";

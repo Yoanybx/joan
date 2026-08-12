@@ -18,10 +18,7 @@ negative_corpus="$work/negative-corpus.json"
 negative_report="$work/negative-report.json"
 trap 'rm -rf "$work"' EXIT
 
-if rg -n 'from "\.\./(crates|target)|node:(net|http|https|tls|dgram)' reference/joan-ref.mjs; then
-  printf '%s\n' 'independent reference imports implementation or network modules' >&2
-  exit 1
-fi
+bash scripts/verify-differential-reference-preflight.sh
 
 cargo build --quiet --locked -p joan-node
 

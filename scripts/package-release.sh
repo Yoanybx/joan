@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root"
 
 if [[ "$#" -ne 3 ]]; then
   printf '%s\n' 'usage: scripts/package-release.sh <tag> <target> <output-directory>' >&2
@@ -11,7 +12,11 @@ fi
 tag="$1"
 target="$2"
 output_directory="$3"
-binary="target/$target/release/joan"
+target_dir="${CARGO_TARGET_DIR:-target}"
+if [[ "$target_dir" != /* ]]; then
+  target_dir="$root/$target_dir"
+fi
+binary="$target_dir/$target/release/joan"
 
 if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][A-Za-z0-9.-]+)?$ ]]; then
   printf 'invalid release tag: %s\n' "$tag" >&2

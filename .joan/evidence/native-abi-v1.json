@@ -1,0 +1,81 @@
+{
+  "schema": "joan.native-abi-report.v1",
+  "status": "passed",
+  "abi_version": 1,
+  "binding_size": 64,
+  "lattice_view_size": 224,
+  "max_buffer_len": 16777216,
+  "case_count": 129,
+  "passed": 129,
+  "mutation_count": 4096,
+  "mutation_seed": "0x4a4f414e4c313500",
+  "mutation_outcome_fnv1a64": "d120450fbdea01cb",
+  "payload_zero_copy": true,
+  "asserted_semantic_binding_preserved": true,
+  "verified_rust_binding_profiles": 3,
+  "sanitizers": "passed",
+  "target": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "pointer_width": 64
+  },
+  "source": {
+    "tree_digest": {
+      "algorithm": "sha256",
+      "profile": "joan-source-tree-v2",
+      "value": "fe9a939bd49cf0f4be430514ea533d21662fd6ad8aafe16472da73d852e68ee9"
+    },
+    "file_count": 270,
+    "excludes": [
+      ".git",
+      "target",
+      ".joan/evidence",
+      "**/.DS_Store",
+      "**/._*"
+    ]
+  },
+  "artifacts": {
+    "header_sha256": "04456c8a0d8df39771b12a8e6a6d242a51d802eb51b0a80ddc9feae3593fbd58",
+    "c_corpus_sha256": "ecd2795864670fa838dd5a0cd10c7b7d1fdbe7bd296b4635d22d5a17fbd42244",
+    "rust_api_sha256": "a438fef251ecb591c53927cede70ab9e6d7537d7b17275d77218ff090c814e89",
+    "gate_files_sha256": "dd1192739fc468ee2c76575bafa1f2dcad84ada9e82ab9fb76322b408092b5d4",
+    "library_sha256": "f0c0da9c74e867f98f396edbba9a21e6254cc44fc2ac3c477a73a0dfe406b7ca",
+    "tools": [
+      {
+        "id": "c-compiler",
+        "version": "Apple clang version 14.0.3 (clang-1403.0.22.14.1)\nTarget: arm64-apple-darwin22.6.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+        "sha256": "60e0dc56bdd6e58d00830d2947f5e7dcaab7bfabbca0fdac83a7e4a9a0e32459"
+      },
+      {
+        "id": "cpp-compiler",
+        "version": "Apple clang version 14.0.3 (clang-1403.0.22.14.1)\nTarget: arm64-apple-darwin22.6.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+        "sha256": "60e0dc56bdd6e58d00830d2947f5e7dcaab7bfabbca0fdac83a7e4a9a0e32459"
+      },
+      {
+        "id": "cargo",
+        "version": "cargo 1.94.1 (29ea6fb6a 2026-03-24)\nrelease: 1.94.1\ncommit-hash: 29ea6fb6a5db279426f4cc4e17aa385f05a0cfbc\ncommit-date: 2026-03-24\nhost: aarch64-apple-darwin\nlibgit2: 1.9.2 (sys:0.20.3 vendored)\nlibcurl: 8.1.2 (sys:0.4.83+curl-8.15.0 system ssl:(SecureTransport) LibreSSL/3.3.6)\nssl: OpenSSL 3.5.4 30 Sep 2025\nos: Mac OS 13.5.0 [64-bit]",
+        "sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1"
+      },
+      {
+        "id": "nm",
+        "version": "llvm-nm, compatible with GNU nm\nApple LLVM version 14.0.3 (clang-1403.0.22.14.1)\n  Optimized build.\n  Default target: arm64-apple-darwin22.6.0\n  Host CPU: apple-m1",
+        "sha256": "60e0dc56bdd6e58d00830d2947f5e7dcaab7bfabbca0fdac83a7e4a9a0e32459"
+      },
+      {
+        "id": "node",
+        "version": "v24.19.0",
+        "sha256": "27db838bb204ef7c21df2931f5656e4c8fb32e6e947f363a402b49714d32b5b1"
+      },
+      {
+        "id": "rg",
+        "version": "ripgrep 15.2.0 (rev e89fff89ac)\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+        "sha256": "243d3d8fe176bfc3268bfd70311b60a7e0be4158e73f301c1efadbd3271cdcc0"
+      },
+      {
+        "id": "rustc",
+        "version": "rustc 1.94.1 (e408947bf 2026-03-25)\nbinary: rustc\ncommit-hash: e408947bfd200af42db322daf0fadfe7e26d3bd1\ncommit-date: 2026-03-25\nhost: aarch64-apple-darwin\nrelease: 1.94.1\nLLVM version: 21.1.8",
+        "sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1"
+      }
+    ]
+  }
+}

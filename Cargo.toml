@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
   "crates/joan-ast",
+  "crates/joan-abi",
   "crates/joan-canonical",
   "crates/joan-check",
   "crates/joan-bytecode",

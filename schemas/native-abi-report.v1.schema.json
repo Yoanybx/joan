@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/native-abi-report.v1.schema.json",
+  "title": "JOAN Native ABI Verification Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "abi_version",
+    "artifacts",
+    "binding_size",
+    "case_count",
+    "lattice_view_size",
+    "max_buffer_len",
+    "mutation_count",
+    "mutation_outcome_fnv1a64",
+    "mutation_seed",
+    "passed",
+    "payload_zero_copy",
+    "sanitizers",
+    "schema",
+    "asserted_semantic_binding_preserved",
+    "source",
+    "status",
+    "target",
+    "verified_rust_binding_profiles"
+  ],
+  "properties": {
+    "abi_version": {"const": 1},
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["c_corpus_sha256", "gate_files_sha256", "header_sha256", "library_sha256", "rust_api_sha256", "tools"],
+      "properties": {
+        "c_corpus_sha256": {"$ref": "#/$defs/sha256"},
+        "gate_files_sha256": {"$ref": "#/$defs/sha256"},
+        "header_sha256": {"$ref": "#/$defs/sha256"},
+        "library_sha256": {"$ref": "#/$defs/sha256"},
+        "rust_api_sha256": {"$ref": "#/$defs/sha256"},
+        "tools": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {"$ref": "#/$defs/tool"}
+        }
+      }
+    },
+    "binding_size": {"const": 64},
+    "case_count": {"type": "integer", "minimum": 120},
+    "lattice_view_size": {"const": 224},
+    "max_buffer_len": {"const": 16777216},
+    "mutation_count": {"const": 4096},
+    "mutation_outcome_fnv1a64": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+    "mutation_seed": {"const": "0x4a4f414e4c313500"},
+    "passed": {"type": "integer", "minimum": 120},
+    "payload_zero_copy": {"const": true},
+    "sanitizers": {"enum": ["passed", "unavailable"]},
+    "schema": {"const": "joan.native-abi-report.v1"},
+    "asserted_semantic_binding_preserved": {"const": true},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["excludes", "file_count", "tree_digest"],
+      "properties": {
+        "excludes": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "file_count": {"type": "integer", "minimum": 1},
+        "tree_digest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "profile", "value"],
+          "properties": {
+            "algorithm": {"const": "sha256"},
+            "profile": {"const": "joan-source-tree-v2"},
+            "value": {"$ref": "#/$defs/sha256"}
+          }
+        }
+      }
+    },
+    "status": {"const": "passed"},
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["arch", "platform", "pointer_width"],
+      "properties": {
+        "arch": {"type": "string", "minLength": 1},
+        "platform": {"enum": ["darwin", "linux"]},
+        "pointer_width": {"const": 64}
+      }
+    },
+    "verified_rust_binding_profiles": {"const": 3}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sha256", "version"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "version": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

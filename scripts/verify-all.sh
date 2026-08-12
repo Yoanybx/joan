@@ -22,6 +22,9 @@ printf '%s\n' '==> differential language parser/checker'
 bash scripts/test-differential-reference-preflight.sh
 bash scripts/verify-differential-language.sh
 
+printf '%s\n' '==> native C ABI and zero-copy borrowed payloads'
+bash scripts/verify-native-abi.sh
+
 printf '%s\n' '==> AI-agent language scorecard'
 bash scripts/verify-agent-scorecard.sh
 

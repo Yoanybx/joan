@@ -26,6 +26,7 @@ cargo run -p joan-node -- trust pr evaluate . --base HEAD^ --head HEAD --json
 ./scripts/verify-jce1.sh
 ./scripts/benchmark-digest.sh 4096 5000
 ./scripts/verify-agent-scorecard.sh
+./scripts/verify-native-abi.sh
 ./scripts/verify-payment-cost.sh
 ./scripts/verify-all.sh
 ```
@@ -47,6 +48,7 @@ The inspection command is designed to be offline and read-only. It reads only al
 - `joan-guardian`: deterministic one-host logical guardian gates and receipts.
 - `joan-instruction`: typed authority attenuation, instruction decisions and safe repository discovery.
 - `joan-lattice`: bounded canonical M2M frame codec with borrowed payload views.
+- `joan-abi`: 64-bit C ABI for bounded payload-zero-copy Lattice validation and typed semantic binding.
 - `joan-runtime`: external-authority effect planning with atomic one-use approval consumption.
 - `joan-case`: content-addressed automatic dispute lifecycle.
 - `joan-evidence`: immutable-at-lock evidence graph.
@@ -79,6 +81,13 @@ Payment-cost evidence follows [spec/payment-cost-proof-v0.md](spec/payment-cost-
 Machine evidence follows [spec/source-tree-evidence-v2.md](spec/source-tree-evidence-v2.md); [v1](spec/source-tree-evidence-v1.md) remains frozen for historical receipts. A passing index is derived from three complete local execution receipts and binds JCE1 and the language preview to the exact source tree, normative specifications and executable gates. This is reproducible local evidence, not independent attestation.
 
 Run `scripts/verify-differential-language.sh` to compare the Rust parser/checker with the dependency-free Node.js reference over 44 frozen cases and 32 deterministic mutations. A 76/76 pass reduces implementation-correlated risk but is not an external audit or a performance claim.
+
+The experimental native boundary in `include/joan.h` exposes fixed-width C/C++
+layouts and relative Lattice spans without retaining input pointers. It is a
+validated interoperability boundary, not a native JOAN backend or a claim of
+speed superiority. Its source-bound local receipt is retained at
+`.joan/evidence/native-abi-v1.json`. See
+[spec/native-abi-v1.md](spec/native-abi-v1.md).
 
 ## License and commercial authority
 

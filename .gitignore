@@ -2,4 +2,5 @@
 *.profraw
 *.profdata
 .DS_Store
+._*
 /.joan/evidence/local/

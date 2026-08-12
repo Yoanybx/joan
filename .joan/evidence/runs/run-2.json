@@ -1,15 +1,15 @@
 {
   "schema": "joan.verification-run-receipt.v1",
   "version": "0.1.0-alpha.1",
-  "run_id": "853f5bfb-7477-4464-8dce-674b82799421",
+  "run_id": "c818f691-8fef-4658-8c92-7784f9918cef",
   "status": "passed",
-  "started_at": "2026-08-12T05:41:06.868Z",
-  "completed_at": "2026-08-12T05:44:22.966Z",
+  "started_at": "2026-08-12T05:54:23.226Z",
+  "completed_at": "2026-08-12T05:57:26.248Z",
   "source": {
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "ad78a5741836e4bb02b708584cb98c17a3ce6335fb376c7004bbbfd3317374fc"
+      "value": "481fd5b77ccc357c8d39398b706806a8a310c6544bbc23df85883071316e2134"
     },
     "file_count": 177,
     "excludes": [
@@ -68,9 +68,9 @@
       ],
       "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
       "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-12T05:41:06.871Z",
-      "completed_at": "2026-08-12T05:41:06.991Z",
-      "duration_ms": 119,
+      "started_at": "2026-08-12T05:54:23.230Z",
+      "completed_at": "2026-08-12T05:54:23.383Z",
+      "duration_ms": 153,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -98,9 +98,9 @@
       ],
       "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
       "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-12T05:41:06.998Z",
-      "completed_at": "2026-08-12T05:41:38.022Z",
-      "duration_ms": 31024,
+      "started_at": "2026-08-12T05:54:23.397Z",
+      "completed_at": "2026-08-12T05:54:48.556Z",
+      "duration_ms": 25158,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -110,7 +110,7 @@
       },
       "stderr": {
         "bytes": 73,
-        "sha256": "823044100dfc14c0927a3033ebee539a219195ff0b935b444be3cd8619415157"
+        "sha256": "e821a5998937f139681c215574bdcc8daf01f195e74222fd1b303681f3f491d1"
       }
     },
     {
@@ -124,19 +124,19 @@
       ],
       "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
       "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-12T05:41:38.037Z",
-      "completed_at": "2026-08-12T05:42:55.162Z",
-      "duration_ms": 77124,
+      "started_at": "2026-08-12T05:54:48.573Z",
+      "completed_at": "2026-08-12T05:56:04.308Z",
+      "duration_ms": 75734,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
       "stdout": {
         "bytes": 11758,
-        "sha256": "a937aa3138979a26b1a3eb3bdcbfd10b1a2fdcb278f5342a2e16d381c80ecf40"
+        "sha256": "4d533b2474284d633a18e61f652a79987ba62d7ecc07dd74b99dae163114cac0"
       },
       "stderr": {
         "bytes": 5213,
-        "sha256": "d7eaa80f9ce2deebf041bbea8363648b94f74e82bc2574e8b2c68bdd2f7d3bb3"
+        "sha256": "6801dfcdca3126a16993b18c68faba92472d0c29f3b4a9703b1f8aa449ec1634"
       }
     },
     {
@@ -150,9 +150,9 @@
       ],
       "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
       "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-12T05:42:55.176Z",
-      "completed_at": "2026-08-12T05:43:22.361Z",
-      "duration_ms": 27185,
+      "started_at": "2026-08-12T05:56:04.321Z",
+      "completed_at": "2026-08-12T05:56:32.929Z",
+      "duration_ms": 28607,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -162,7 +162,7 @@
       },
       "stderr": {
         "bytes": 541,
-        "sha256": "260faaa5bb831db8ccd2381db490e226b289e55e2d600c3b4aece56b2a87a5e8"
+        "sha256": "75347d75b5e3bc2e9ceb60e121bcb2ca5841c577a881b78750696cf5bd11a792"
       }
     },
     {
@@ -176,9 +176,9 @@
       ],
       "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
       "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-12T05:43:22.375Z",
-      "completed_at": "2026-08-12T05:43:31.509Z",
-      "duration_ms": 9134,
+      "started_at": "2026-08-12T05:56:32.943Z",
+      "completed_at": "2026-08-12T05:56:39.478Z",
+      "duration_ms": 6534,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -188,7 +188,7 @@
       },
       "stderr": {
         "bytes": 62,
-        "sha256": "9c7bb4c3d94a6987f5430007eb30619ce90765cd80a7894d3fd5a3e30c8d86b3"
+        "sha256": "505e56461a54c56a113bd2a526b09902c4c6fb896fd6ad630deaf07e1196a622"
       }
     },
     {
@@ -198,9 +198,9 @@
       ],
       "executable_path": "/Users/gepsygainza/Documents/Playground/joan/scripts/verify-jce1.sh",
       "executable_sha256": "b5798b586af75b93465da894d03da93e430d9742e160f5912743216d976a9814",
-      "started_at": "2026-08-12T05:43:31.519Z",
-      "completed_at": "2026-08-12T05:43:38.981Z",
-      "duration_ms": 7462,
+      "started_at": "2026-08-12T05:56:39.484Z",
+      "completed_at": "2026-08-12T05:56:44.914Z",
+      "duration_ms": 5429,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -222,15 +222,15 @@
       ],
       "executable_path": "/Users/gepsygainza/Documents/Playground/joan/scripts/benchmark-digest.sh",
       "executable_sha256": "587231f79668c4f729a23acdce5e78c2fd33c7577a80fbe3ed08eddff07ec37c",
-      "started_at": "2026-08-12T05:43:38.981Z",
-      "completed_at": "2026-08-12T05:43:41.951Z",
-      "duration_ms": 2970,
+      "started_at": "2026-08-12T05:56:44.914Z",
+      "completed_at": "2026-08-12T05:56:47.459Z",
+      "duration_ms": 2544,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
       "stdout": {
-        "bytes": 782,
-        "sha256": "0918a9615f94ae8c57eead94084b75023be858dcd4a75335ee546854bbc4aadf"
+        "bytes": 783,
+        "sha256": "4872fa9e4ebfd2907b3fa5edbeb7c820fbac382f6b1a8920448ea8f3d9599a1f"
       },
       "stderr": {
         "bytes": 0,
@@ -244,15 +244,15 @@
       ],
       "executable_path": "/Users/gepsygainza/Documents/Playground/joan/scripts/verify-payment-cost.sh",
       "executable_sha256": "1f413855abefacd9ba1d1c1af924bd8b87287a2db62951ebdf9b69ff457f7917",
-      "started_at": "2026-08-12T05:43:41.951Z",
-      "completed_at": "2026-08-12T05:43:42.047Z",
-      "duration_ms": 96,
+      "started_at": "2026-08-12T05:56:47.459Z",
+      "completed_at": "2026-08-12T05:56:47.559Z",
+      "duration_ms": 99,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
       "stdout": {
-        "bytes": 600,
-        "sha256": "4b6f5685839b1161ecd87a3e3e94545e565b582c004ac11f5b7d6b4591087872"
+        "bytes": 603,
+        "sha256": "ed7bfd7e87edc96b2450b8196177222bbc042a88c7a726744774903c32650eea"
       },
       "stderr": {
         "bytes": 0,
@@ -269,9 +269,9 @@
       ],
       "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
       "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-12T05:43:42.049Z",
-      "completed_at": "2026-08-12T05:43:43.252Z",
-      "duration_ms": 1202,
+      "started_at": "2026-08-12T05:56:47.560Z",
+      "completed_at": "2026-08-12T05:56:48.686Z",
+      "duration_ms": 1125,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -293,9 +293,9 @@
       ],
       "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
       "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-12T05:43:43.259Z",
-      "completed_at": "2026-08-12T05:43:44.841Z",
-      "duration_ms": 1581,
+      "started_at": "2026-08-12T05:56:48.694Z",
+      "completed_at": "2026-08-12T05:56:50.023Z",
+      "duration_ms": 1329,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -320,7 +320,7 @@
       "tree_digest": {
         "algorithm": "sha256",
         "profile": "joan-source-tree-v2",
-        "value": "ad78a5741836e4bb02b708584cb98c17a3ce6335fb376c7004bbbfd3317374fc"
+        "value": "481fd5b77ccc357c8d39398b706806a8a310c6544bbc23df85883071316e2134"
       },
       "file_count": 177,
       "excludes": [

@@ -18,6 +18,9 @@ node tools/verification-runner.mjs "$receipt"
 printf '%s\n' '==> machine evidence and receipt drift check'
 node tools/evidence-index.mjs check
 
+printf '%s\n' '==> differential language parser/checker'
+bash scripts/verify-differential-language.sh
+
 printf '%s\n' '==> offline PR trust envelope'
 bash scripts/verify-pr-trust.sh
 

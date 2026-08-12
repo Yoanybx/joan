@@ -1,0 +1,228 @@
+{
+  "schema": "joan.language-differential-corpus.v1",
+  "seed": "0x123456789abcdef0",
+  "mutation_count": 32,
+  "mutation_base_ids": ["A001", "A002", "A003", "A004", "A005", "A006", "A007"],
+  "cases": [
+    {
+      "id": "A001",
+      "expected": {"phase": "check", "status": "accepted"},
+      "source": "module basic;\nfn main() -> i64 effects [] { return 42; }\n"
+    },
+    {
+      "id": "A002",
+      "expected": {"phase": "check", "status": "accepted"},
+      "source": "/* outer /* nested */ comment */\nmodule operators;\nfn main() -> bool effects [] { let value: i64 = (40 + 2) * 2 / 2 % 43; return value >= 1 && !(value == 0); }\n"
+    },
+    {
+      "id": "A003",
+      "expected": {"phase": "check", "status": "accepted"},
+      "source": "module effects_demo;\nfn send(value: string) -> unit effects [network_send] { request network_send(value); return; }\nfn main() -> unit effects [network_send] { send(\"payload\"); return; }\n"
+    },
+    {
+      "id": "A004",
+      "expected": {"phase": "check", "status": "accepted"},
+      "source": "module linear;\nfn main() -> unit effects [network_send] authorities [send_once: network_send] { request network_send(\"payload\") using send_once; return; }\n"
+    },
+    {
+      "id": "A005",
+      "expected": {"phase": "check", "status": "accepted"},
+      "source": "module secure flow;\nfn relay(value: string flow [secret, tenant:agent_a, purpose:handoff]) -> string flow [secret, tenant:agent_a, purpose:handoff] effects [] authorities [] { return value; }\nfn main() -> unit flow [public] effects [network_send] authorities [send_once: network_send] { let payload: string flow [secret, tenant:agent_a, purpose:handoff] = \"data\"; request network_send(relay(payload)) using send_once flow [secret, tenant:agent_a, purpose:handoff]; return; }\n"
+    },
+    {
+      "id": "A006",
+      "expected": {"phase": "check", "status": "accepted"},
+      "source": "module strings;\nfn main() -> string effects [] { return \"line\\nquote: \\\" slash: \\\\\"; }\n"
+    },
+    {
+      "id": "A007",
+      "expected": {"phase": "check", "status": "accepted"},
+      "source": "module contextual;\nfn echo(flow: i64, authorities: i64) -> i64 effects [] { let using: i64 = flow + authorities; return using; }\nfn main() -> i64 effects [] { return echo(20, 22); }\n"
+    },
+    {
+      "id": "P001",
+      "expected": {"diagnostic_codes": ["J1003"], "phase": "parse", "status": "rejected"},
+      "source": "module missing_semicolon"
+    },
+    {
+      "id": "P002",
+      "expected": {"diagnostic_codes": ["J0012"], "phase": "lex", "status": "rejected"},
+      "source": "/* never closed"
+    },
+    {
+      "id": "P003",
+      "expected": {"diagnostic_codes": ["J0011"], "phase": "lex", "status": "rejected"},
+      "source": "module cafe_é; fn main() -> unit effects [] { return; }"
+    },
+    {
+      "id": "P004",
+      "expected": {"diagnostic_codes": ["J0005"], "phase": "lex", "status": "rejected"},
+      "source": "module huge; fn main() -> i64 effects [] { return 9223372036854775808; }"
+    },
+    {
+      "id": "P005",
+      "expected": {"diagnostic_codes": ["J0007"], "phase": "lex", "status": "rejected"},
+      "source": "module newline; fn main() -> string effects [] { return \"raw\nline\"; }"
+    },
+    {
+      "id": "P006",
+      "expected": {"diagnostic_codes": ["J1017"], "phase": "parse", "status": "rejected"},
+      "source": "module missing_effects; fn main() -> unit { return; }"
+    },
+    {
+      "id": "P007",
+      "expected": {"diagnostic_codes": ["J1091"], "phase": "parse", "status": "rejected"},
+      "source": "module bad_flow flow; fn main() -> unit flow [classified] effects [] authorities [] { return; }"
+    },
+    {
+      "id": "C001",
+      "expected": {"diagnostic_codes": ["J2028"], "phase": "check", "status": "rejected"},
+      "source": "module undeclared; fn main() -> unit effects [] { request network_send(\"x\"); return; }"
+    },
+    {
+      "id": "C002",
+      "expected": {"diagnostic_codes": ["J2035"], "phase": "check", "status": "rejected"},
+      "source": "module mismatch; fn main() -> i64 effects [] { return false; }"
+    },
+    {
+      "id": "C003",
+      "expected": {"diagnostic_codes": ["J2034"], "phase": "check", "status": "rejected"},
+      "source": "module propagation; fn send() -> unit effects [network_send] { request network_send(); return; } fn main() -> unit effects [] { send(); return; }"
+    },
+    {
+      "id": "C004",
+      "expected": {"diagnostic_codes": ["J2040"], "phase": "check", "status": "rejected"},
+      "source": "module recursive; fn main() -> unit effects [] { main(); return; }"
+    },
+    {
+      "id": "C005",
+      "expected": {"diagnostic_codes": ["J2030"], "phase": "check", "status": "rejected"},
+      "source": "module unknown_local; fn main() -> i64 effects [] { return missing; }"
+    },
+    {
+      "id": "C006",
+      "expected": {"diagnostic_codes": ["J2032"], "phase": "check", "status": "rejected"},
+      "source": "module unknown_call; fn main() -> i64 effects [] { return missing(); }"
+    },
+    {
+      "id": "C007",
+      "expected": {"diagnostic_codes": ["J2033"], "phase": "check", "status": "rejected"},
+      "source": "module arity; fn add(value: i64) -> i64 effects [] { return value; } fn main() -> i64 effects [] { return add(); }"
+    },
+    {
+      "id": "C008",
+      "expected": {"diagnostic_codes": ["J2004"], "phase": "check", "status": "rejected"},
+      "source": "module duplicate_fn; fn main() -> unit effects [] { return; } fn main() -> unit effects [] { return; }"
+    },
+    {
+      "id": "C009",
+      "expected": {"diagnostic_codes": ["J2011"], "phase": "check", "status": "rejected"},
+      "source": "module main_args; fn main(value: i64) -> i64 effects [] { return value; }"
+    },
+    {
+      "id": "C010",
+      "expected": {"diagnostic_codes": ["J2010"], "phase": "check", "status": "rejected"},
+      "source": "module no_main; fn helper() -> unit effects [] { return; }"
+    },
+    {
+      "id": "C011",
+      "expected": {"diagnostic_codes": ["J2025"], "phase": "check", "status": "rejected"},
+      "source": "module duplicate_local; fn main() -> i64 effects [] { let value: i64 = 1; let value: i64 = 2; return value; }"
+    },
+    {
+      "id": "C012",
+      "expected": {"diagnostic_codes": ["J2029"], "phase": "check", "status": "rejected"},
+      "source": "module no_return; fn main() -> unit effects [] { let value: i64 = 1; }"
+    },
+    {
+      "id": "C013",
+      "expected": {"diagnostic_codes": ["J2056"], "phase": "check", "status": "rejected"},
+      "source": "module replay; fn main() -> unit effects [send] authorities [once: send] { request send() using once; request send() using once; return; }"
+    },
+    {
+      "id": "C014",
+      "expected": {"diagnostic_codes": ["J2053", "J2057"], "phase": "check", "status": "rejected"},
+      "source": "module missing_authority; fn main() -> unit effects [send] authorities [once: send] { request send(); return; }"
+    },
+    {
+      "id": "C015",
+      "expected": {"diagnostic_codes": ["J2055", "J2057"], "phase": "check", "status": "rejected"},
+      "source": "module wrong_authority; fn main() -> unit effects [send, read] authorities [once: read] { request send() using once; return; }"
+    },
+    {
+      "id": "C016",
+      "expected": {"diagnostic_codes": ["J2050"], "phase": "check", "status": "rejected"},
+      "source": "module mixed; fn legacy() -> unit effects [] { return; } fn main() -> unit effects [] authorities [] { legacy(); return; }"
+    },
+    {
+      "id": "C017",
+      "expected": {"diagnostic_codes": ["J2060"], "phase": "check", "status": "rejected"},
+      "source": "module incomplete flow; fn main() -> unit effects [] authorities [] { return; }"
+    },
+    {
+      "id": "C018",
+      "expected": {"diagnostic_codes": ["J2061"], "phase": "check", "status": "rejected"},
+      "source": "module undeclared_flow; fn main() -> unit flow [public] effects [] { return; }"
+    },
+    {
+      "id": "C019",
+      "expected": {"diagnostic_codes": ["J2062"], "phase": "check", "status": "rejected"},
+      "source": "module crossing flow; fn leak(value: string flow [secret, tenant:a, purpose:handoff]) -> string flow [public] effects [] authorities [] { return value; } fn main() -> unit flow [public] effects [] authorities [] { return; }"
+    },
+    {
+      "id": "C020",
+      "expected": {"diagnostic_codes": ["J2063"], "phase": "check", "status": "rejected"},
+      "source": "module purpose_mix flow; fn mix(left: i64 flow [secret, tenant:a, purpose:x], right: i64 flow [secret, tenant:a, purpose:y]) -> i64 flow [secret, tenant:a, purpose:x] effects [] authorities [] { return left + right; } fn main() -> unit flow [public] effects [] authorities [] { return; }"
+    },
+    {
+      "id": "C021",
+      "expected": {"diagnostic_codes": ["J2003"], "phase": "check", "status": "rejected"},
+      "source": "module duplicate_effect; fn main() -> unit effects [audit, audit] { return; }"
+    },
+    {
+      "id": "C022",
+      "expected": {"diagnostic_codes": ["J2021"], "phase": "check", "status": "rejected"},
+      "source": "module duplicate_parameter; fn same(value: i64, value: i64) -> i64 effects [] { return value; } fn main() -> i64 effects [] { return same(1, 2); }"
+    },
+    {
+      "id": "C023",
+      "expected": {"diagnostic_codes": ["J2023"], "phase": "check", "status": "rejected"},
+      "source": "module unreachable; fn main() -> unit effects [] { return; 1; }"
+    },
+    {
+      "id": "C024",
+      "expected": {"diagnostic_codes": ["J2020"], "phase": "check", "status": "rejected"},
+      "source": "module unit_parameter; fn helper(value: unit) -> unit effects [] { return; } fn main() -> unit effects [] { return; }"
+    },
+    {
+      "id": "C025",
+      "expected": {"diagnostic_codes": ["J2024", "J2035"], "phase": "check", "status": "rejected"},
+      "source": "module unit_local; fn main() -> unit effects [] { let value: unit = 1; return; }"
+    },
+    {
+      "id": "C026",
+      "expected": {"diagnostic_codes": ["J2026"], "phase": "check", "status": "rejected"},
+      "source": "module missing_return_value; fn main() -> i64 effects [] { return; }"
+    },
+    {
+      "id": "C027",
+      "expected": {"diagnostic_codes": ["J2027"], "phase": "check", "status": "rejected"},
+      "source": "module unexpected_return_value; fn main() -> unit effects [] { return 1; }"
+    },
+    {
+      "id": "C028",
+      "expected": {"diagnostic_codes": ["J2054", "J2057"], "phase": "check", "status": "rejected"},
+      "source": "module unknown_authority; fn main() -> unit effects [send] authorities [once: send] { request send() using missing; return; }"
+    },
+    {
+      "id": "C029",
+      "expected": {"diagnostic_codes": ["J2052", "J2057"], "phase": "check", "status": "rejected"},
+      "source": "module widening; fn main() -> unit effects [] authorities [once: send] { return; }"
+    },
+    {
+      "id": "C030",
+      "expected": {"diagnostic_codes": ["J2031"], "phase": "check", "status": "rejected"},
+      "source": "module equality; fn main() -> bool effects [] { return 1 == false; }"
+    }
+  ]
+}

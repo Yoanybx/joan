@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/language-differential-report.v1.schema.json",
+  "title": "JOAN Language Differential Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "corpus_digest",
+    "failed",
+    "implementation",
+    "mutation_count",
+    "passed",
+    "results",
+    "schema",
+    "seed",
+    "total"
+  ],
+  "properties": {
+    "corpus_digest": {"$ref": "#/$defs/sha256"},
+    "failed": {"type": "integer", "minimum": 0},
+    "implementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "reference_digest", "rust", "rust_binary_digest"],
+      "properties": {
+        "reference": {"type": "string", "minLength": 1},
+        "reference_digest": {"$ref": "#/$defs/sha256"},
+        "rust": {"type": "string", "minLength": 1},
+        "rust_binary_digest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "mutation_count": {"type": "integer", "minimum": 1, "maximum": 256},
+    "passed": {"type": "integer", "minimum": 0},
+    "results": {
+      "type": "array",
+      "minItems": 41,
+      "items": {"$ref": "#/$defs/result"}
+    },
+    "schema": {"const": "joan.language-differential-report.v1"},
+    "seed": {"type": "string", "pattern": "^0x[0-9a-f]{16}$"},
+    "total": {"type": "integer", "minimum": 41}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "diagnosticCodes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^J[0-9]{4}$"}
+    },
+    "expectation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["phase", "status"],
+          "properties": {
+            "phase": {"const": "check"},
+            "status": {"const": "accepted"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["diagnostic_codes", "phase", "status"],
+          "properties": {
+            "diagnostic_codes": {"$ref": "#/$defs/diagnosticCodes"},
+            "phase": {"enum": ["lex", "parse", "check"]},
+            "status": {"const": "rejected"}
+          }
+        }
+      ]
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "module",
+        "function_count",
+        "statement_count",
+        "declared_effects",
+        "termination_profile",
+        "effect_profile",
+        "authority_profile",
+        "authority_slot_count"
+      ],
+      "properties": {
+        "schema": {"enum": ["joan.check-receipt.v0", "joan.check-receipt.v1"]},
+        "status": {"const": "accepted"},
+        "module": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
+        "function_count": {"type": "integer", "minimum": 1, "maximum": 1024},
+        "statement_count": {"type": "integer", "minimum": 0, "maximum": 100000},
+        "declared_effects": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"}
+        },
+        "termination_profile": {"const": "no-loops-acyclic-call-graph-bounded-vm"},
+        "effect_profile": {"const": "requests-recorded-never-executed"},
+        "authority_profile": {"enum": ["legacy-receipt-only", "linear-one-shot-per-invocation"]},
+        "authority_slot_count": {"type": "integer", "minimum": 0},
+        "information_flow_profile": {"const": "explicit-tenant-purpose-no-declassification"},
+        "protected_boundary_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "observation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["phase", "receipt", "status"],
+          "properties": {
+            "phase": {"const": "check"},
+            "receipt": {"$ref": "#/$defs/receipt"},
+            "status": {"const": "accepted"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["diagnostic_codes", "phase", "status"],
+          "properties": {
+            "diagnostic_codes": {"$ref": "#/$defs/diagnosticCodes"},
+            "phase": {"enum": ["lex", "parse", "check"]},
+            "status": {"const": "rejected"}
+          }
+        }
+      ]
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expected", "id", "reference", "rust", "source_digest", "status"],
+      "properties": {
+        "expected": {"$ref": "#/$defs/expectation"},
+        "id": {"type": "string", "pattern": "^[APCM][0-9]{3}$"},
+        "reference": {"$ref": "#/$defs/observation"},
+        "rust": {"$ref": "#/$defs/observation"},
+        "source_digest": {"$ref": "#/$defs/sha256"},
+        "status": {"enum": ["passed", "failed"]}
+      }
+    }
+  }
+}

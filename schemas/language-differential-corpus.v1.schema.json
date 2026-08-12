@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/language-differential-corpus.v1.schema.json",
+  "title": "JOAN Language Differential Corpus v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "seed", "mutation_count", "mutation_base_ids", "cases"],
+  "properties": {
+    "schema": {"const": "joan.language-differential-corpus.v1"},
+    "seed": {"type": "string", "pattern": "^0x[0-9a-f]{16}$"},
+    "mutation_count": {"type": "integer", "minimum": 1, "maximum": 256},
+    "mutation_base_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^A[0-9]{3}$"}
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 40,
+      "maxItems": 512,
+      "items": {"$ref": "#/$defs/case"}
+    }
+  },
+  "$defs": {
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "expected", "source"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[APC][0-9]{3}$"},
+        "expected": {"$ref": "#/$defs/expected"},
+        "source": {"type": "string", "maxLength": 1048576}
+      }
+    },
+    "expected": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["phase", "status"],
+          "properties": {
+            "phase": {"const": "check"},
+            "status": {"const": "accepted"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["diagnostic_codes", "phase", "status"],
+          "properties": {
+            "diagnostic_codes": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "pattern": "^J[0-9]{4}$"}
+            },
+            "phase": {"enum": ["lex", "parse", "check"]},
+            "status": {"const": "rejected"}
+          }
+        }
+      ]
+    }
+  }
+}

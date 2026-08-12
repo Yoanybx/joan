@@ -58,6 +58,7 @@ fn every_machine_contract_is_strict_json() -> Result<(), Box<dyn std::error::Err
     collect_json(&root.join("vectors/canonical"), &mut files)?;
     collect_json(&root.join("vectors/adoption"), &mut files)?;
     collect_json(&root.join("vectors/jce1"), &mut files)?;
+    collect_json(&root.join("vectors/language-differential"), &mut files)?;
     collect_json(&root.join("vectors/payment-cost"), &mut files)?;
     assert!(!files.is_empty());
     for path in files {
@@ -266,6 +267,39 @@ fn manifest_schemas_reject_unknown_fields() -> Result<(), Box<dyn std::error::Er
 }
 
 #[test]
+fn differential_language_report_matches_its_schema() -> Result<(), Box<dyn std::error::Error>> {
+    let root = workspace_root();
+    let temporary = tempfile::tempdir()?;
+    let report_path = temporary.path().join("report.json");
+    let output = Command::new("node")
+        .args([
+            "tools/language-differential-runner.mjs",
+            env!("CARGO_BIN_EXE_joan"),
+            "vectors/language-differential/corpus-v1.json",
+        ])
+        .arg(&report_path)
+        .env("JOAN_DIFFERENTIAL_TMPDIR", temporary.path())
+        .current_dir(&root)
+        .output()?;
+    if !output.status.success() {
+        return Err(format!(
+            "differential runner failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )
+        .into());
+    }
+    let report = read_json(&report_path)?;
+    validate_instance(
+        &report,
+        "schemas/language-differential-report.v1.schema.json",
+    )?;
+    assert_eq!(report["total"], 76);
+    assert_eq!(report["passed"], 76);
+    assert_eq!(report["failed"], 0);
+    Ok(())
+}
+
+#[test]
 fn verification_receipts_match_their_schema() -> Result<(), Box<dyn std::error::Error>> {
     let root = workspace_root();
     let receipt_directory = root.join(".joan/evidence/runs");
@@ -328,7 +362,7 @@ fn workspace_root() -> PathBuf {
         )
 }
 
-fn manifest_schema_pairs() -> [(&'static str, &'static str); 10] {
+fn manifest_schema_pairs() -> [(&'static str, &'static str); 11] {
     [
         (
             ".joan/adoption.json",
@@ -365,6 +399,10 @@ fn manifest_schema_pairs() -> [(&'static str, &'static str); 10] {
         (
             "vectors/payment-cost/report-v0.json",
             "schemas/payment-cost-report.v0.schema.json",
+        ),
+        (
+            "vectors/language-differential/corpus-v1.json",
+            "schemas/language-differential-corpus.v1.schema.json",
         ),
         (
             "tools/verification-gates.v1.json",

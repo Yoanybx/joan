@@ -1,0 +1,232 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/pr-trust-envelope.v0.schema.json",
+  "title": "JOAN PR Trust Envelope v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "claim_scope",
+    "network_policy",
+    "write_policy",
+    "telemetry_policy",
+    "candidate",
+    "evidence",
+    "policy_digest",
+    "program",
+    "limitations",
+    "envelope_digest"
+  ],
+  "properties": {
+    "schema": {"const": "joan.pr-trust-envelope.v0"},
+    "status": {"const": "requirements-satisfied"},
+    "claim_scope": {"const": "offline-local-evidence-binding-not-code-safety-or-pr-approval"},
+    "network_policy": {"const": "denied-no-network-client"},
+    "write_policy": {"const": "denied"},
+    "telemetry_policy": {"const": "none"},
+    "candidate": {"$ref": "#/$defs/candidate"},
+    "evidence": {"$ref": "#/$defs/evidence"},
+    "policy_digest": {"$ref": "#/$defs/policyDigest"},
+    "program": {"$ref": "#/$defs/program"},
+    "limitations": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "envelope_digest": {"$ref": "#/$defs/envelopeDigest"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "typedDigest": {"$ref": "digest.v1.schema.json"},
+    "sourceDigest": {
+      "allOf": [
+        {"$ref": "digest.v1.schema.json"},
+        {"properties": {"domain": {"const": "joan.source.v1"}}}
+      ]
+    },
+    "candidateDigest": {
+      "allOf": [
+        {"$ref": "digest.v1.schema.json"},
+        {"properties": {"domain": {"const": "joan.pr-candidate.v1"}}}
+      ]
+    },
+    "policyDigest": {
+      "allOf": [
+        {"$ref": "digest.v1.schema.json"},
+        {"properties": {"domain": {"const": "joan.pr-trust-policy.v1"}}}
+      ]
+    },
+    "evidenceDigest": {
+      "allOf": [
+        {"$ref": "digest.v1.schema.json"},
+        {"properties": {"domain": {"const": "joan.pr-trust-evidence.v1"}}}
+      ]
+    },
+    "envelopeDigest": {
+      "allOf": [
+        {"$ref": "digest.v1.schema.json"},
+        {"properties": {"domain": {"const": "joan.pr-trust-envelope.v1"}}}
+      ]
+    },
+    "changedFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "change"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "change": {"enum": ["added", "modified", "deleted"]},
+        "base_bytes": {"type": "integer", "minimum": 0, "maximum": 67108864},
+        "base_content_digest": {"$ref": "#/$defs/sourceDigest"},
+        "current_bytes": {"type": "integer", "minimum": 0, "maximum": 67108864},
+        "current_content_digest": {"$ref": "#/$defs/sourceDigest"}
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "repository",
+        "object_format",
+        "base_commit",
+        "head_commit",
+        "changed_files",
+        "total_changed_bytes",
+        "candidate_digest"
+      ],
+      "properties": {
+        "schema": {"const": "joan.pr-candidate-receipt.v0"},
+        "status": {"const": "bound-clean-worktree"},
+        "repository": {"type": "string", "minLength": 1, "maxLength": 256},
+        "object_format": {"enum": ["sha1", "sha256"]},
+        "base_commit": {"type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"},
+        "head_commit": {"type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"},
+        "changed_files": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1024,
+          "items": {"$ref": "#/$defs/changedFile"}
+        },
+        "total_changed_bytes": {"type": "integer", "minimum": 0, "maximum": 67108864},
+        "candidate_digest": {"$ref": "#/$defs/candidateDigest"}
+      }
+    },
+    "sourceTree": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tree_digest", "file_count", "excludes"],
+      "properties": {
+        "tree_digest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "profile", "value"],
+          "properties": {
+            "algorithm": {"const": "sha256"},
+            "profile": {"const": "joan-source-tree-v2"},
+            "value": {"$ref": "#/$defs/sha256"}
+          }
+        },
+        "file_count": {"type": "integer", "minimum": 1, "maximum": 100000},
+        "excludes": {
+          "const": [".git", "target", ".joan/evidence", "**/.DS_Store", "**/._*"]
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "source",
+        "evidence_index_digest",
+        "verification_run_ids",
+        "required_gate_ids",
+        "jce1_passed",
+        "dispute_cases",
+        "vulnerabilities_found",
+        "claim_scope"
+      ],
+      "properties": {
+        "schema": {"const": "joan.pr-evidence-binding.v0"},
+        "status": {"const": "three-local-runs-bound"},
+        "source": {"$ref": "#/$defs/sourceTree"},
+        "evidence_index_digest": {"$ref": "#/$defs/evidenceDigest"},
+        "verification_run_ids": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {"type": "string", "format": "uuid"}
+        },
+        "required_gate_ids": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[a-z0-9-]+$"}
+        },
+        "jce1_passed": {"const": 27},
+        "dispute_cases": {"const": 10000},
+        "vulnerabilities_found": {"const": 0},
+        "claim_scope": {"const": "local-receipts-not-independent-attestation"}
+      }
+    },
+    "program": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_source_path",
+        "package_manifest_path",
+        "policy_source_digest",
+        "package_manifest_digest",
+        "package_resolution_digest",
+        "semantic_identity",
+        "bytecode_verification",
+        "execution_receipt_digest",
+        "effect_plan_digest",
+        "instruction_budget",
+        "instructions_executed",
+        "planned_effect",
+        "authority_slot",
+        "information"
+      ],
+      "properties": {
+        "policy_source_path": {"const": "examples/pr-trust/pr-trust-policy.joan"},
+        "package_manifest_path": {"const": "examples/pr-trust/package.joan.json"},
+        "policy_source_digest": {"$ref": "#/$defs/sourceDigest"},
+        "package_manifest_digest": {
+          "allOf": [
+            {"$ref": "digest.v1.schema.json"},
+            {"properties": {"domain": {"const": "joan.package-manifest.v1"}}}
+          ]
+        },
+        "package_resolution_digest": {"$ref": "#/$defs/evidenceDigest"},
+        "semantic_identity": {"$ref": "canonical-ast-identity.v2.schema.json"},
+        "bytecode_verification": {"$ref": "bytecode-verification-receipt.v2.schema.json"},
+        "execution_receipt_digest": {"$ref": "#/$defs/evidenceDigest"},
+        "effect_plan_digest": {"$ref": "digest.v0.schema.json"},
+        "instruction_budget": {"const": 10000},
+        "instructions_executed": {"type": "integer", "minimum": 1, "maximum": 10000},
+        "planned_effect": {"const": "publish_pr_assessment"},
+        "authority_slot": {"const": "publish_once"},
+        "information": {
+          "allOf": [
+            {"$ref": "information-label.v1.schema.json"},
+            {
+              "properties": {
+                "class": {"const": "secret"},
+                "tenant": {"const": "github"},
+                "purpose": {"const": "pr_review"}
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -114,6 +114,25 @@ fn bytecode_program_domain_is_registered() -> Result<(), Box<dyn std::error::Err
 }
 
 #[test]
+fn pr_trust_domains_are_registered() -> Result<(), Box<dyn std::error::Error>> {
+    for (name, expected) in [
+        ("joan.pr-candidate.v1", RegisteredDomainV1::PrCandidate),
+        ("joan.pr-trust-policy.v1", RegisteredDomainV1::PrTrustPolicy),
+        (
+            "joan.pr-trust-evidence.v1",
+            RegisteredDomainV1::PrTrustEvidence,
+        ),
+        (
+            "joan.pr-trust-envelope.v1",
+            RegisteredDomainV1::PrTrustEnvelope,
+        ),
+    ] {
+        assert_eq!(RegisteredDomainV1::parse(name)?, expected);
+    }
+    Ok(())
+}
+
+#[test]
 fn typed_digest_rejects_profile_domain_and_payload_substitution()
 -> Result<(), Box<dyn std::error::Error>> {
     let payload = b"JOAN JCE1 fixed payload";

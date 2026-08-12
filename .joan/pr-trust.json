@@ -1,0 +1,31 @@
+{
+  "schema": "joan.pr-trust-policy.v0",
+  "profile": "offline-read-only-v0",
+  "repository": "joan-local-checkout",
+  "policy_source_path": "examples/pr-trust/pr-trust-policy.joan",
+  "package_manifest_path": "examples/pr-trust/package.joan.json",
+  "package_store_path": "examples/pr-trust/store",
+  "evidence_index_path": ".joan/evidence/latest.json",
+  "policy_source_digest": {
+    "algorithm": "sha256",
+    "profile": "joan-hash-v1",
+    "domain": "joan.source.v1",
+    "value": "4a0a2fd6c1faa57fd5d36bb0cb9208314bfe5c88e64d63c8bd9114e45de1b5a8"
+  },
+  "package_manifest_digest": {
+    "algorithm": "sha256",
+    "profile": "joan-hash-v1",
+    "domain": "joan.package-manifest.v1",
+    "value": "266acd7e29c133eb69e8f6ad72b4e8b1ce5634fb4b7890a52763b1256b03c4e2"
+  },
+  "instruction_budget": 10000,
+  "max_changed_files": 1024,
+  "max_changed_bytes": 67108864,
+  "required_verification_runs": 3,
+  "required_gate_count": 10,
+  "required_jce1_passed": 27,
+  "network_policy": "denied-no-network-client",
+  "write_policy": "denied",
+  "telemetry_policy": "none",
+  "claim_scope": "offline-local-evidence-binding-not-code-safety-or-pr-approval"
+}

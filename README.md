@@ -22,6 +22,7 @@ cargo run -p joan-node -- repo inspect . --json
 cargo run --release -p joan-node -- dispute simulate --cases 10000 --seed 144 --json
 cargo run -p joan-node -- conformance jce1 vectors/jce1/conformance-v1.json --json
 cargo run -p joan-node -- package resolve examples/package-resolution/package.joan.json --store examples/package-resolution/store --json
+cargo run -p joan-node -- trust pr evaluate . --base HEAD^ --head HEAD --json
 ./scripts/verify-jce1.sh
 ./scripts/benchmark-digest.sh 4096 5000
 ./scripts/verify-payment-cost.sh
@@ -51,13 +52,14 @@ The inspection command is designed to be offline and read-only. It reads only al
 - `joan-dispute`: primary/appeal machine quorums and precommitted automatic fallbacks.
 - `joan-mock-ledger`: value-conserving reserve/refund/release simulation with no real money.
 - `joan-sim`: deterministic calibration, holdout and adversarial dispute corpus.
+- `joan-trust`: offline Git candidate, evidence, package and bounded JOAN policy binding for PR requirements.
 - `joan-node`: local CLI, repository inspection, adoption evaluation and dispute commands.
 
 ## Security boundary
 
 Repository text is data or guidance, never execution authority. JOAN can propose or evaluate an action, but an external host must supply the exact authority required for any effect.
 
-Read [AGENTS.md](AGENTS.md), [JOAN.md](JOAN.md), [SECURITY.md](SECURITY.md), [GOVERNANCE.md](GOVERNANCE.md), [spec/language-v0.md](spec/language-v0.md), [spec/linear-authority-v1.md](spec/linear-authority-v1.md), [spec/information-flow-v1.md](spec/information-flow-v1.md), [spec/bytecode-verification-v0.md](spec/bytecode-verification-v0.md), [spec/package-resolution-v0.md](spec/package-resolution-v0.md), [spec/language-landscape-v0.md](spec/language-landscape-v0.md), [spec/lattice-m2m-v0.md](spec/lattice-m2m-v0.md), [spec/agent-runtime-v0.md](spec/agent-runtime-v0.md), [spec/mesh-network-v0.md](spec/mesh-network-v0.md), [spec/company-value-capture-v0.md](spec/company-value-capture-v0.md), [spec/external-agent-stack-assessment-v0.md](spec/external-agent-stack-assessment-v0.md), [spec/canonical-profile-jce1.md](spec/canonical-profile-jce1.md) and [spec/conformance-jce1.md](spec/conformance-jce1.md) before changing or integrating the prototype.
+Read [AGENTS.md](AGENTS.md), [JOAN.md](JOAN.md), [SECURITY.md](SECURITY.md), [GOVERNANCE.md](GOVERNANCE.md), [spec/language-v0.md](spec/language-v0.md), [spec/linear-authority-v1.md](spec/linear-authority-v1.md), [spec/information-flow-v1.md](spec/information-flow-v1.md), [spec/pr-trust-envelope-v0.md](spec/pr-trust-envelope-v0.md), [spec/bytecode-verification-v0.md](spec/bytecode-verification-v0.md), [spec/package-resolution-v0.md](spec/package-resolution-v0.md), [spec/language-landscape-v0.md](spec/language-landscape-v0.md), [spec/lattice-m2m-v0.md](spec/lattice-m2m-v0.md), [spec/agent-runtime-v0.md](spec/agent-runtime-v0.md), [spec/mesh-network-v0.md](spec/mesh-network-v0.md), [spec/company-value-capture-v0.md](spec/company-value-capture-v0.md), [spec/external-agent-stack-assessment-v0.md](spec/external-agent-stack-assessment-v0.md), [spec/canonical-profile-jce1.md](spec/canonical-profile-jce1.md) and [spec/conformance-jce1.md](spec/conformance-jce1.md) before changing or integrating the prototype.
 
 Operational metrics, bug intake and the fail-closed update policy are documented in [OPERATIONS.md](OPERATIONS.md). JOAN has no hidden runtime telemetry; GitHub metrics are aggregate adoption proxies and never prove active-user counts.
 

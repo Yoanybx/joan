@@ -19,6 +19,7 @@ use joan_node::{
 use joan_package::resolve_package;
 use joan_patch::{GraphBundle, SemanticPatch, apply_patch};
 use joan_sim::SimulationConfig;
+use joan_trust::{encode_envelope, evaluate_pr, verify_pr_envelope};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use std::env;
@@ -186,6 +187,26 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             let task: InstructionAuditTask = read_json(task_path)?;
             write_json(&audit_instructions(Path::new(repository), authority, task)?)?;
         }
+        [group, subject, command, repository, rest @ ..]
+            if group == "trust" && subject == "pr" && command == "evaluate" =>
+        {
+            if !rest.iter().any(|argument| argument == "--json") {
+                return Err("trust pr evaluate requires --json".into());
+            }
+            let base = option_text(rest, "--base")?;
+            let head = option_text(rest, "--head")?;
+            let envelope = evaluate_pr(Path::new(repository), base, head)?;
+            io::stdout().write_all(&encode_envelope(&envelope)?)?;
+            io::stdout().write_all(b"\n")?;
+        }
+        [group, subject, command, repository, envelope, flag]
+            if group == "trust" && subject == "pr" && command == "verify" && flag == "--json" =>
+        {
+            let bytes = read_bounded_bytes(envelope, 4 * 1_048_576 + 1)?;
+            let verified = verify_pr_envelope(Path::new(repository), &bytes)?;
+            io::stdout().write_all(&encode_envelope(&verified)?)?;
+            io::stdout().write_all(b"\n")?;
+        }
         _ => return Err(usage().into()),
     }
     Ok(())
@@ -202,7 +223,7 @@ fn verify_jce1_suite(path: &str) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn usage() -> &'static str {
-    "usage:\n  joan check <program.joan> [--json]\n  joan fmt <program.joan> [--check]\n  joan compile <program.joan> --json\n  joan run <program.joan> --json\n  joan canonicalize <file|->\n  joan canonicalize-v1 <file|->\n  joan canonical-set-v1 <array-file|->\n  joan digest <domain> <file|->\n  joan digest-v1 <registered-domain> <file|->\n  joan conformance jce1 <suite.json> --json\n  joan benchmark digest-v1 --bytes <count> --iterations <count> --json\n  joan identity verify <bundle.json>\n  joan bytecode verify <bytecode.json> --json\n  joan patch verify <graph.json> <patch.json>\n  joan package resolve <manifest.json> --store <dir> --json\n  joan guardian evaluate <candidate.json>\n  joan node self-check\n  joan repo inspect <path> --json\n  joan adoption evaluate <trial.json> --json\n  joan dispute evaluate <bundle.json> --json\n  joan dispute simulate --cases <count> --seed <seed> --json\n  joan instructions audit <repo> --authority-envelope <file> --task <file> --json"
+    "usage:\n  joan check <program.joan> [--json]\n  joan fmt <program.joan> [--check]\n  joan compile <program.joan> --json\n  joan run <program.joan> --json\n  joan canonicalize <file|->\n  joan canonicalize-v1 <file|->\n  joan canonical-set-v1 <array-file|->\n  joan digest <domain> <file|->\n  joan digest-v1 <registered-domain> <file|->\n  joan conformance jce1 <suite.json> --json\n  joan benchmark digest-v1 --bytes <count> --iterations <count> --json\n  joan identity verify <bundle.json>\n  joan bytecode verify <bytecode.json> --json\n  joan patch verify <graph.json> <patch.json>\n  joan package resolve <manifest.json> --store <dir> --json\n  joan guardian evaluate <candidate.json>\n  joan node self-check\n  joan repo inspect <path> --json\n  joan adoption evaluate <trial.json> --json\n  joan dispute evaluate <bundle.json> --json\n  joan dispute simulate --cases <count> --seed <seed> --json\n  joan instructions audit <repo> --authority-envelope <file> --task <file> --json\n  joan trust pr evaluate <repo> --base <commit> --head <commit> --json\n  joan trust pr verify <repo> <envelope.json> --json"
 }
 
 fn language_result<T>(result: Result<T, LanguageError>) -> Result<T, Box<dyn std::error::Error>> {

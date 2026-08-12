@@ -227,11 +227,13 @@ fn package_manifest_and_receipt_match_their_schemas() -> Result<(), Box<dyn std:
 #[test]
 fn joan_manifests_match_their_schemas() -> Result<(), Box<dyn std::error::Error>> {
     let root = workspace_root();
+    let retriever = LocalSchemaRetriever::load()?;
     for (instance_path, schema_path) in manifest_schema_pairs() {
         let instance = read_json(&root.join(instance_path))?;
         let schema = read_json(&root.join(schema_path))?;
         let validator = jsonschema::draft202012::options()
             .should_validate_formats(true)
+            .with_retriever(retriever.clone())
             .build(&schema)
             .map_err(|error| format!("schema build failed for {schema_path}: {error}"))?;
         if let Err(error) = validator.validate(&instance) {
@@ -244,6 +246,7 @@ fn joan_manifests_match_their_schemas() -> Result<(), Box<dyn std::error::Error>
 #[test]
 fn manifest_schemas_reject_unknown_fields() -> Result<(), Box<dyn std::error::Error>> {
     let root = workspace_root();
+    let retriever = LocalSchemaRetriever::load()?;
     for (instance_path, schema_path) in manifest_schema_pairs() {
         let mut instance = read_json(&root.join(instance_path))?;
         instance
@@ -251,7 +254,9 @@ fn manifest_schemas_reject_unknown_fields() -> Result<(), Box<dyn std::error::Er
             .ok_or_else(|| format!("manifest is not an object: {instance_path}"))?
             .insert("unexpected_field".to_owned(), Value::Bool(true));
         let schema = read_json(&root.join(schema_path))?;
-        let validator = jsonschema::draft202012::options().build(&schema)?;
+        let validator = jsonschema::draft202012::options()
+            .with_retriever(retriever.clone())
+            .build(&schema)?;
         assert!(
             !validator.is_valid(&instance),
             "unknown field accepted by {schema_path}"
@@ -323,7 +328,7 @@ fn workspace_root() -> PathBuf {
         )
 }
 
-fn manifest_schema_pairs() -> [(&'static str, &'static str); 9] {
+fn manifest_schema_pairs() -> [(&'static str, &'static str); 10] {
     [
         (
             ".joan/adoption.json",
@@ -344,6 +349,10 @@ fn manifest_schema_pairs() -> [(&'static str, &'static str); 9] {
         (
             ".joan/project.json",
             "schemas/project-manifest.v0.schema.json",
+        ),
+        (
+            ".joan/pr-trust.json",
+            "schemas/pr-trust-policy.v0.schema.json",
         ),
         (
             ".joan/update-policy.json",
@@ -382,6 +391,7 @@ fn validate_instance(
     Ok(())
 }
 
+#[derive(Clone)]
 struct LocalSchemaRetriever {
     schemas: HashMap<String, Value>,
 }

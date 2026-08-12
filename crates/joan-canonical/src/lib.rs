@@ -118,6 +118,14 @@ pub enum RegisteredDomainV1 {
     MockLedger,
     /// Reproducible benchmark-manifest identity.
     BenchmarkManifest,
+    /// Offline pull-request candidate identity.
+    PrCandidate,
+    /// Versioned pull-request trust policy identity.
+    PrTrustPolicy,
+    /// Evidence artifact bound into a pull-request trust envelope.
+    PrTrustEvidence,
+    /// Complete pull-request trust envelope identity.
+    PrTrustEnvelope,
 }
 
 impl RegisteredDomainV1 {
@@ -144,6 +152,10 @@ impl RegisteredDomainV1 {
             Self::EffectApplication => "joan.effect-application.v1",
             Self::MockLedger => "joan.mock-ledger.v1",
             Self::BenchmarkManifest => "joan.benchmark-manifest.v1",
+            Self::PrCandidate => "joan.pr-candidate.v1",
+            Self::PrTrustPolicy => "joan.pr-trust-policy.v1",
+            Self::PrTrustEvidence => "joan.pr-trust-evidence.v1",
+            Self::PrTrustEnvelope => "joan.pr-trust-envelope.v1",
         }
     }
 
@@ -169,6 +181,10 @@ impl RegisteredDomainV1 {
             "joan.effect-application.v1" => Self::EffectApplication,
             "joan.mock-ledger.v1" => Self::MockLedger,
             "joan.benchmark-manifest.v1" => Self::BenchmarkManifest,
+            "joan.pr-candidate.v1" => Self::PrCandidate,
+            "joan.pr-trust-policy.v1" => Self::PrTrustPolicy,
+            "joan.pr-trust-evidence.v1" => Self::PrTrustEvidence,
+            "joan.pr-trust-envelope.v1" => Self::PrTrustEnvelope,
             _ => return Err(Jce1Error::UnregisteredDomain(value.to_owned())),
         };
         Ok(domain)

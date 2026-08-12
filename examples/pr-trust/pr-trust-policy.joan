@@ -1,0 +1,7 @@
+module pr_trust_policy flow;
+
+fn main() -> unit flow [public] effects [publish_pr_assessment] authorities [publish_once: publish_pr_assessment] {
+  let assessment: string flow [secret, tenant:github, purpose:pr_review] = "requirements-satisfied";
+  request publish_pr_assessment(assessment) using publish_once flow [secret, tenant:github, purpose:pr_review];
+  return;
+}

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/pr-trust-policy.v0.schema.json",
+  "title": "JOAN PR Trust Policy v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "profile",
+    "repository",
+    "policy_source_path",
+    "package_manifest_path",
+    "package_store_path",
+    "evidence_index_path",
+    "policy_source_digest",
+    "package_manifest_digest",
+    "instruction_budget",
+    "max_changed_files",
+    "max_changed_bytes",
+    "required_verification_runs",
+    "required_gate_count",
+    "required_jce1_passed",
+    "network_policy",
+    "write_policy",
+    "telemetry_policy",
+    "claim_scope"
+  ],
+  "properties": {
+    "schema": {"const": "joan.pr-trust-policy.v0"},
+    "profile": {"const": "offline-read-only-v0"},
+    "repository": {"type": "string", "minLength": 1, "maxLength": 256},
+    "policy_source_path": {"$ref": "#/$defs/path"},
+    "package_manifest_path": {"$ref": "#/$defs/path"},
+    "package_store_path": {"$ref": "#/$defs/path"},
+    "evidence_index_path": {"$ref": "#/$defs/path"},
+    "policy_source_digest": {
+      "allOf": [
+        {"$ref": "digest.v1.schema.json"},
+        {"properties": {"domain": {"const": "joan.source.v1"}}}
+      ]
+    },
+    "package_manifest_digest": {
+      "allOf": [
+        {"$ref": "digest.v1.schema.json"},
+        {"properties": {"domain": {"const": "joan.package-manifest.v1"}}}
+      ]
+    },
+    "instruction_budget": {"type": "integer", "minimum": 1, "maximum": 1000000},
+    "max_changed_files": {"type": "integer", "minimum": 1, "maximum": 1024},
+    "max_changed_bytes": {"type": "integer", "minimum": 1, "maximum": 67108864},
+    "required_verification_runs": {"const": 3},
+    "required_gate_count": {"const": 10},
+    "required_jce1_passed": {"const": 27},
+    "network_policy": {"const": "denied-no-network-client"},
+    "write_policy": {"const": "denied"},
+    "telemetry_policy": {"const": "none"},
+    "claim_scope": {"const": "offline-local-evidence-binding-not-code-safety-or-pr-approval"}
+  },
+  "$defs": {
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*\\\\)[^\\u0000-\\u001f\\u007f]+$"
+    }
+  }
+}

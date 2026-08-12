@@ -536,6 +536,7 @@ dependencies = [
  "joan-patch",
  "joan-sim",
  "joan-syntax",
+ "joan-trust",
  "jsonschema",
  "serde",
  "serde_json",
@@ -597,6 +598,25 @@ version = "0.1.0-alpha.1"
 dependencies = [
  "joan-ast",
  "proptest",
+]
+
+[[package]]
+name = "joan-trust"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "joan-ast",
+ "joan-bytecode",
+ "joan-canonical",
+ "joan-compiler",
+ "joan-identity",
+ "joan-instruction",
+ "joan-package",
+ "joan-runtime",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror",
 ]
 
 [[package]]

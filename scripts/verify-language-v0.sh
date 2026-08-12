@@ -9,17 +9,19 @@ if [[ "$target_dir" != /* ]]; then
   target_dir="$root/$target_dir"
 fi
 binary="$target_dir/debug/joan"
-receipt="$(mktemp "${TMPDIR:-/tmp}/joan-language-receipt.XXXXXX.json")"
-artifact="$(mktemp "${TMPDIR:-/tmp}/joan-language-artifact.XXXXXX.json")"
-bytecode="$(mktemp "${TMPDIR:-/tmp}/joan-language-bytecode.XXXXXX.json")"
-verification="$(mktemp "${TMPDIR:-/tmp}/joan-language-verification.XXXXXX.json")"
-linear_receipt="$(mktemp "${TMPDIR:-/tmp}/joan-linear-language-receipt.XXXXXX.json")"
-linear_artifact="$(mktemp "${TMPDIR:-/tmp}/joan-linear-language-artifact.XXXXXX.json")"
-flow_receipt="$(mktemp "${TMPDIR:-/tmp}/joan-flow-language-receipt.XXXXXX.json")"
-flow_artifact="$(mktemp "${TMPDIR:-/tmp}/joan-flow-language-artifact.XXXXXX.json")"
-flow_bytecode="$(mktemp "${TMPDIR:-/tmp}/joan-flow-language-bytecode.XXXXXX.json")"
-flow_verification="$(mktemp "${TMPDIR:-/tmp}/joan-flow-language-verification.XXXXXX.json")"
-trap 'rm -f "$receipt" "$artifact" "$bytecode" "$verification" "$linear_receipt" "$linear_artifact" "$flow_receipt" "$flow_artifact" "$flow_bytecode" "$flow_verification"' EXIT
+receipt="$(mktemp "${TMPDIR:-/tmp}/joan-language-receipt.XXXXXX")"
+artifact="$(mktemp "${TMPDIR:-/tmp}/joan-language-artifact.XXXXXX")"
+bytecode="$(mktemp "${TMPDIR:-/tmp}/joan-language-bytecode.XXXXXX")"
+verification="$(mktemp "${TMPDIR:-/tmp}/joan-language-verification.XXXXXX")"
+linear_receipt="$(mktemp "${TMPDIR:-/tmp}/joan-linear-language-receipt.XXXXXX")"
+linear_artifact="$(mktemp "${TMPDIR:-/tmp}/joan-linear-language-artifact.XXXXXX")"
+flow_receipt="$(mktemp "${TMPDIR:-/tmp}/joan-flow-language-receipt.XXXXXX")"
+flow_artifact="$(mktemp "${TMPDIR:-/tmp}/joan-flow-language-artifact.XXXXXX")"
+flow_bytecode="$(mktemp "${TMPDIR:-/tmp}/joan-flow-language-bytecode.XXXXXX")"
+flow_verification="$(mktemp "${TMPDIR:-/tmp}/joan-flow-language-verification.XXXXXX")"
+trust_receipt="$(mktemp "${TMPDIR:-/tmp}/joan-trust-language-receipt.XXXXXX")"
+trust_artifact="$(mktemp "${TMPDIR:-/tmp}/joan-trust-language-artifact.XXXXXX")"
+trap 'rm -f "$receipt" "$artifact" "$bytecode" "$verification" "$linear_receipt" "$linear_artifact" "$flow_receipt" "$flow_artifact" "$flow_bytecode" "$flow_verification" "$trust_receipt" "$trust_artifact"' EXIT
 
 cargo build --quiet --locked -p joan-node
 "$binary" fmt examples/agent-handoff.joan --check
@@ -40,8 +42,12 @@ node -e 'process.stdout.write(JSON.stringify(JSON.parse(require("node:fs").readF
 node -e 'process.stdout.write(JSON.stringify(JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).bytecode))' "$flow_artifact" \
   | "$binary" canonicalize-v1 - >"$flow_bytecode"
 "$binary" bytecode verify "$flow_bytecode" --json >"$flow_verification"
+"$binary" fmt examples/pr-trust/pr-trust-policy.joan --check
+"$binary" check examples/pr-trust/pr-trust-policy.joan --json >/dev/null
+"$binary" compile examples/pr-trust/pr-trust-policy.joan --json >"$trust_artifact"
+"$binary" run examples/pr-trust/pr-trust-policy.joan --json >"$trust_receipt"
 
-node - "$artifact" "$receipt" "$verification" "$linear_artifact" "$linear_receipt" "$flow_artifact" "$flow_receipt" "$flow_verification" <<'NODE'
+node - "$artifact" "$receipt" "$verification" "$linear_artifact" "$linear_receipt" "$flow_artifact" "$flow_receipt" "$flow_verification" "$trust_artifact" "$trust_receipt" <<'NODE'
 const { readFileSync } = require("node:fs");
 const artifact = JSON.parse(readFileSync(process.argv[2], "utf8"));
 const receipt = JSON.parse(readFileSync(process.argv[3], "utf8"));
@@ -51,6 +57,8 @@ const linearReceipt = JSON.parse(readFileSync(process.argv[6], "utf8"));
 const flowArtifact = JSON.parse(readFileSync(process.argv[7], "utf8"));
 const flowReceipt = JSON.parse(readFileSync(process.argv[8], "utf8"));
 const flowVerification = JSON.parse(readFileSync(process.argv[9], "utf8"));
+const trustArtifact = JSON.parse(readFileSync(process.argv[10], "utf8"));
+const trustReceipt = JSON.parse(readFileSync(process.argv[11], "utf8"));
 if (artifact.schema !== "joan.compile-artifact.v1" || artifact.status !== "compiled") {
   throw new Error("compile artifact contract failed");
 }
@@ -132,6 +140,20 @@ if (
 ) {
   throw new Error("tenant-purpose request binding failed");
 }
+const trustRequest = trustReceipt.effect_requests[0];
+if (
+  trustArtifact.schema !== "joan.compile-artifact.v3" ||
+  trustReceipt.schema !== "joan.execution-receipt.v3" ||
+  trustReceipt.effect_requests.length !== 1 ||
+  trustRequest.effect !== "publish_pr_assessment" ||
+  trustRequest.authority_slot !== "publish_once" ||
+  trustRequest.information?.tenant !== "github" ||
+  trustRequest.information?.purpose !== "pr_review" ||
+  trustRequest.arguments[0]?.type !== "string" ||
+  trustRequest.arguments[0]?.value !== "requirements-satisfied"
+) {
+  throw new Error("PR trust policy program contract failed");
+}
 NODE
 
-printf '%s\n' 'JOAN legacy, linear-authority, and tenant-purpose flow contracts passed.'
+printf '%s\n' 'JOAN legacy, linear-authority, tenant-purpose flow, and PR trust policy contracts passed.'

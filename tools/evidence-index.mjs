@@ -33,8 +33,8 @@ const BENCHMARK_RELATIVE = "benchmarks/results/2026-08-11-mac15-4-jce1-digest.js
 const BENCHMARK_PATH = join(ROOT, BENCHMARK_RELATIVE);
 const PAYMENT_REPORT_RELATIVE = "vectors/payment-cost/report-v0.json";
 const PAYMENT_REPORT_PATH = join(ROOT, PAYMENT_REPORT_RELATIVE);
-const EXCLUDES = [".git", "target", ".joan/evidence"];
-const SOURCE_PREFIX = Buffer.from("JOAN\0SOURCE-TREE\0V1", "ascii");
+const EXCLUDES = [".git", "target", ".joan/evidence", "**/.DS_Store", "**/._*"];
+const SOURCE_PREFIX = Buffer.from("JOAN\0SOURCE-TREE\0V2", "ascii");
 const JCE1_PREFIX = Buffer.from("JOAN\0HASH\0V1", "ascii");
 const JCE1_PROFILE = "joan-hash-v1";
 const JCE1_DOMAIN = "joan.conformance-vector.v1";
@@ -75,7 +75,12 @@ function relativePath(path) {
 }
 
 function isExcluded(path) {
-  return EXCLUDES.some((excluded) => path === excluded || path.startsWith(`${excluded}/`));
+  if ([".git", "target", ".joan/evidence"].some(
+    (excluded) => path === excluded || path.startsWith(`${excluded}/`),
+  )) {
+    return true;
+  }
+  return path.split("/").some((segment) => segment === ".DS_Store" || segment.startsWith("._"));
 }
 
 function compareUtf8(left, right) {
@@ -125,7 +130,7 @@ function sourceTree() {
   return {
     tree_digest: {
       algorithm: "sha256",
-      profile: "joan-source-tree-v1",
+      profile: "joan-source-tree-v2",
       value: tree.digest("hex"),
     },
     file_count: files.length,
@@ -452,14 +457,16 @@ function checkEvidence() {
 
 const [, , command, ...argumentsList] = process.argv;
 try {
-  if (command === "state" && argumentsList.length === 0) {
+  if (command === "source" && argumentsList.length === 0) {
+    process.stdout.write(`${JSON.stringify(sourceTree())}\n`);
+  } else if (command === "state" && argumentsList.length === 0) {
     process.stdout.write(`${JSON.stringify(currentState())}\n`);
   } else if (command === "write") {
     writeEvidence(argumentsList);
   } else if (command === "check" && argumentsList.length === 0) {
     checkEvidence();
   } else {
-    fail("usage: node tools/evidence-index.mjs <state|write <receipt-1> <receipt-2> <receipt-3>|check>");
+    fail("usage: node tools/evidence-index.mjs <source|state|write <receipt-1> <receipt-2> <receipt-3>|check>");
   }
 } catch (error) {
   process.stderr.write(`evidence-index: ${String(error.message ?? error)}\n`);

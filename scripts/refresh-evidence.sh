@@ -11,14 +11,26 @@ for tool in cargo-audit cargo-deny; do
 done
 
 receipt_directory='.joan/evidence/runs'
+temporary_directory="$(mktemp -d "${TMPDIR:-/tmp}/joan-evidence-refresh.XXXXXX")"
 mkdir -p "$receipt_directory"
 receipts=()
 
+cleanup() {
+  rm -rf -- "$temporary_directory"
+}
+trap cleanup EXIT
+
 for ordinal in 1 2 3; do
-  receipt="$receipt_directory/run-$ordinal.json"
+  receipt="$temporary_directory/run-$ordinal.json"
   printf '==> complete verification receipt %s of 3\n' "$ordinal"
   node tools/verification-runner.mjs "$receipt"
-  receipts+=("$receipt")
+done
+
+for ordinal in 1 2 3; do
+  staged="$receipt_directory/.run-$ordinal.next.json"
+  cp "$temporary_directory/run-$ordinal.json" "$staged"
+  mv "$staged" "$receipt_directory/run-$ordinal.json"
+  receipts+=("$receipt_directory/run-$ordinal.json")
 done
 
 node tools/evidence-index.mjs write "${receipts[@]}"

@@ -3,7 +3,9 @@
 use joan_canonical::parse_strict;
 use serde_json::Value;
 use std::fs;
+use std::io::Write as _;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 const FOUNDER: &str = "Joan Alberto Barrios Cruz";
 const CORPORATE_OWNER: &str = "LED ACTION LLC";
@@ -155,6 +157,20 @@ fn invalid_vectors_remain_rejected() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[test]
+fn source_tree_v2_ignores_appledouble_metadata() -> Result<(), Box<dyn std::error::Error>> {
+    let root = workspace_root();
+    let baseline = source_snapshot(&root)?;
+    let mut metadata = tempfile::Builder::new()
+        .prefix("._joan-source-tree-v2-")
+        .tempfile_in(&root)?;
+    metadata.write_all(b"platform metadata is not source")?;
+    metadata.flush()?;
+    let observed = source_snapshot(&root)?;
+    assert_eq!(observed, baseline);
+    Ok(())
+}
+
 fn workspace_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
@@ -208,6 +224,17 @@ fn manifest_schema_pairs() -> [(&'static str, &'static str); 9] {
 
 fn read_json(path: &Path) -> Result<Value, Box<dyn std::error::Error>> {
     Ok(serde_json::from_str(&fs::read_to_string(path)?)?)
+}
+
+fn source_snapshot(root: &Path) -> Result<Value, Box<dyn std::error::Error>> {
+    let output = Command::new("node")
+        .args(["tools/evidence-index.mjs", "source"])
+        .current_dir(root)
+        .output()?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).into_owned().into());
+    }
+    Ok(serde_json::from_slice(&output.stdout)?)
 }
 
 fn collect_json(directory: &Path, files: &mut Vec<PathBuf>) -> Result<(), std::io::Error> {

@@ -60,7 +60,7 @@ Performance evidence follows [spec/benchmark-policy-v0.md](spec/benchmark-policy
 
 Payment-cost evidence follows [spec/payment-cost-proof-v0.md](spec/payment-cost-proof-v0.md). JOAN v0 charges no protocol fee and compares qualified settlement modes using fixed-point total effective cost. The checked-in scenario is illustrative evidence of deterministic selection, not proof that JOAN is universally the cheapest payment system.
 
-Machine evidence follows [spec/source-tree-evidence-v1.md](spec/source-tree-evidence-v1.md). A passing index is derived from three complete local execution receipts and binds JCE1 and the language preview to the exact source tree, normative specifications and executable gates. This is reproducible local evidence, not independent attestation.
+Machine evidence follows [spec/source-tree-evidence-v2.md](spec/source-tree-evidence-v2.md); [v1](spec/source-tree-evidence-v1.md) remains frozen for historical receipts. A passing index is derived from three complete local execution receipts and binds JCE1 and the language preview to the exact source tree, normative specifications and executable gates. This is reproducible local evidence, not independent attestation.
 
 ## License and commercial authority
 

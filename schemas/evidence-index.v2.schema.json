@@ -58,15 +58,15 @@
           "required": ["algorithm", "profile", "value"],
           "properties": {
             "algorithm": {"const": "sha256"},
-            "profile": {"const": "joan-source-tree-v1"},
+            "profile": {"const": "joan-source-tree-v2"},
             "value": {"$ref": "#/$defs/sha256"}
           }
         },
         "file_count": {"type": "integer", "minimum": 1},
         "excludes": {
           "type": "array",
-          "minItems": 3,
-          "maxItems": 3,
+          "minItems": 5,
+          "maxItems": 5,
           "uniqueItems": true,
           "items": {"type": "string", "minLength": 1}
         }

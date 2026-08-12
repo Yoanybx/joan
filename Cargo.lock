@@ -421,6 +421,7 @@ dependencies = [
  "joan-ast",
  "joan-canonical",
  "joan-check",
+ "joan-identity",
  "joan-syntax",
  "serde",
  "thiserror",
@@ -470,6 +471,7 @@ dependencies = [
 name = "joan-identity"
 version = "0.1.0-alpha.1"
 dependencies = [
+ "joan-ast",
  "joan-canonical",
  "serde",
  "thiserror",

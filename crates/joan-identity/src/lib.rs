@@ -1,8 +1,16 @@
 //! Semantic identity bundles built from separate, domain-tagged digests.
 
-use joan_canonical::{CanonicalError, Digest, digest_serializable};
+use joan_ast::CanonicalProgram;
+use joan_canonical::{
+    CanonicalError, CanonicalValue, Digest, Jce1Error, RegisteredDomainV1, digest_bytes_v1,
+    digest_serializable, from_serializable_v1, parse_strict_v1, to_canonical_bytes_v1,
+    verify_typed_digest_v1,
+};
 use serde::{Deserialize, Serialize};
+use std::str;
 use thiserror::Error;
+
+const CANONICAL_AST_IDENTITY_SCHEMA_V0: &str = "joan.canonical-ast-identity.v0";
 
 /// Source-independent package identity inputs.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -70,6 +78,29 @@ pub struct SemanticIdentityBundle {
     pub program_root: Digest,
 }
 
+/// Typed identity of one exact canonical JOAN AST encoding.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CanonicalAstIdentity {
+    /// Identity descriptor schema.
+    pub schema: String,
+    /// Canonical encoding profile.
+    pub encoding: String,
+    /// AST schema covered by the digest.
+    pub ast_schema: String,
+    /// JCE1 digest of the exact canonical AST bytes.
+    pub digest: Digest,
+}
+
+/// Canonical bytes plus their typed identity.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EncodedCanonicalAst {
+    /// Exact JCE1 bytes.
+    pub bytes: Vec<u8>,
+    /// Typed identity of `bytes`.
+    pub identity: CanonicalAstIdentity,
+}
+
 /// Snapshot-scoped reference to one semantic node.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -90,6 +121,9 @@ pub enum IdentityError {
     /// Canonical encoding or hashing failed.
     #[error(transparent)]
     Canonical(#[from] CanonicalError),
+    /// JCE1 encoding, domain or digest validation failed.
+    #[error(transparent)]
+    Jce1(#[from] Jce1Error),
     /// Input schema is unsupported.
     #[error("unsupported schema: {0}")]
     UnsupportedSchema(String),
@@ -99,6 +133,9 @@ pub enum IdentityError {
     /// A derived identity did not match the supplied value.
     #[error("identity mismatch in field {0}")]
     Mismatch(&'static str),
+    /// AST bytes were not exact canonical JCE1 or lacked the required schema.
+    #[error("canonical AST bytes are not an exact joan.canonical-ast.v0 JCE1 value")]
+    NonCanonicalAst,
 }
 
 #[derive(Serialize)]
@@ -142,6 +179,78 @@ pub fn build_bundle(
         components,
         program_root,
     })
+}
+
+/// Encode a canonical AST value and derive its typed JCE1 identity.
+pub fn encode_canonical_ast(ast: &CanonicalProgram) -> Result<EncodedCanonicalAst, IdentityError> {
+    if ast.schema != CanonicalProgram::SCHEMA {
+        return Err(IdentityError::UnsupportedSchema(ast.schema.clone()));
+    }
+    let value = from_serializable_v1(ast)?;
+    let bytes = to_canonical_bytes_v1(&value)?;
+    let identity = CanonicalAstIdentity {
+        schema: CANONICAL_AST_IDENTITY_SCHEMA_V0.to_owned(),
+        encoding: "JCE1".to_owned(),
+        ast_schema: CanonicalProgram::SCHEMA.to_owned(),
+        digest: digest_bytes_v1(RegisteredDomainV1::LanguageCanonicalAst, &bytes)?,
+    };
+    verify_canonical_ast_identity(&identity, &bytes)?;
+    Ok(EncodedCanonicalAst { bytes, identity })
+}
+
+/// Verify the fixed tags and digest shape of a canonical AST identity descriptor.
+pub fn verify_canonical_ast_identity_descriptor(
+    identity: &CanonicalAstIdentity,
+) -> Result<(), IdentityError> {
+    if identity.schema != CANONICAL_AST_IDENTITY_SCHEMA_V0 {
+        return Err(IdentityError::UnsupportedSchema(identity.schema.clone()));
+    }
+    if identity.encoding != "JCE1" {
+        return Err(IdentityError::Mismatch("encoding"));
+    }
+    if identity.ast_schema != CanonicalProgram::SCHEMA {
+        return Err(IdentityError::UnsupportedSchema(
+            identity.ast_schema.clone(),
+        ));
+    }
+    if identity.digest.algorithm != "sha256"
+        || identity.digest.profile != "joan-hash-v1"
+        || identity.digest.domain != RegisteredDomainV1::LanguageCanonicalAst.as_str()
+        || identity.digest.value.len() != 64
+        || !identity
+            .digest
+            .value
+            .bytes()
+            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+    {
+        return Err(IdentityError::MalformedDigest("digest"));
+    }
+    Ok(())
+}
+
+/// Verify exact canonical AST bytes against their schema and typed digest.
+pub fn verify_canonical_ast_identity(
+    identity: &CanonicalAstIdentity,
+    bytes: &[u8],
+) -> Result<(), IdentityError> {
+    verify_canonical_ast_identity_descriptor(identity)?;
+    let text = str::from_utf8(bytes).map_err(|_| IdentityError::NonCanonicalAst)?;
+    let value = parse_strict_v1(text)?;
+    let CanonicalValue::Object(fields) = &value else {
+        return Err(IdentityError::NonCanonicalAst);
+    };
+    if fields.get("schema") != Some(&CanonicalValue::String(CanonicalProgram::SCHEMA.to_owned())) {
+        return Err(IdentityError::NonCanonicalAst);
+    }
+    if to_canonical_bytes_v1(&value)? != bytes {
+        return Err(IdentityError::NonCanonicalAst);
+    }
+    verify_typed_digest_v1(
+        RegisteredDomainV1::LanguageCanonicalAst,
+        bytes,
+        &identity.digest,
+    )?;
+    Ok(())
 }
 
 /// Verify schema, digest shapes and the bundle root.

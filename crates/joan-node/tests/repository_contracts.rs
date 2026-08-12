@@ -1,6 +1,7 @@
 //! Repository-level machine contract and founder-attribution tests.
 
 use joan_canonical::parse_strict;
+use joan_compiler::canonicalize_source_ast;
 use serde_json::Value;
 use std::fs;
 use std::io::Write as _;
@@ -78,6 +79,25 @@ fn every_schema_is_valid_draft_2020_12() -> Result<(), Box<dyn std::error::Error
                 path.display()
             )
         })?;
+    }
+    Ok(())
+}
+
+#[test]
+fn compiler_canonical_ast_matches_its_schema() -> Result<(), Box<dyn std::error::Error>> {
+    let encoded = canonicalize_source_ast(
+        r#"module contract;
+fn main() -> i64 effects [audit] {
+  request audit("schema");
+  return 9223372036854775807;
+}
+"#,
+    )?;
+    let instance: Value = serde_json::from_slice(&encoded.bytes)?;
+    let schema = read_json(&workspace_root().join("schemas/canonical-ast.v0.schema.json"))?;
+    let validator = jsonschema::draft202012::options().build(&schema)?;
+    if let Err(error) = validator.validate(&instance) {
+        return Err(format!("compiler canonical AST does not match its schema: {error}").into());
     }
     Ok(())
 }

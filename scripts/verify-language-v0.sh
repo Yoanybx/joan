@@ -35,8 +35,26 @@ if (receipt.result.type !== "i64" || receipt.result.value !== 42) {
 if (receipt.effect_requests.length !== 1 || receipt.effect_requests[0].effect !== "network_send") {
   throw new Error("effect request was not receipted");
 }
-if (artifact.bytecode.semantic_digest.value !== receipt.semantic_digest.value) {
+if (JSON.stringify(artifact.bytecode.semantic_digest) !== JSON.stringify(receipt.semantic_digest)) {
   throw new Error("compile and execution semantic identities differ");
+}
+const compiledIdentity = artifact.bytecode.semantic_identity;
+const executedIdentity = receipt.semantic_identity;
+if (
+  compiledIdentity.schema !== "joan.canonical-ast-identity.v0" ||
+  compiledIdentity.encoding !== "JCE1" ||
+  compiledIdentity.ast_schema !== "joan.canonical-ast.v0" ||
+  compiledIdentity.digest.algorithm !== "sha256" ||
+  compiledIdentity.digest.profile !== "joan-hash-v1" ||
+  compiledIdentity.digest.domain !== "joan.language-canonical-ast.v1"
+) {
+  throw new Error("compile artifact lacks the canonical AST identity contract");
+}
+if (JSON.stringify(compiledIdentity) !== JSON.stringify(executedIdentity)) {
+  throw new Error("compile and execution canonical AST descriptors differ");
+}
+if (compiledIdentity.digest.value !== artifact.bytecode.semantic_digest.value) {
+  throw new Error("semantic digest is not bound to the canonical AST identity");
 }
 NODE
 

@@ -11,6 +11,7 @@ publish.workspace = true
 joan-ast = { path = "../joan-ast" }
 joan-canonical = { path = "../joan-canonical" }
 joan-check = { path = "../joan-check" }
+joan-identity = { path = "../joan-identity" }
 joan-syntax = { path = "../joan-syntax" }
 serde.workspace = true
 thiserror.workspace = true

@@ -89,6 +89,13 @@ fn domains_are_closed_and_typed() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+fn language_canonical_ast_domain_is_registered() -> Result<(), Box<dyn std::error::Error>> {
+    let domain = RegisteredDomainV1::parse("joan.language-canonical-ast.v1")?;
+    assert_eq!(domain, RegisteredDomainV1::LanguageCanonicalAst);
+    Ok(())
+}
+
+#[test]
 fn typed_digest_rejects_profile_domain_and_payload_substitution()
 -> Result<(), Box<dyn std::error::Error>> {
     let payload = b"JOAN JCE1 fixed payload";

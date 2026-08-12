@@ -40,7 +40,8 @@ expression    := literals, immutable locals, calls, unary operators,
 ```
 
 Identifiers are ASCII and source strings are UTF-8. Comments use `//` and
-`/* ... */`. Inputs are bounded to 1 MiB and 200,000 tokens.
+nested `/* ... */`; unterminated blocks fail during lexing. Inputs are bounded
+to 1 MiB and 200,000 tokens.
 
 ## Static invariants
 
@@ -67,10 +68,13 @@ UTF-8 source -> bounded lexer -> parser -> AST -> static checker
              -> bytecode compiler -> bounded deterministic VM -> receipt
 ```
 
-Source spans are excluded from semantic identity. Function declarations and
-effect rows are sorted only for identity calculation, so equivalent whitespace,
-formatting, function order, and effect order yield the same semantic digest.
-Execution order still follows compiled bytecode.
+Source spans and trivia are excluded from `joan.canonical-ast.v0`. Function
+declarations and effect rows are sorted only for identity calculation, so
+equivalent whitespace, comments, formatting, function order, and effect order
+yield identical JCE1 bytes and the same `joan.language-canonical-ast.v1` typed
+digest. Execution order still follows compiled bytecode. Exact normalization,
+integer encoding, verifier limits, and non-equivalence boundaries are frozen in
+`spec/canonical-ast-v0.md`.
 
 The default instruction budget is 1,000,000 and maximum call depth is 1,024.
 All `i64` arithmetic is checked. Overflow, division failure, malformed bytecode,
@@ -99,7 +103,8 @@ Implemented in v0:
 - explicit effect rows and effect attenuation across calls;
 - acyclic bounded termination profile;
 - deterministic bytecode compilation and VM execution;
-- semantic program digests, structured diagnostics, and execution receipts.
+- versioned JCE1 canonical AST identities, structured diagnostics, and
+  execution receipts bound to those identities.
 
 Not implemented in v0:
 

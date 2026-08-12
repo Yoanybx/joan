@@ -1,17 +1,17 @@
 {
   "schema": "joan.verification-run-receipt.v1",
   "version": "0.1.0-alpha.1",
-  "run_id": "f67a4753-868e-4a48-a440-1bcd249df4ff",
+  "run_id": "e663ae3a-3616-4714-bbfa-2ec9d917bbae",
   "status": "passed",
-  "started_at": "2026-08-12T06:11:20.413Z",
-  "completed_at": "2026-08-12T06:14:42.545Z",
+  "started_at": "2026-08-12T06:59:21.590Z",
+  "completed_at": "2026-08-12T07:02:43.791Z",
   "source": {
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "b6204e754ddc450af5b343b272dea9e164de428bd5a68d9be095fde69a607bd8"
+      "value": "c29142c41a21854d8748fa60a377eae3d8a368c82479689f59396eec3b4be1ea"
     },
-    "file_count": 177,
+    "file_count": 180,
     "excludes": [
       ".git",
       "target",
@@ -68,9 +68,9 @@
       ],
       "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
       "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-12T06:11:20.415Z",
-      "completed_at": "2026-08-12T06:11:20.580Z",
-      "duration_ms": 164,
+      "started_at": "2026-08-12T06:59:21.592Z",
+      "completed_at": "2026-08-12T06:59:21.736Z",
+      "duration_ms": 144,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -98,9 +98,9 @@
       ],
       "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
       "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-12T06:11:20.588Z",
-      "completed_at": "2026-08-12T06:11:45.200Z",
-      "duration_ms": 24612,
+      "started_at": "2026-08-12T06:59:21.744Z",
+      "completed_at": "2026-08-12T06:59:52.918Z",
+      "duration_ms": 31174,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -110,7 +110,7 @@
       },
       "stderr": {
         "bytes": 73,
-        "sha256": "fa9f723cfd0b92ecfbd6b581fc11b7ba4a9341f7b5285ded84770e47f6faabaf"
+        "sha256": "2b691ff55911b53f719c915ab6c216d7fd0f12960e35794b1f62133c73adc287"
       }
     },
     {
@@ -124,19 +124,19 @@
       ],
       "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
       "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-12T06:11:45.214Z",
-      "completed_at": "2026-08-12T06:13:09.317Z",
-      "duration_ms": 84102,
+      "started_at": "2026-08-12T06:59:52.932Z",
+      "completed_at": "2026-08-12T07:01:21.413Z",
+      "duration_ms": 88480,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
       "stdout": {
-        "bytes": 11758,
-        "sha256": "3591349ba56a81c3bba157ce53597436c875e2d00868bac9daf1de0e50ee5239"
+        "bytes": 12338,
+        "sha256": "60db84a2fc6d5a7c83e6fa6522fd66ca792f4ddbec66b227d1bc7b95a1bb8dd9"
       },
       "stderr": {
-        "bytes": 5213,
-        "sha256": "8bb7ab1953ab3afad0dc779c73b4281fb981d0e456f4813213708248a839ae70"
+        "bytes": 9971,
+        "sha256": "2416747dc9abb0c693c0569f7c6ef03002e86c4d308b9677424fddd37068b6d3"
       }
     },
     {
@@ -150,9 +150,9 @@
       ],
       "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
       "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-12T06:13:09.335Z",
-      "completed_at": "2026-08-12T06:13:36.075Z",
-      "duration_ms": 26739,
+      "started_at": "2026-08-12T07:01:21.427Z",
+      "completed_at": "2026-08-12T07:01:46.381Z",
+      "duration_ms": 24953,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -161,8 +161,8 @@
         "sha256": "ce67a839428f37e8a53c7b9e55cc8b9539fa89685fd089d400f431910f2ec63f"
       },
       "stderr": {
-        "bytes": 541,
-        "sha256": "f2764f189886d0eda3268901ac0980333d560def92536882ec77fa0e73174113"
+        "bytes": 5299,
+        "sha256": "a3b9859b235dbca2fa132537a857d941851fd4f9e30079a9a2226ed9d16295c1"
       }
     },
     {
@@ -176,9 +176,9 @@
       ],
       "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
       "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-12T06:13:36.089Z",
-      "completed_at": "2026-08-12T06:13:45.022Z",
-      "duration_ms": 8932,
+      "started_at": "2026-08-12T07:01:46.394Z",
+      "completed_at": "2026-08-12T07:02:03.766Z",
+      "duration_ms": 17372,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -187,8 +187,8 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stderr": {
-        "bytes": 62,
-        "sha256": "f739972d3a96f725d863ff25fed749234033d655367a759bb4ffbe6c6fc91f91"
+        "bytes": 1897,
+        "sha256": "5eba6be9dccfb7e882ff1c6f09988d2e36ca195cf7d0a056df9edf7adc321238"
       }
     },
     {
@@ -198,9 +198,9 @@
       ],
       "executable_path": "/Users/gepsygainza/Documents/Playground/joan/scripts/verify-jce1.sh",
       "executable_sha256": "b5798b586af75b93465da894d03da93e430d9742e160f5912743216d976a9814",
-      "started_at": "2026-08-12T06:13:45.030Z",
-      "completed_at": "2026-08-12T06:13:53.935Z",
-      "duration_ms": 8904,
+      "started_at": "2026-08-12T07:02:03.778Z",
+      "completed_at": "2026-08-12T07:02:11.021Z",
+      "duration_ms": 7242,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -209,8 +209,8 @@
         "sha256": "ebdddca1621c9ccb7261d0396ca60cbe85ce0f89df687184194b5353d4f5ad57"
       },
       "stderr": {
-        "bytes": 0,
-        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "bytes": 4108,
+        "sha256": "05986f5f0955adf607a61b1659f4e4932e6acb37b9df1db525140ece293b4de0"
       }
     },
     {
@@ -222,15 +222,15 @@
       ],
       "executable_path": "/Users/gepsygainza/Documents/Playground/joan/scripts/benchmark-digest.sh",
       "executable_sha256": "804f065635cfbc42dfd7d8c9ede79ff667e057cc47e529168dfcff703c76347f",
-      "started_at": "2026-08-12T06:13:53.936Z",
-      "completed_at": "2026-08-12T06:13:58.049Z",
-      "duration_ms": 4113,
+      "started_at": "2026-08-12T07:02:11.021Z",
+      "completed_at": "2026-08-12T07:02:13.947Z",
+      "duration_ms": 2926,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
       "stdout": {
         "bytes": 782,
-        "sha256": "34db4428655a9d55a668d12117c179906871085469c51f7c72a128c4907cccc2"
+        "sha256": "d8b0d639c07f166a093b553150a7f26226fcfbdd94fd90d4e158ddf801cc6185"
       },
       "stderr": {
         "bytes": 0,
@@ -244,15 +244,15 @@
       ],
       "executable_path": "/Users/gepsygainza/Documents/Playground/joan/scripts/verify-payment-cost.sh",
       "executable_sha256": "1f413855abefacd9ba1d1c1af924bd8b87287a2db62951ebdf9b69ff457f7917",
-      "started_at": "2026-08-12T06:13:58.050Z",
-      "completed_at": "2026-08-12T06:13:58.207Z",
-      "duration_ms": 157,
+      "started_at": "2026-08-12T07:02:13.947Z",
+      "completed_at": "2026-08-12T07:02:14.044Z",
+      "duration_ms": 96,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
       "stdout": {
-        "bytes": 604,
-        "sha256": "1195f4c9557aa126d88064db4168dc909a1d6fc95fbc7521901422dad899e702"
+        "bytes": 600,
+        "sha256": "d76bbc11179309bd6cb8038fe4a612f681b5399c07019242f9dbfcc87a4c9a82"
       },
       "stderr": {
         "bytes": 0,
@@ -269,9 +269,9 @@
       ],
       "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
       "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-12T06:13:58.209Z",
-      "completed_at": "2026-08-12T06:13:59.486Z",
-      "duration_ms": 1276,
+      "started_at": "2026-08-12T07:02:14.045Z",
+      "completed_at": "2026-08-12T07:02:15.044Z",
+      "duration_ms": 998,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -293,9 +293,9 @@
       ],
       "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
       "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-12T06:13:59.494Z",
-      "completed_at": "2026-08-12T06:14:01.015Z",
-      "duration_ms": 1521,
+      "started_at": "2026-08-12T07:02:15.052Z",
+      "completed_at": "2026-08-12T07:02:16.965Z",
+      "duration_ms": 1913,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -320,9 +320,9 @@
       "tree_digest": {
         "algorithm": "sha256",
         "profile": "joan-source-tree-v2",
-        "value": "b6204e754ddc450af5b343b272dea9e164de428bd5a68d9be095fde69a607bd8"
+        "value": "c29142c41a21854d8748fa60a377eae3d8a368c82479689f59396eec3b4be1ea"
       },
-      "file_count": 177,
+      "file_count": 180,
       "excludes": [
         ".git",
         "target",
@@ -333,8 +333,8 @@
     },
     "inventory": {
       "workspace_crates": 18,
-      "json_schemas": 36,
-      "rust_tests": 108
+      "json_schemas": 38,
+      "rust_tests": 117
     },
     "jce1": {
       "total": 27,

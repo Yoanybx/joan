@@ -17,6 +17,7 @@ const HASH_PREFIX = Buffer.from("JOAN\0HASH\0V1", "ascii");
 const HASH_PROFILE = "joan-hash-v1";
 const DOMAINS = new Set([
   "joan.canonical-set-element.v1",
+  "joan.language-canonical-ast.v1",
   "joan.conformance-vector.v1",
   "joan.source.v1",
   "joan.dispute-case.v1",

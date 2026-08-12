@@ -1,9 +1,10 @@
 //! Semantic identity bundle tests.
 
+use joan_ast::{CanonicalFunction, CanonicalProgram, CanonicalStatement, Type};
 use joan_canonical::digest_bytes;
 use joan_identity::{
-    ComponentDigests, IdentityError, NodeRef, PackageDescriptor, build_bundle, verify_bundle,
-    verify_node_ref,
+    ComponentDigests, IdentityError, NodeRef, PackageDescriptor, build_bundle,
+    encode_canonical_ast, verify_bundle, verify_canonical_ast_identity, verify_node_ref,
 };
 
 fn components(body: &[u8]) -> Result<ComponentDigests, Box<dyn std::error::Error>> {
@@ -69,5 +70,32 @@ fn stale_node_reference_is_rejected() -> Result<(), Box<dyn std::error::Error>> 
     verify_node_ref(&node_ref, &bundle.program_root, &node_ref.expected_digest)?;
     let stale = digest_bytes("joan.structural.v0", b"stale")?;
     assert!(verify_node_ref(&node_ref, &bundle.program_root, &stale).is_err());
+    Ok(())
+}
+
+#[test]
+fn canonical_ast_identity_rejects_noncanonical_or_modified_bytes()
+-> Result<(), Box<dyn std::error::Error>> {
+    let encoded = encode_canonical_ast(&CanonicalProgram {
+        schema: CanonicalProgram::SCHEMA.to_owned(),
+        module: "example".to_owned(),
+        functions: vec![CanonicalFunction {
+            name: "main".to_owned(),
+            parameters: Vec::new(),
+            return_type: Type::Unit,
+            effects: Vec::new(),
+            body: vec![CanonicalStatement::Return { value: None }],
+        }],
+    })?;
+    verify_canonical_ast_identity(&encoded.identity, &encoded.bytes)?;
+
+    let noncanonical = b"{\"schema\": \"joan.canonical-ast.v0\",\"module\":\"example\"}";
+    assert!(matches!(
+        verify_canonical_ast_identity(&encoded.identity, noncanonical),
+        Err(IdentityError::NonCanonicalAst)
+    ));
+
+    let modified = b"{\"module\":\"changed\",\"schema\":\"joan.canonical-ast.v0\"}";
+    assert!(verify_canonical_ast_identity(&encoded.identity, modified).is_err());
     Ok(())
 }

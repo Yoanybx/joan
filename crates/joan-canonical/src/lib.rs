@@ -82,6 +82,8 @@ pub struct Digest {
 pub enum RegisteredDomainV1 {
     /// Canonical set element identity.
     CanonicalSetElement,
+    /// Canonical JOAN language AST identity.
+    LanguageCanonicalAst,
     /// One conformance vector or vector manifest.
     ConformanceVector,
     /// Source-byte identity.
@@ -112,6 +114,7 @@ impl RegisteredDomainV1 {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::CanonicalSetElement => "joan.canonical-set-element.v1",
+            Self::LanguageCanonicalAst => "joan.language-canonical-ast.v1",
             Self::ConformanceVector => "joan.conformance-vector.v1",
             Self::Source => "joan.source.v1",
             Self::DisputeCase => "joan.dispute-case.v1",
@@ -130,6 +133,7 @@ impl RegisteredDomainV1 {
     pub fn parse(value: &str) -> Result<Self, Jce1Error> {
         let domain = match value {
             "joan.canonical-set-element.v1" => Self::CanonicalSetElement,
+            "joan.language-canonical-ast.v1" => Self::LanguageCanonicalAst,
             "joan.conformance-vector.v1" => Self::ConformanceVector,
             "joan.source.v1" => Self::Source,
             "joan.dispute-case.v1" => Self::DisputeCase,

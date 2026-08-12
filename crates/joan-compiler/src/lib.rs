@@ -3,8 +3,12 @@
 use joan_ast::{
     BinaryOperator, DiagnosticReport, Expression, Program, Statement, Type, UnaryOperator,
 };
-use joan_canonical::{CanonicalError, Digest, digest_bytes};
+use joan_canonical::{CanonicalError, Digest};
 use joan_check::{CheckReceipt, check};
+use joan_identity::{
+    CanonicalAstIdentity, EncodedCanonicalAst, IdentityError, encode_canonical_ast,
+    verify_canonical_ast_identity_descriptor,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use thiserror::Error;
@@ -123,6 +127,8 @@ pub struct BytecodeProgram {
     pub module: String,
     /// Whitespace- and declaration-order-independent source meaning digest.
     pub semantic_digest: Digest,
+    /// Versioned JCE1 AST identity from which `semantic_digest` is copied.
+    pub semantic_identity: CanonicalAstIdentity,
     /// Entrypoint function table index.
     pub entry_function: usize,
     /// Functions in source order.
@@ -169,6 +175,8 @@ pub struct ExecutionReceipt {
     pub status: String,
     /// Semantic program identity.
     pub semantic_digest: Digest,
+    /// Versioned JCE1 AST identity accepted by the VM.
+    pub semantic_identity: CanonicalAstIdentity,
     /// Entrypoint result.
     pub result: Value,
     /// Host effects requested but not executed.
@@ -186,6 +194,9 @@ pub enum LanguageError {
     /// Canonical semantic identity failed.
     #[error("semantic identity failed: {0}")]
     Canonical(#[from] CanonicalError),
+    /// Canonical AST identity construction failed.
+    #[error("semantic identity failed: {0}")]
+    Identity(#[from] IdentityError),
     /// Internal compiler invariant failed.
     #[error("compiler invariant failed: {0}")]
     Compiler(String),
@@ -204,6 +215,13 @@ impl From<DiagnosticReport> for LanguageError {
 pub fn check_source(source: &str) -> Result<CheckReceipt, LanguageError> {
     let program = joan_syntax::parse(source)?;
     Ok(check(&program)?)
+}
+
+/// Parse, check, and encode the canonical semantic AST for one source module.
+pub fn canonicalize_source_ast(source: &str) -> Result<EncodedCanonicalAst, LanguageError> {
+    let program = joan_syntax::parse(source)?;
+    check(&program)?;
+    encode_program_ast(&program)
 }
 
 /// Parse, validate, and compile source to deterministic JOAN bytecode.
@@ -240,6 +258,14 @@ pub fn execute_bytecode(
             "entry function index is outside the function table".to_owned(),
         ));
     }
+    verify_canonical_ast_identity_descriptor(&program.semantic_identity).map_err(|error| {
+        LanguageError::Runtime(format!("invalid semantic identity descriptor: {error}"))
+    })?;
+    if program.semantic_digest != program.semantic_identity.digest {
+        return Err(LanguageError::Runtime(
+            "semantic digest does not match the canonical AST identity".to_owned(),
+        ));
+    }
     let mut machine = Machine {
         program,
         remaining: instruction_budget,
@@ -251,6 +277,7 @@ pub fn execute_bytecode(
         schema: "joan.execution-receipt.v0".to_owned(),
         status: "completed".to_owned(),
         semantic_digest: program.semantic_digest.clone(),
+        semantic_identity: program.semantic_identity.clone(),
         result,
         effect_requests: machine.requests,
         instructions_executed: machine.executed,
@@ -272,21 +299,19 @@ fn compile_program(program: &Program) -> Result<BytecodeProgram, LanguageError> 
         .iter()
         .map(|function| compile_function(function, &function_indexes))
         .collect::<Result<Vec<_>, _>>()?;
-    let mut normalized = program.clone();
-    normalized
-        .functions
-        .sort_by(|left, right| left.name.cmp(&right.name));
-    for function in &mut normalized.functions {
-        function.effects.sort();
-    }
-    let semantic_source = joan_syntax::format_program(&normalized);
+    let semantic_ast = encode_program_ast(program)?;
     Ok(BytecodeProgram {
         schema: "joan.bytecode-program.v0".to_owned(),
         module: program.module.clone(),
-        semantic_digest: digest_bytes("joan.language-program.v0", semantic_source.as_bytes())?,
+        semantic_digest: semantic_ast.identity.digest.clone(),
+        semantic_identity: semantic_ast.identity,
         entry_function,
         functions,
     })
+}
+
+fn encode_program_ast(program: &Program) -> Result<EncodedCanonicalAst, LanguageError> {
+    Ok(encode_canonical_ast(&program.canonical())?)
 }
 
 fn compile_function(

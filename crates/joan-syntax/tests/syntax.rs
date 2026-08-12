@@ -32,6 +32,28 @@ fn malformed_source_has_a_stable_parse_diagnostic() -> Result<(), Box<dyn std::e
     Ok(())
 }
 
+#[test]
+fn line_and_nested_block_comments_are_ignored() -> Result<(), Box<dyn std::error::Error>> {
+    let commented = r"/* outer /* nested */ block */
+module agent; // module declaration
+fn main() -> i64 effects [] { return 42; }
+";
+    let program = parse(commented)?;
+    assert_eq!(program.module, "agent");
+    assert_eq!(program.functions.len(), 1);
+    Ok(())
+}
+
+#[test]
+fn unterminated_block_comment_has_a_stable_diagnostic() -> Result<(), Box<dyn std::error::Error>> {
+    let Err(report) = parse("/* never closed") else {
+        return Err("unterminated block comment unexpectedly parsed".into());
+    };
+    assert_eq!(report.phase, "lex");
+    assert_eq!(report.diagnostics[0].code, "J0012");
+    Ok(())
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(256))]
 

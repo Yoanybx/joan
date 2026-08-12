@@ -382,3 +382,244 @@ pub struct Program {
     #[serde(skip, default)]
     pub span: Span,
 }
+
+/// Span-free, declaration-normalized AST used for semantic identity.
+///
+/// This representation is intentionally separate from [`Program`]: it freezes
+/// identity semantics without making diagnostics or parser internals part of a
+/// program digest.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CanonicalProgram {
+    /// Canonical AST schema.
+    pub schema: String,
+    /// Module name.
+    pub module: String,
+    /// Functions sorted by name.
+    pub functions: Vec<CanonicalFunction>,
+}
+
+impl CanonicalProgram {
+    /// Exact schema identifier covered by the canonical digest.
+    pub const SCHEMA: &'static str = "joan.canonical-ast.v0";
+}
+
+/// One canonical function declaration.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CanonicalFunction {
+    /// Function name.
+    pub name: String,
+    /// Ordered parameters.
+    pub parameters: Vec<CanonicalParameter>,
+    /// Declared return type.
+    pub return_type: Type,
+    /// Lexicographically sorted effect row.
+    pub effects: Vec<String>,
+    /// Ordered body statements.
+    pub body: Vec<CanonicalStatement>,
+}
+
+/// One canonical function parameter.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CanonicalParameter {
+    /// Parameter name.
+    pub name: String,
+    /// Parameter type.
+    pub value_type: Type,
+}
+
+/// One span-free canonical statement.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum CanonicalStatement {
+    /// Immutable local binding.
+    Let {
+        /// Local name.
+        name: String,
+        /// Declared type.
+        value_type: Type,
+        /// Initializer.
+        value: CanonicalExpression,
+    },
+    /// Function return.
+    Return {
+        /// Optional value for `unit` functions.
+        value: Option<CanonicalExpression>,
+    },
+    /// Host-effect request.
+    Request {
+        /// Declared effect name.
+        effect: String,
+        /// Ordered request arguments.
+        arguments: Vec<CanonicalExpression>,
+    },
+    /// Expression statement.
+    Expression {
+        /// Expression.
+        expression: CanonicalExpression,
+    },
+}
+
+/// One span-free canonical expression.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum CanonicalExpression {
+    /// Exact signed integer encoded as decimal text for lossless JCE1 transport.
+    Integer {
+        /// Canonical base-10 `i64` spelling.
+        value: String,
+    },
+    /// Boolean literal.
+    Boolean {
+        /// Value.
+        value: bool,
+    },
+    /// Decoded UTF-8 string literal.
+    String {
+        /// Value.
+        value: String,
+    },
+    /// Local variable reference.
+    Variable {
+        /// Name.
+        name: String,
+    },
+    /// Unary expression.
+    Unary {
+        /// Operator.
+        operator: UnaryOperator,
+        /// Operand.
+        operand: Box<Self>,
+    },
+    /// Binary expression.
+    Binary {
+        /// Operator.
+        operator: BinaryOperator,
+        /// Left operand.
+        left: Box<Self>,
+        /// Right operand.
+        right: Box<Self>,
+    },
+    /// Function call.
+    Call {
+        /// Function name.
+        function: String,
+        /// Ordered arguments.
+        arguments: Vec<Self>,
+    },
+}
+
+impl Program {
+    /// Project this parsed AST into its canonical semantic representation.
+    #[must_use]
+    pub fn canonical(&self) -> CanonicalProgram {
+        let mut functions = self
+            .functions
+            .iter()
+            .map(CanonicalFunction::from)
+            .collect::<Vec<_>>();
+        functions.sort_by(|left, right| left.name.cmp(&right.name));
+        CanonicalProgram {
+            schema: CanonicalProgram::SCHEMA.to_owned(),
+            module: self.module.clone(),
+            functions,
+        }
+    }
+}
+
+impl From<&Function> for CanonicalFunction {
+    fn from(function: &Function) -> Self {
+        let mut effects = function.effects.clone();
+        effects.sort();
+        Self {
+            name: function.name.clone(),
+            parameters: function
+                .parameters
+                .iter()
+                .map(CanonicalParameter::from)
+                .collect(),
+            return_type: function.return_type.clone(),
+            effects,
+            body: function.body.iter().map(CanonicalStatement::from).collect(),
+        }
+    }
+}
+
+impl From<&Parameter> for CanonicalParameter {
+    fn from(parameter: &Parameter) -> Self {
+        Self {
+            name: parameter.name.clone(),
+            value_type: parameter.value_type.clone(),
+        }
+    }
+}
+
+impl From<&Statement> for CanonicalStatement {
+    fn from(statement: &Statement) -> Self {
+        match statement {
+            Statement::Let {
+                name,
+                value_type,
+                value,
+                ..
+            } => Self::Let {
+                name: name.clone(),
+                value_type: value_type.clone(),
+                value: CanonicalExpression::from(value),
+            },
+            Statement::Return { value, .. } => Self::Return {
+                value: value.as_ref().map(CanonicalExpression::from),
+            },
+            Statement::Request {
+                effect, arguments, ..
+            } => Self::Request {
+                effect: effect.clone(),
+                arguments: arguments.iter().map(CanonicalExpression::from).collect(),
+            },
+            Statement::Expression { expression, .. } => Self::Expression {
+                expression: CanonicalExpression::from(expression),
+            },
+        }
+    }
+}
+
+impl From<&Expression> for CanonicalExpression {
+    fn from(expression: &Expression) -> Self {
+        match expression {
+            Expression::Integer { value, .. } => Self::Integer {
+                value: value.to_string(),
+            },
+            Expression::Boolean { value, .. } => Self::Boolean { value: *value },
+            Expression::String { value, .. } => Self::String {
+                value: value.clone(),
+            },
+            Expression::Variable { name, .. } => Self::Variable { name: name.clone() },
+            Expression::Unary {
+                operator, operand, ..
+            } => Self::Unary {
+                operator: operator.clone(),
+                operand: Box::new(Self::from(operand.as_ref())),
+            },
+            Expression::Binary {
+                operator,
+                left,
+                right,
+                ..
+            } => Self::Binary {
+                operator: operator.clone(),
+                left: Box::new(Self::from(left.as_ref())),
+                right: Box::new(Self::from(right.as_ref())),
+            },
+            Expression::Call {
+                function,
+                arguments,
+                ..
+            } => Self::Call {
+                function: function.clone(),
+                arguments: arguments.iter().map(Self::from).collect(),
+            },
+        }
+    }
+}

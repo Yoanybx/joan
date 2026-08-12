@@ -153,6 +153,8 @@ impl<'a> Lexer<'a> {
                     self.bump();
                 }
                 Ok(())
+            } else if value == '/' && self.next() == Some('*') {
+                self.block_comment(start)
             } else if value.is_ascii_alphabetic() || value == '_' {
                 self.identifier(start)
             } else if value.is_ascii_digit() {
@@ -207,6 +209,36 @@ impl<'a> Lexer<'a> {
             _ => TokenKind::Identifier(text.to_owned()),
         };
         self.push(kind, start)
+    }
+
+    fn block_comment(&mut self, start: Position) -> Result<(), Diagnostic> {
+        self.bump();
+        self.bump();
+        let mut depth = 1usize;
+        while self.current().is_some() {
+            if self.current() == Some('/') && self.next() == Some('*') {
+                self.bump();
+                self.bump();
+                depth += 1;
+            } else if self.current() == Some('*') && self.next() == Some('/') {
+                self.bump();
+                self.bump();
+                depth -= 1;
+                if depth == 0 {
+                    return Ok(());
+                }
+            } else {
+                self.bump();
+            }
+        }
+        Err(Diagnostic::error(
+            "J0012",
+            "unterminated block comment",
+            Span {
+                start,
+                end: self.position(),
+            },
+        ))
     }
 
     fn integer(&mut self, start: Position) -> Result<(), Diagnostic> {

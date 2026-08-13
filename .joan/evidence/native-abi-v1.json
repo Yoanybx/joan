@@ -23,9 +23,9 @@
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "2831b67312f4eeac1691983baa32b4774733295fe2a944a54ccab3687e37b1b6"
+      "value": "08f0914671102421793632519d4fdc8179351d6ce0bb2806e232ee490c1f0afa"
     },
-    "file_count": 295,
+    "file_count": 303,
     "excludes": [
       ".git",
       "target",

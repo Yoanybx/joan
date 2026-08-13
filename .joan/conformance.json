@@ -10,9 +10,9 @@
       "evidence": "27/27 shared vectors agree between Rust and the independent Node reference"
     },
     "JBC": {
-      "level": "JBC0-partial-digest-baseline",
-      "status": "local-candidate",
-      "evidence": "one equivalent-output digest workload is measured; the full benchmark matrix is not implemented"
+      "level": "JBC1-bytecode-verifier-local",
+      "status": "passed-local",
+      "evidence": "bytecode v1-v3 is bound to canonical AST identities, checked by abstract interpretation and reproduced by a second emitter before execution"
     },
     "JAD": {
       "level": "JAD1-local-candidate",
@@ -30,14 +30,19 @@
       "evidence": "deterministic logical guardian gate; no machine or operator independence"
     },
     "JSH": {
-      "level": "JSH1-local-candidate",
-      "status": "local-candidate",
-      "evidence": "semantic identity and atomic flat-graph patches; no compiler AST"
+      "level": "JSH2-language-semantic-identity-local",
+      "status": "passed-local",
+      "evidence": "canonical AST v0-v2 semantic identities and atomic flat-graph patches are executable locally; no behavioral-equivalence or formal-correctness proof is claimed"
     },
     "JNODE": {
-      "level": "JNODE1-local-candidate",
+      "level": "JNODE2-language-toolchain-local",
       "status": "local-candidate",
-      "evidence": "offline CLI self-check, repository inspection, conformance and simulation commands"
+      "evidence": "offline CLI includes source check, format, compile, VM run, pure native compile/run, bytecode verification, repository inspection, conformance and simulations"
+    },
+    "JLANG": {
+      "level": "JLANG1-preview-pure-native-local",
+      "status": "local-candidate",
+      "evidence": "ASCII grammar, parser, checker, formatter, canonical AST, compiler, deterministic VM and pure Cranelift subset execute locally; general-purpose completeness and trusted host effects remain unimplemented"
     },
     "JDR": {
       "level": "JDR1-local-candidate",
@@ -52,17 +57,19 @@
   },
   "independence": {
     "level": "I1-structural-one-host",
-    "scope": "Rust and Node JCE1 implementations use separate code paths on the same Mac and operator account",
+    "scope": "Rust and Node JCE1 plus Rust and manual Node parser/checker paths execute on the same Mac and operator account",
     "limitations": [
       "No hostile process, host, key or operator independence is demonstrated",
-      "JDR1 adjudicators remain I0 logical components"
+      "JDR1 adjudicators remain I0 logical components",
+      "Native benchmark and independent-rerun package remain local until a second host and operator execute them"
     ]
   },
   "claims": [
     "No public conformance level is claimed before official release and external verification",
     "No blockchain consensus, payment network or distributed JOAN node is implemented",
     "No universal performance, security, adjudication or adoption superiority is claimed",
-    "JCE0 remains a historical custom profile; JCE1 is additive"
+    "JCE0 remains a historical custom profile; JCE1 is additive",
+    "The compiler and native backend are experimental subsets, not a general-purpose-complete language or production effect host"
   ],
   "unexecuted_gates": [
     "JDR2 effect authority",
@@ -71,7 +78,8 @@
     "external security audit",
     "official GitHub clean-clone CI",
     "real dispute holdout",
-    "JOAN language compiler",
+    "trusted host effects and general-purpose language completeness LC01-LC19",
+    "canonical compact Machine IR and distributed JOAN Link network",
     "payment rail sandbox"
   ]
 }

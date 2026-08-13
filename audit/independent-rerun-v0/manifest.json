@@ -1,0 +1,46 @@
+{
+  "schema": "joan.independent-rerun-manifest.v0",
+  "version": "0.1.0-alpha.1",
+  "profile": "native-backend-independent-rerun-v0",
+  "reference": {
+    "path": "benchmarks/results/2026-08-13-mac15-4-native-backend.json",
+    "sha256": "66a40fc2353e1a66dae36f7c94c99c65d9910113fa675217652c23f158060529",
+    "schema": "joan.native-backend-benchmark-report.v0",
+    "status": "local-benchmark-not-qualified"
+  },
+  "execution": {
+    "command": ["bash", "scripts/run-independent-rerun.sh", "<absolute-output-directory>"],
+    "required_implementations": ["joan-native", "c", "cpp", "rust"],
+    "optional_implementations": ["julia"],
+    "required_tools": ["bash", "cargo", "cargo-audit", "cargo-deny", "cc", "c++", "clang", "clang++", "git", "nm", "node", "rg", "rustc"],
+    "pinned_versions": {
+      "node": "v24.19.0",
+      "rustc_prefix": "rustc 1.94.1 ",
+      "cargo_audit": "cargo-audit 0.22.2",
+      "cargo_deny": "cargo-deny 0.20.2"
+    },
+    "supported_hosts": ["darwin", "linux"]
+  },
+  "scope": {
+    "review_paths": [
+      "audit/independent-rerun-v0/REVIEW.md",
+      "audit/independent-rerun-v0/manifest.json",
+      "benchmarks/native-backend",
+      "benchmarks/results/2026-08-13-mac15-4-native-backend.json",
+      "crates/joan-native",
+      "reference/native-benchmark-oracle.mjs",
+      "schemas/independent-rerun-manifest.v0.schema.json",
+      "schemas/independent-rerun-receipt.v0.schema.json",
+      "scripts/run-independent-rerun.sh",
+      "scripts/verify-independent-rerun.sh",
+      "tools/independent-rerun.mjs",
+      "tools/native-backend-benchmark.mjs"
+    ],
+    "excluded_material": ["credentials", "legal-signatures", "private-notes", "payment-effects"]
+  },
+  "qualification": {
+    "external_operator_required": true,
+    "machine_provenance_is_independence": false,
+    "universal_superiority_claim_allowed": false
+  }
+}

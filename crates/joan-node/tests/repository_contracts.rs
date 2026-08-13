@@ -385,6 +385,18 @@ fn native_backend_report_matches_its_schema_when_supplied() -> Result<(), Box<dy
 }
 
 #[test]
+fn independent_rerun_receipt_matches_its_schema_when_supplied()
+-> Result<(), Box<dyn std::error::Error>> {
+    let Ok(path) = std::env::var("JOAN_INDEPENDENT_RERUN_RECEIPT_INPUT") else {
+        return Ok(());
+    };
+    validate_instance(
+        &read_json(Path::new(&path))?,
+        "schemas/independent-rerun-receipt.v0.schema.json",
+    )
+}
+
+#[test]
 fn verification_receipts_match_their_schema() -> Result<(), Box<dyn std::error::Error>> {
     let root = workspace_root();
     let receipt_directory = root.join(".joan/evidence/runs");
@@ -447,7 +459,7 @@ fn workspace_root() -> PathBuf {
         )
 }
 
-fn manifest_schema_pairs() -> [(&'static str, &'static str); 15] {
+fn manifest_schema_pairs() -> [(&'static str, &'static str); 16] {
     [
         (
             ".joan/adoption.json",
@@ -508,6 +520,10 @@ fn manifest_schema_pairs() -> [(&'static str, &'static str); 15] {
         (
             "benchmarks/results/2026-08-13-mac15-4-native-backend.json",
             "schemas/native-backend-benchmark-report.v0.schema.json",
+        ),
+        (
+            "audit/independent-rerun-v0/manifest.json",
+            "schemas/independent-rerun-manifest.v0.schema.json",
         ),
     ]
 }

@@ -22,9 +22,11 @@ jobs:
       - name: Install pinned Node runtime
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
-          node-version: 24.8.0
+          node-version: 24.19.0
           package-manager-cache: false
       - name: Install pinned supply-chain gates
         run: cargo install --locked cargo-audit@0.22.2 cargo-deny@0.20.2
       - name: Require complete local verification gate
+        env:
+          JOAN_NATIVE_ABI_REPORT: ${{ runner.temp }}/joan-native-abi-v1.json
         run: ./scripts/verify-all.sh

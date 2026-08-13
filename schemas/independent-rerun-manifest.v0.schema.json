@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/independent-rerun-manifest.v0.schema.json",
+  "title": "JOAN Independent Rerun Manifest v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "profile", "reference", "execution", "scope", "qualification"],
+  "properties": {
+    "schema": {"const": "joan.independent-rerun-manifest.v0"},
+    "version": {"const": "0.1.0-alpha.1"},
+    "profile": {"const": "native-backend-independent-rerun-v0"},
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "schema", "status"],
+      "properties": {
+        "path": {"const": "benchmarks/results/2026-08-13-mac15-4-native-backend.json"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "schema": {"const": "joan.native-backend-benchmark-report.v0"},
+        "status": {"const": "local-benchmark-not-qualified"}
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "required_implementations", "optional_implementations", "required_tools", "pinned_versions", "supported_hosts"],
+      "properties": {
+        "command": {"const": ["bash", "scripts/run-independent-rerun.sh", "<absolute-output-directory>"]},
+        "required_implementations": {"const": ["joan-native", "c", "cpp", "rust"]},
+        "optional_implementations": {"const": ["julia"]},
+        "required_tools": {
+          "type": "array",
+          "minItems": 10,
+          "uniqueItems": true,
+          "items": {"enum": ["bash", "cargo", "cargo-audit", "cargo-deny", "cc", "c++", "clang", "clang++", "git", "nm", "node", "rg", "rustc"]}
+        },
+        "pinned_versions": {
+          "const": {
+            "node": "v24.19.0",
+            "rustc_prefix": "rustc 1.94.1 ",
+            "cargo_audit": "cargo-audit 0.22.2",
+            "cargo_deny": "cargo-deny 0.20.2"
+          }
+        },
+        "supported_hosts": {"const": ["darwin", "linux"]}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["review_paths", "excluded_material"],
+      "properties": {
+        "review_paths": {
+          "type": "array",
+          "minItems": 10,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[A-Za-z0-9._/-]+$"}
+        },
+        "excluded_material": {"const": ["credentials", "legal-signatures", "private-notes", "payment-effects"]}
+      }
+    },
+    "qualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["external_operator_required", "machine_provenance_is_independence", "universal_superiority_claim_allowed"],
+      "properties": {
+        "external_operator_required": {"const": true},
+        "machine_provenance_is_independence": {"const": false},
+        "universal_superiority_claim_allowed": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

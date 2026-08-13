@@ -10,8 +10,13 @@ for tool in cargo-audit cargo-deny; do
   fi
 done
 
-receipt="$(mktemp "${TMPDIR:-/tmp}/joan-verification-receipt.XXXXXX")"
-trap 'rm -f "$receipt"' EXIT
+if [[ -n "${JOAN_VERIFICATION_RECEIPT_OUTPUT:-}" ]]; then
+  receipt="$JOAN_VERIFICATION_RECEIPT_OUTPUT"
+  mkdir -p "$(dirname "$receipt")"
+else
+  receipt="$(mktemp "${TMPDIR:-/tmp}/joan-verification-receipt.XXXXXX")"
+  trap 'rm -f "$receipt"' EXIT
+fi
 
 node tools/verification-runner.mjs "$receipt"
 
@@ -30,6 +35,9 @@ bash scripts/verify-native-backend.sh
 
 printf '%s\n' '==> native backend comparative smoke corpus'
 bash scripts/verify-native-benchmark.sh
+
+printf '%s\n' '==> independent native rerun package'
+bash scripts/verify-independent-rerun.sh
 
 printf '%s\n' '==> AI-agent language scorecard'
 bash scripts/verify-agent-scorecard.sh

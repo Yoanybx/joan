@@ -1,0 +1,49 @@
+name: independent-rerun
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-rerun:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, macos-14]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    env:
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install pinned Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24.19.0
+          package-manager-cache: false
+      - name: Install pinned supply-chain gates
+        run: cargo install --locked cargo-audit@0.22.2 cargo-deny@0.20.2
+      - name: Execute recorded rerun package
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/joan-cargo-target
+        run: bash scripts/run-independent-rerun.sh "${RUNNER_TEMP}/joan-independent-rerun-v0"
+      - name: Attest machine provenance
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763
+        with:
+          subject-path: ${{ runner.temp }}/joan-independent-rerun-v0/*.json
+      - name: Upload rerun artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: joan-independent-rerun-${{ runner.os }}-${{ runner.arch }}
+          path: ${{ runner.temp }}/joan-independent-rerun-v0/*.json
+          if-no-files-found: error
+          retention-days: 30

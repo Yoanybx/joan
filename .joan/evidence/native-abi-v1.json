@@ -23,9 +23,9 @@
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "d7964fd6063ecb031ab22c726d9d9be2e110982733d4d32c62fa716275923b70"
+      "value": "2831b67312f4eeac1691983baa32b4774733295fe2a944a54ccab3687e37b1b6"
     },
-    "file_count": 271,
+    "file_count": 295,
     "excludes": [
       ".git",
       "target",
@@ -38,7 +38,7 @@
     "header_sha256": "04456c8a0d8df39771b12a8e6a6d242a51d802eb51b0a80ddc9feae3593fbd58",
     "c_corpus_sha256": "ecd2795864670fa838dd5a0cd10c7b7d1fdbe7bd296b4635d22d5a17fbd42244",
     "rust_api_sha256": "8b7ce5419efe9b19e3b5ce1e16a87f99b3233e44fd75bc27af84ab591c9c28c7",
-    "gate_files_sha256": "34d0e4192cd56c086a8f022478e531b118a9775cc630f8e165f9bca02d9eb206",
+    "gate_files_sha256": "cdc1da20d84907fbcfd733dff1dec26cb6e6d1cc8406a5abbbe3ca41aa850ef8",
     "library_sha256": "be7b51a5c1d475281df9347c5a8346e4cb673a97af11a8ff0c6cd176cc0e109b",
     "tools": [
       {

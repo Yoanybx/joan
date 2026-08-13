@@ -155,8 +155,12 @@ function atomicWrite(path, value) {
   }
 }
 
+function resolvePaths(paths) {
+  return paths.map((path) => resolve(path));
+}
+
 function finalize(paths, startedAt) {
-  const [manifestPath, referencePath, rerunPath, verificationPath, nativeAbiPath, outputPath] = paths.map(resolve);
+  const [manifestPath, referencePath, rerunPath, verificationPath, nativeAbiPath, outputPath] = resolvePaths(paths);
   for (const path of [rerunPath, verificationPath, nativeAbiPath, outputPath]) {
     assert(!path.startsWith(`${ROOT}${sep}`), "generated rerun artifacts must be written outside the source tree");
   }
@@ -237,6 +241,12 @@ function finalize(paths, startedAt) {
 function selfTest(manifestPath, referencePath) {
   const manifest = readJson(manifestPath);
   validateManifest(manifest, manifestPath);
+  const pathResolutionInputs = ["manifest", "reference", "rerun", "verification", "native-abi", "receipt"];
+  const resolvedPaths = resolvePaths(pathResolutionInputs);
+  requireEqual(resolvedPaths.length, pathResolutionInputs.length, "path resolution count");
+  for (let index = 0; index < pathResolutionInputs.length; index += 1) {
+    requireEqual(resolvedPaths[index], resolve(pathResolutionInputs[index]), `path resolution ${index}`);
+  }
   const reference = readJson(referencePath);
   const first = compareReports(reference, structuredClone(reference));
   const second = compareReports(reference, structuredClone(reference));
@@ -261,7 +271,11 @@ function selfTest(manifestPath, referencePath) {
     }
   }
   requireEqual(rejected, 3, "negative control rejection count");
-  process.stdout.write(`${JSON.stringify({ status: "passed", negative_controls: rejected })}\n`);
+  process.stdout.write(`${JSON.stringify({
+    status: "passed",
+    path_resolution_cases: resolvedPaths.length,
+    negative_controls: rejected,
+  })}\n`);
 }
 
 const [, , command, ...argumentsList] = process.argv;

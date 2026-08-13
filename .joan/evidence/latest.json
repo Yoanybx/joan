@@ -2,14 +2,14 @@
   "schema": "joan.evidence-index.v2",
   "version": "0.1.0-alpha.1",
   "status": "local-verification-passed-with-receipts",
-  "generated_at": "2026-08-13T00:33:39.749Z",
+  "generated_at": "2026-08-13T09:04:50.720Z",
   "source": {
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "d7964fd6063ecb031ab22c726d9d9be2e110982733d4d32c62fa716275923b70"
+      "value": "2831b67312f4eeac1691983baa32b4774733295fe2a944a54ccab3687e37b1b6"
     },
-    "file_count": 271,
+    "file_count": 295,
     "excludes": [
       ".git",
       "target",
@@ -19,9 +19,9 @@
     ]
   },
   "inventory": {
-    "workspace_crates": 22,
-    "json_schemas": 58,
-    "rust_tests": 180
+    "workspace_crates": 23,
+    "json_schemas": 62,
+    "rust_tests": 190
   },
   "conformance": {
     "jce1": {
@@ -56,7 +56,7 @@
   "supply_chain": {
     "cargo_audit": {
       "advisory_database_commit": "69f93e1d081d8b6fbee010e48f0b5e0d13661415",
-      "dependency_count": 155,
+      "dependency_count": 197,
       "status": "passed",
       "tool_version": "cargo-audit 0.22.2",
       "vulnerabilities_found": 0
@@ -96,35 +96,35 @@
     "runs": [
       {
         "ordinal": 1,
-        "run_id": "28db1e3a-1599-46e3-9758-15aa6264b1e6",
+        "run_id": "06d9f6a8-1b2b-4a85-9bda-89bfb1bfd773",
         "path": ".joan/evidence/runs/run-1.json",
-        "file_sha256": "83f8c7928c587e9f9aae37ffdad48ceb4fc22e99ef66a7a36e5bcd6fa5db7e02",
+        "file_sha256": "5aab9e94b445b71336103156e941f68a1e9c50366380495f5b919fbc6b7c92e0",
         "status": "passed",
-        "started_at": "2026-08-13T00:14:55.578Z",
-        "completed_at": "2026-08-13T00:20:11.092Z",
-        "source_digest": "d7964fd6063ecb031ab22c726d9d9be2e110982733d4d32c62fa716275923b70",
+        "started_at": "2026-08-13T08:41:31.149Z",
+        "completed_at": "2026-08-13T08:49:11.442Z",
+        "source_digest": "2831b67312f4eeac1691983baa32b4774733295fe2a944a54ccab3687e37b1b6",
         "gate_count": 10
       },
       {
         "ordinal": 2,
-        "run_id": "a5cbd5ac-cfda-47a8-aa8a-3fcbb45b66b5",
+        "run_id": "a7bcb9aa-729f-4657-b0b6-001650bc3676",
         "path": ".joan/evidence/runs/run-2.json",
-        "file_sha256": "970c58b3864b3755a1fc4a4371f5dc96418abd82a8a3785f9e4d56ddaee40d30",
+        "file_sha256": "fd9876d97e3fdbb23604036675fbf4efe1b29bd8e2f65550d125ffccdb457959",
         "status": "passed",
-        "started_at": "2026-08-13T00:21:08.487Z",
-        "completed_at": "2026-08-13T00:26:04.919Z",
-        "source_digest": "d7964fd6063ecb031ab22c726d9d9be2e110982733d4d32c62fa716275923b70",
+        "started_at": "2026-08-13T08:50:12.273Z",
+        "completed_at": "2026-08-13T08:56:15.574Z",
+        "source_digest": "2831b67312f4eeac1691983baa32b4774733295fe2a944a54ccab3687e37b1b6",
         "gate_count": 10
       },
       {
         "ordinal": 3,
-        "run_id": "307213fb-908b-40a5-be8a-9380e789066b",
+        "run_id": "7f9ea03c-b89b-4429-9d5a-c9822b9af9ce",
         "path": ".joan/evidence/runs/run-3.json",
-        "file_sha256": "6430953f5cae7f919cd6c648b86c398ddd421b06370f02348cf71a35ae198792",
+        "file_sha256": "2f2678aa05ecdb8a9cd0fd78642229b09d6edce3f5da83df2158ce030469ccdf",
         "status": "passed",
-        "started_at": "2026-08-13T00:27:01.746Z",
-        "completed_at": "2026-08-13T00:32:11.006Z",
-        "source_digest": "d7964fd6063ecb031ab22c726d9d9be2e110982733d4d32c62fa716275923b70",
+        "started_at": "2026-08-13T08:57:22.716Z",
+        "completed_at": "2026-08-13T09:04:14.475Z",
+        "source_digest": "2831b67312f4eeac1691983baa32b4774733295fe2a944a54ccab3687e37b1b6",
         "gate_count": 10
       }
     ],
@@ -152,6 +152,22 @@
       "broad_language_superiority_claim": false,
       "universal_language_superiority_claim": false
     },
+    "native_backend": {
+      "path": "benchmarks/results/2026-08-13-mac15-4-native-backend.json",
+      "file_sha256": "66a40fc2353e1a66dae36f7c94c99c65d9910113fa675217652c23f158060529",
+      "status": "local-benchmark-not-qualified",
+      "mode": "recorded",
+      "measured_source_tree_sha256": "8a4e46e88aa912c2f1f5ef2e3a0102d82275b3a82d53dda7e7a3c084e0435ab6",
+      "workload_count": 5,
+      "samples_per_workload": 101,
+      "rss_samples_per_implementation": 11,
+      "iterations_per_sample": 1000000,
+      "oracle_verified_cases": 15,
+      "output_equivalent": true,
+      "independent_rerun": false,
+      "julia_measured": false,
+      "universal_language_superiority_claim": false
+    },
     "payment_cost": {
       "path": "vectors/payment-cost/report-v0.json",
       "file_sha256": "37e816bf6fa0d3bcd785fe8bfa974d0327d84a03d5318d3162a16b8c8334c53a",
@@ -163,10 +179,11 @@
   "limitations": [
     "Three local receipts on one host and operator are not independent external attestations",
     "Local evidence is not an official release, external audit or hostile reproduction",
-    "No official remote, public adoption, native-code backend, distributed network or real payment exists",
+    "No official remote, public adoption, distributed network or real payment exists; the native backend covers only the published pure subset",
     "JDR1 synthetic results do not authorize effects; JDR2 remains unimplemented",
     "The recorded digest benchmark does not establish language superiority",
     "The two-workload agent scorecard is baseline-only and does not establish language superiority",
+    "The five-workload native benchmark is local and not independently rerun; it does not establish language superiority",
     "The payment-cost vector proves local integer accounting only, not universal market superiority"
   ]
 }

@@ -84,6 +84,7 @@ function main() {
       ]),
       rust_api_sha256: combinedDigest([
         "crates/joan-abi/Cargo.toml",
+        "crates/joan-abi/build.rs",
         "crates/joan-abi/src/lib.rs",
         "crates/joan-abi/src/ffi.rs",
         "crates/joan-abi/tests/no_alloc.rs",

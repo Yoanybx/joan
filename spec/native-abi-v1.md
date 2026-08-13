@@ -94,6 +94,11 @@ requests remain inert data and require separate external authority.
 - AddressSanitizer and UndefinedBehaviorSanitizer when available;
 - two byte-identical reports containing source, tool, and native-library hashes.
 
+On macOS the crate fixes the Mach-O install name to
+`@rpath/libjoan_abi.dylib`. This keeps the dynamic-library hash independent of
+the checkout and `CARGO_TARGET_DIR` paths; the caller still chooses the runtime
+search path. Linux uses the platform's path-independent shared-object identity.
+
 The strict report distinguishes `asserted_semantic_binding_preserved` at the C
 boundary from `verified_rust_binding_profiles = 3` in the Rust cold path. It uses
 `schemas/native-abi-report.v1.schema.json`, is bound to the

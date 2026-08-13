@@ -1,0 +1,33 @@
+{
+  "schema": "joan.native-backend-benchmark-manifest.v0",
+  "profile": "dynamic-pure-kernels-v0",
+  "implementation_order": ["joan-native", "c", "cpp", "rust", "julia"],
+  "sources": {
+    "joan-native": "benchmarks/native-backend/joan/kernels.joan",
+    "c": "benchmarks/native-backend/c/kernels.c",
+    "cpp": "benchmarks/native-backend/cpp/kernels.cpp",
+    "rust": "benchmarks/native-backend/rust/kernels.rs",
+    "julia": "benchmarks/native-backend/julia/kernels.jl"
+  },
+  "workloads": [
+    {"id": "cost-model", "description": "Bounded compute and storage cost aggregation over dynamic machine inputs."},
+    {"id": "dispatch-decision", "description": "Bounded load-limit and authorization decision over dynamic machine inputs."},
+    {"id": "route-score", "description": "Static call-DAG route score over dynamic signal and confidence inputs."},
+    {"id": "split-budget", "description": "Checked division and remainder for bounded worker-budget allocation."},
+    {"id": "deadline-slack", "description": "Checked deadline, elapsed-time and reserve arithmetic over dynamic inputs."}
+  ],
+  "sampling": {
+    "seed": "5354584147903952384",
+    "smoke_samples": 3,
+    "recorded_samples": 101,
+    "smoke_iterations": 100000,
+    "recorded_iterations": 1000000,
+    "rss_samples": 11
+  },
+  "qualification": {
+    "independent_rerun_required": true,
+    "minimum_workloads": 5,
+    "minimum_recorded_samples": 101,
+    "universal_superiority_claim_allowed": false
+  }
+}

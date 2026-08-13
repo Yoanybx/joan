@@ -1,0 +1,13 @@
+module native_gate;
+
+fn increment(value: i64) -> i64 effects [] {
+  return value + 1;
+}
+
+fn score(base: i64, scale: i64) -> i64 effects [] {
+  return increment(base) * scale;
+}
+
+fn main() -> i64 effects [] {
+  return 0;
+}

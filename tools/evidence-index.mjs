@@ -33,6 +33,8 @@ const BENCHMARK_RELATIVE = "benchmarks/results/2026-08-11-mac15-4-jce1-digest.js
 const BENCHMARK_PATH = join(ROOT, BENCHMARK_RELATIVE);
 const AGENT_SCORECARD_RELATIVE = "benchmarks/results/2026-08-12-mac15-4-agent-scorecard.json";
 const AGENT_SCORECARD_PATH = join(ROOT, AGENT_SCORECARD_RELATIVE);
+const NATIVE_BACKEND_RELATIVE = "benchmarks/results/2026-08-13-mac15-4-native-backend.json";
+const NATIVE_BACKEND_PATH = join(ROOT, NATIVE_BACKEND_RELATIVE);
 const PAYMENT_REPORT_RELATIVE = "vectors/payment-cost/report-v0.json";
 const PAYMENT_REPORT_PATH = join(ROOT, PAYMENT_REPORT_RELATIVE);
 const EXCLUDES = [".git", "target", ".joan/evidence", "**/.DS_Store", "**/._*"];
@@ -181,6 +183,8 @@ function currentState() {
   const benchmark = JSON.parse(benchmarkBytes.toString("utf8"));
   const agentScorecardBytes = readFileSync(AGENT_SCORECARD_PATH);
   const agentScorecard = JSON.parse(agentScorecardBytes.toString("utf8"));
+  const nativeBackendBytes = readFileSync(NATIVE_BACKEND_PATH);
+  const nativeBackend = JSON.parse(nativeBackendBytes.toString("utf8"));
   const paymentReportBytes = readFileSync(PAYMENT_REPORT_PATH);
   const paymentReport = JSON.parse(paymentReportBytes.toString("utf8"));
   return {
@@ -223,6 +227,23 @@ function currentState() {
         agentScorecard.qualification.broad_language_superiority_claim,
       universal_language_superiority_claim:
         agentScorecard.universal_language_superiority_claim,
+    },
+    native_backend: {
+      path: NATIVE_BACKEND_RELATIVE,
+      file_sha256: sha256(nativeBackendBytes),
+      status: nativeBackend.status,
+      mode: nativeBackend.mode,
+      measured_source_tree_sha256: nativeBackend.identities.source_tree.value,
+      workload_count: nativeBackend.workloads.length,
+      samples_per_workload: nativeBackend.samples,
+      rss_samples_per_implementation: nativeBackend.rss_samples,
+      iterations_per_sample: nativeBackend.iterations,
+      oracle_verified_cases: nativeBackend.oracle.verified_cases,
+      output_equivalent: nativeBackend.qualification.output_equivalent,
+      independent_rerun: nativeBackend.qualification.independent_rerun,
+      julia_measured: nativeBackend.qualification.julia_measured,
+      universal_language_superiority_claim:
+        nativeBackend.qualification.universal_language_superiority_claim,
     },
     payment_cost: {
       path: PAYMENT_REPORT_RELATIVE,
@@ -377,15 +398,17 @@ function buildEvidence(receiptPaths) {
     benchmark: {
       ...state.benchmark,
       agent_scorecard: state.agent_scorecard,
+      native_backend: state.native_backend,
       payment_cost: state.payment_cost,
     },
     limitations: [
       "Three local receipts on one host and operator are not independent external attestations",
       "Local evidence is not an official release, external audit or hostile reproduction",
-      "No official remote, public adoption, native-code backend, distributed network or real payment exists",
+      "No official remote, public adoption, distributed network or real payment exists; the native backend covers only the published pure subset",
       "JDR1 synthetic results do not authorize effects; JDR2 remains unimplemented",
       "The recorded digest benchmark does not establish language superiority",
       "The two-workload agent scorecard is baseline-only and does not establish language superiority",
+      "The five-workload native benchmark is local and not independently rerun; it does not establish language superiority",
       "The payment-cost vector proves local integer accounting only, not universal market superiority",
     ],
   };
@@ -437,6 +460,7 @@ function checkEvidence() {
   requireEqual(evidence.benchmark, {
     ...state.benchmark,
     agent_scorecard: state.agent_scorecard,
+    native_backend: state.native_backend,
     payment_cost: state.payment_cost,
   }, "benchmark evidence");
   requireEqual(evidence.verification.runner, {

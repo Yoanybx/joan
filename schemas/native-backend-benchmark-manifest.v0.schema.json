@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/native-backend-benchmark-manifest.v0.schema.json",
+  "title": "JOAN Native Backend Benchmark Manifest v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["implementation_order", "profile", "qualification", "sampling", "schema", "sources", "workloads"],
+  "properties": {
+    "schema": {"const": "joan.native-backend-benchmark-manifest.v0"},
+    "profile": {"const": "dynamic-pure-kernels-v0"},
+    "implementation_order": {
+      "const": ["joan-native", "c", "cpp", "rust", "julia"]
+    },
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["c", "cpp", "joan-native", "julia", "rust"],
+      "properties": {
+        "joan-native": {"type": "string", "pattern": "^benchmarks/native-backend/.+\\.joan$"},
+        "c": {"type": "string", "pattern": "^benchmarks/native-backend/.+\\.c$"},
+        "cpp": {"type": "string", "pattern": "^benchmarks/native-backend/.+\\.cpp$"},
+        "rust": {"type": "string", "pattern": "^benchmarks/native-backend/.+\\.rs$"},
+        "julia": {"type": "string", "pattern": "^benchmarks/native-backend/.+\\.jl$"}
+      }
+    },
+    "workloads": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["description", "id"],
+        "properties": {
+          "id": {"enum": ["cost-model", "deadline-slack", "dispatch-decision", "route-score", "split-budget"]},
+          "description": {"type": "string", "minLength": 20}
+        }
+      }
+    },
+    "sampling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recorded_iterations", "recorded_samples", "rss_samples", "seed", "smoke_iterations", "smoke_samples"],
+      "properties": {
+        "seed": {"type": "string", "pattern": "^[1-9][0-9]{0,19}$"},
+        "smoke_samples": {"const": 3},
+        "recorded_samples": {"const": 101},
+        "smoke_iterations": {"const": 100000},
+        "recorded_iterations": {"const": 1000000},
+        "rss_samples": {"const": 11}
+      }
+    },
+    "qualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["independent_rerun_required", "minimum_recorded_samples", "minimum_workloads", "universal_superiority_claim_allowed"],
+      "properties": {
+        "independent_rerun_required": {"const": true},
+        "minimum_recorded_samples": {"minimum": 101, "type": "integer"},
+        "minimum_workloads": {"minimum": 5, "type": "integer"},
+        "universal_superiority_claim_allowed": {"const": false}
+      }
+    }
+  }
+}

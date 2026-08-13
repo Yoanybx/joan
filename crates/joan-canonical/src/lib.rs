@@ -118,6 +118,10 @@ pub enum RegisteredDomainV1 {
     MockLedger,
     /// Reproducible benchmark-manifest identity.
     BenchmarkManifest,
+    /// Native-code artifact identity bound to verified bytecode and backend configuration.
+    NativeArtifact,
+    /// One relocatable native-code image before address-dependent JIT linking.
+    NativeCode,
     /// Offline pull-request candidate identity.
     PrCandidate,
     /// Versioned pull-request trust policy identity.
@@ -152,6 +156,8 @@ impl RegisteredDomainV1 {
             Self::EffectApplication => "joan.effect-application.v1",
             Self::MockLedger => "joan.mock-ledger.v1",
             Self::BenchmarkManifest => "joan.benchmark-manifest.v1",
+            Self::NativeArtifact => "joan.native-artifact.v1",
+            Self::NativeCode => "joan.native-code.v1",
             Self::PrCandidate => "joan.pr-candidate.v1",
             Self::PrTrustPolicy => "joan.pr-trust-policy.v1",
             Self::PrTrustEvidence => "joan.pr-trust-evidence.v1",
@@ -181,6 +187,8 @@ impl RegisteredDomainV1 {
             "joan.effect-application.v1" => Self::EffectApplication,
             "joan.mock-ledger.v1" => Self::MockLedger,
             "joan.benchmark-manifest.v1" => Self::BenchmarkManifest,
+            "joan.native-artifact.v1" => Self::NativeArtifact,
+            "joan.native-code.v1" => Self::NativeCode,
             "joan.pr-candidate.v1" => Self::PrCandidate,
             "joan.pr-trust-policy.v1" => Self::PrTrustPolicy,
             "joan.pr-trust-evidence.v1" => Self::PrTrustEvidence,

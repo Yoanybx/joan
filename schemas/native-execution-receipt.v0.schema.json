@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/native-execution-receipt.v0.schema.json",
+  "title": "JOAN Native Execution Receipt v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifact_digest",
+    "bytecode_digest",
+    "function",
+    "instructions_executed",
+    "result",
+    "schema",
+    "status"
+  ],
+  "properties": {
+    "artifact_digest": {"$ref": "native-compile-receipt.v0.schema.json#/$defs/nativeArtifactDigest"},
+    "bytecode_digest": {"$ref": "native-compile-receipt.v0.schema.json#/$defs/digest"},
+    "function": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "instructions_executed": {"type": "integer", "minimum": 1},
+    "result": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "value"],
+          "properties": {"type": {"const": "i64"}, "value": {"type": "string", "pattern": "^-?(0|[1-9][0-9]*)$"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "value"],
+          "properties": {"type": {"const": "bool"}, "value": {"type": "boolean"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {"type": {"const": "unit"}}
+        }
+      ]
+    },
+    "schema": {"const": "joan.native-execution-receipt.v0"},
+    "status": {"const": "completed"}
+  }
+}

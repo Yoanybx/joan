@@ -154,6 +154,64 @@ fn language_commands_are_available_to_agents() -> Result<(), Box<dyn std::error:
 }
 
 #[test]
+fn native_commands_require_explicit_machine_inputs() -> Result<(), Box<dyn std::error::Error>> {
+    let directory = tempdir()?;
+    let program = directory.path().join("native-agent.joan");
+    let arguments = directory.path().join("arguments.json");
+    fs::write(
+        &program,
+        concat!(
+            "module native_agent;\n",
+            "fn score(base: i64, scale: i64) -> i64 effects [] { return base * scale; }\n",
+            "fn main() -> i64 effects [] { return 0; }\n",
+        ),
+    )?;
+    fs::write(
+        &arguments,
+        r#"[{"type":"i64","value":"6"},{"type":"i64","value":"7"}]"#,
+    )?;
+
+    let compile = Command::new(env!("CARGO_BIN_EXE_joan"))
+        .args(["native", "compile"])
+        .arg(&program)
+        .arg("--json")
+        .output()?;
+    assert!(compile.status.success());
+    let compile_stdout = String::from_utf8(compile.stdout)?;
+    assert!(compile_stdout.contains(r#""schema":"joan.native-compile-receipt.v0""#));
+    assert!(compile_stdout.contains(r#""backend":"joan.cranelift-jit.v0""#));
+
+    let run = Command::new(env!("CARGO_BIN_EXE_joan"))
+        .args(["native", "run"])
+        .arg(&program)
+        .args(["--function", "score", "--arguments"])
+        .arg(&arguments)
+        .args(["--budget", "100", "--json"])
+        .output()?;
+    assert!(run.status.success());
+    let run_stdout = String::from_utf8(run.stdout)?;
+    assert!(run_stdout.contains(r#""schema":"joan.native-execution-receipt.v0""#));
+    assert!(run_stdout.contains(r#""function":"score""#));
+    assert!(run_stdout.contains(r#""type":"i64","value":"42""#));
+
+    let pretty_arguments = directory.path().join("pretty-arguments.json");
+    fs::write(
+        &pretty_arguments,
+        "[\n  {\"type\": \"i64\", \"value\": \"6\"},\n  {\"type\": \"i64\", \"value\": \"7\"}\n]\n",
+    )?;
+    let noncanonical = Command::new(env!("CARGO_BIN_EXE_joan"))
+        .args(["native", "run"])
+        .arg(&program)
+        .args(["--function", "score", "--arguments"])
+        .arg(&pretty_arguments)
+        .args(["--budget", "100", "--json"])
+        .output()?;
+    assert!(!noncanonical.status.success());
+    assert!(String::from_utf8(noncanonical.stderr)?.contains("input is not exact canonical JCE1"));
+    Ok(())
+}
+
+#[test]
 fn language_diagnostics_are_machine_readable() -> Result<(), Box<dyn std::error::Error>> {
     let directory = tempdir()?;
     let program = directory.path().join("invalid.joan");

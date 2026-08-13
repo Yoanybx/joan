@@ -25,6 +25,12 @@ bash scripts/verify-differential-language.sh
 printf '%s\n' '==> native C ABI and zero-copy borrowed payloads'
 bash scripts/verify-native-abi.sh
 
+printf '%s\n' '==> experimental Cranelift native backend'
+bash scripts/verify-native-backend.sh
+
+printf '%s\n' '==> native backend comparative smoke corpus'
+bash scripts/verify-native-benchmark.sh
+
 printf '%s\n' '==> AI-agent language scorecard'
 bash scripts/verify-agent-scorecard.sh
 

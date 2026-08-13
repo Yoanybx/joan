@@ -2,7 +2,7 @@
 
 use joan_ast::{
     BinaryOperator, CanonicalExpression, CanonicalFunction, CanonicalStatement, DiagnosticReport,
-    InformationLabel, Program, UnaryOperator,
+    InformationLabel, Program, Type, UnaryOperator,
 };
 use joan_bytecode::{
     BYTECODE_PROGRAM_INFORMATION_SCHEMA, BYTECODE_PROGRAM_LINEAR_SCHEMA, BYTECODE_PROGRAM_SCHEMA,
@@ -99,6 +99,30 @@ pub struct ExecutionReceipt {
     /// Typed identity of the exact verified bytecode artifact.
     pub bytecode_digest: Digest,
     /// Entrypoint result.
+    pub result: Value,
+    /// Host effects requested but not executed.
+    pub effect_requests: Vec<EffectRequest>,
+    /// Exact number of bytecode instructions evaluated.
+    pub instructions_executed: u64,
+}
+
+/// Deterministic execution receipt for one explicitly selected pure or effectful function.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FunctionExecutionReceipt {
+    /// Receipt schema.
+    pub schema: String,
+    /// Always `completed`.
+    pub status: String,
+    /// Semantic program identity.
+    pub semantic_digest: Digest,
+    /// Versioned JCE1 AST identity accepted by the VM.
+    pub semantic_identity: CanonicalAstIdentity,
+    /// Typed identity of the exact verified bytecode artifact.
+    pub bytecode_digest: Digest,
+    /// Exact function selected by name.
+    pub function: String,
+    /// Function result.
     pub result: Value,
     /// Host effects requested but not executed.
     pub effect_requests: Vec<EffectRequest>,
@@ -214,6 +238,96 @@ pub fn execute_bytecode(
         effect_requests: machine.requests,
         instructions_executed: machine.executed,
     })
+}
+
+/// Execute one named function from verified bytecode with explicit typed arguments.
+///
+/// This entrypoint supplies dynamic benchmark and conformance inputs without changing
+/// JOAN's zero-argument `main` language contract. Host effects remain inert requests.
+pub fn execute_bytecode_function(
+    program: &BytecodeProgram,
+    function_name: &str,
+    arguments: Vec<Value>,
+    instruction_budget: u64,
+) -> Result<FunctionExecutionReceipt, LanguageError> {
+    let verification = verify_bytecode(program)?;
+    if instruction_budget == 0 {
+        return Err(LanguageError::Runtime(
+            "instruction budget must be greater than zero".to_owned(),
+        ));
+    }
+    let function_index = program
+        .functions
+        .iter()
+        .position(|function| function.name == function_name)
+        .ok_or_else(|| {
+            LanguageError::Runtime(format!("function `{function_name}` was not found"))
+        })?;
+    let function = &program.functions[function_index];
+    validate_arguments(function, &arguments)?;
+
+    let mut machine = Machine {
+        program,
+        remaining: instruction_budget,
+        executed: 0,
+        requests: Vec::new(),
+    };
+    let result = machine.call(function_index, arguments, 0)?;
+    Ok(FunctionExecutionReceipt {
+        schema: "joan.function-execution-receipt.v0".to_owned(),
+        status: "completed".to_owned(),
+        semantic_digest: program.semantic_digest.clone(),
+        semantic_identity: program.semantic_identity.clone(),
+        bytecode_digest: verification.bytecode_digest,
+        function: function_name.to_owned(),
+        result,
+        effect_requests: machine.requests,
+        instructions_executed: machine.executed,
+    })
+}
+
+fn validate_arguments(
+    function: &BytecodeFunction,
+    arguments: &[Value],
+) -> Result<(), LanguageError> {
+    if arguments.len() != function.parameter_count {
+        return Err(LanguageError::Runtime(format!(
+            "function `{}` expected {} arguments but received {}",
+            function.name,
+            function.parameter_count,
+            arguments.len()
+        )));
+    }
+    for (index, (expected, actual)) in function.parameter_types.iter().zip(arguments).enumerate() {
+        if !value_matches_type(actual, expected) {
+            return Err(LanguageError::Runtime(format!(
+                "function `{}` argument {index} expected {} but received {}",
+                function.name,
+                expected.as_str(),
+                value_type_name(actual)
+            )));
+        }
+    }
+    Ok(())
+}
+
+const fn value_matches_type(value: &Value, expected: &Type) -> bool {
+    matches!(
+        (value, expected),
+        (Value::I64(_), Type::I64)
+            | (Value::Bool(_), Type::Bool)
+            | (Value::String(_), Type::String)
+            | (Value::Unit, Type::Unit)
+    )
+}
+
+const fn value_type_name(value: &Value) -> &'static str {
+    match value {
+        Value::I64(_) => "i64",
+        Value::Bool(_) => "bool",
+        Value::String(_) => "string",
+        Value::Unit => "unit",
+    }
 }
 
 fn compile_program(program: &Program) -> Result<BytecodeProgram, LanguageError> {

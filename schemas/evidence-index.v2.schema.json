@@ -230,7 +230,7 @@
     "benchmark": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "file_sha256", "status", "faster_observed", "language_superiority_claim", "agent_scorecard", "payment_cost"],
+      "required": ["path", "file_sha256", "status", "faster_observed", "language_superiority_claim", "agent_scorecard", "native_backend", "payment_cost"],
       "properties": {
         "path": {"type": "string", "minLength": 1},
         "file_sha256": {"$ref": "#/$defs/sha256"},
@@ -258,6 +258,42 @@
             "joan_safety_cases_protected": {"const": 4},
             "joan_safety_cases_total": {"const": 4},
             "broad_language_superiority_claim": {"const": false},
+            "universal_language_superiority_claim": {"const": false}
+          }
+        },
+        "native_backend": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "file_sha256",
+            "status",
+            "mode",
+            "measured_source_tree_sha256",
+            "workload_count",
+            "samples_per_workload",
+            "rss_samples_per_implementation",
+            "iterations_per_sample",
+            "oracle_verified_cases",
+            "output_equivalent",
+            "independent_rerun",
+            "julia_measured",
+            "universal_language_superiority_claim"
+          ],
+          "properties": {
+            "path": {"const": "benchmarks/results/2026-08-13-mac15-4-native-backend.json"},
+            "file_sha256": {"$ref": "#/$defs/sha256"},
+            "status": {"const": "local-benchmark-not-qualified"},
+            "mode": {"const": "recorded"},
+            "measured_source_tree_sha256": {"$ref": "#/$defs/sha256"},
+            "workload_count": {"const": 5},
+            "samples_per_workload": {"const": 101},
+            "rss_samples_per_implementation": {"const": 11},
+            "iterations_per_sample": {"const": 1000000},
+            "oracle_verified_cases": {"const": 15},
+            "output_equivalent": {"const": true},
+            "independent_rerun": {"const": false},
+            "julia_measured": {"const": false},
             "universal_language_superiority_claim": {"const": false}
           }
         },

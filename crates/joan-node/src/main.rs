@@ -12,6 +12,7 @@ use joan_dispute::DisputeEvaluationBundle;
 use joan_guardian::GuardianCandidate;
 use joan_identity::{SemanticIdentityBundle, verify_bundle};
 use joan_instruction::AuthorityEnvelope;
+use joan_native::compile_bytecode as compile_native_bytecode;
 use joan_node::{
     AdoptionTrialReceipt, InstructionAuditTask, audit_instructions, evaluate_adoption,
     inspect_repository, node_self_check,
@@ -67,6 +68,28 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         [command, input, flag] if command == "run" && flag == "--json" => {
             let source = read_text(input)?;
             write_json(&language_result(execute_source(&source))?)?;
+        }
+        [group, command, input, flag]
+            if group == "native" && command == "compile" && flag == "--json" =>
+        {
+            let source = read_text(input)?;
+            let artifact = language_result(compile_source(&source))?;
+            let native = compile_native_bytecode(&artifact.bytecode)?;
+            write_json(native.receipt())?;
+        }
+        [group, command, input, rest @ ..] if group == "native" && command == "run" => {
+            if !rest.iter().any(|argument| argument == "--json") {
+                return Err("native run requires --json".into());
+            }
+            let function = option_text(rest, "--function")?;
+            let arguments_path = option_text(rest, "--arguments")?;
+            let instruction_budget = option_text(rest, "--budget")?.parse::<u64>()?;
+            let arguments: Vec<joan_bytecode::Value> =
+                read_exact_jce1_json(arguments_path, 1_048_576)?;
+            let source = read_text(input)?;
+            let artifact = language_result(compile_source(&source))?;
+            let native = compile_native_bytecode(&artifact.bytecode)?;
+            write_json(&native.invoke(function, &arguments, instruction_budget)?)?;
         }
         [command, input] if command == "canonicalize" => {
             let text = read_text(input)?;
@@ -223,7 +246,7 @@ fn verify_jce1_suite(path: &str) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn usage() -> &'static str {
-    "usage:\n  joan check <program.joan> [--json]\n  joan fmt <program.joan> [--check]\n  joan compile <program.joan> --json\n  joan run <program.joan> --json\n  joan canonicalize <file|->\n  joan canonicalize-v1 <file|->\n  joan canonical-set-v1 <array-file|->\n  joan digest <domain> <file|->\n  joan digest-v1 <registered-domain> <file|->\n  joan conformance jce1 <suite.json> --json\n  joan benchmark digest-v1 --bytes <count> --iterations <count> --json\n  joan identity verify <bundle.json>\n  joan bytecode verify <bytecode.json> --json\n  joan patch verify <graph.json> <patch.json>\n  joan package resolve <manifest.json> --store <dir> --json\n  joan guardian evaluate <candidate.json>\n  joan node self-check\n  joan repo inspect <path> --json\n  joan adoption evaluate <trial.json> --json\n  joan dispute evaluate <bundle.json> --json\n  joan dispute simulate --cases <count> --seed <seed> --json\n  joan instructions audit <repo> --authority-envelope <file> --task <file> --json\n  joan trust pr evaluate <repo> --base <commit> --head <commit> --json\n  joan trust pr verify <repo> <envelope.json> --json"
+    "usage:\n  joan check <program.joan> [--json]\n  joan fmt <program.joan> [--check]\n  joan compile <program.joan> --json\n  joan run <program.joan> --json\n  joan native compile <program.joan> --json\n  joan native run <program.joan> --function <name> --arguments <values.json> --budget <count> --json\n  joan canonicalize <file|->\n  joan canonicalize-v1 <file|->\n  joan canonical-set-v1 <array-file|->\n  joan digest <domain> <file|->\n  joan digest-v1 <registered-domain> <file|->\n  joan conformance jce1 <suite.json> --json\n  joan benchmark digest-v1 --bytes <count> --iterations <count> --json\n  joan identity verify <bundle.json>\n  joan bytecode verify <bytecode.json> --json\n  joan patch verify <graph.json> <patch.json>\n  joan package resolve <manifest.json> --store <dir> --json\n  joan guardian evaluate <candidate.json>\n  joan node self-check\n  joan repo inspect <path> --json\n  joan adoption evaluate <trial.json> --json\n  joan dispute evaluate <bundle.json> --json\n  joan dispute simulate --cases <count> --seed <seed> --json\n  joan instructions audit <repo> --authority-envelope <file> --task <file> --json\n  joan trust pr evaluate <repo> --base <commit> --head <commit> --json\n  joan trust pr verify <repo> <envelope.json> --json"
 }
 
 fn language_result<T>(result: Result<T, LanguageError>) -> Result<T, Box<dyn std::error::Error>> {

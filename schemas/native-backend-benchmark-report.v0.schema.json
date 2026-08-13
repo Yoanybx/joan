@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/native-backend-benchmark-report.v0.schema.json",
+  "title": "JOAN Native Backend Benchmark Report v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "available_implementations", "environment", "identities", "iterations", "measurement_contract", "mode",
+    "oracle", "preparation", "qualification", "rss_samples", "samples", "schema", "status",
+    "toolchains", "unavailable_implementations", "workloads"
+  ],
+  "properties": {
+    "schema": {"const": "joan.native-backend-benchmark-report.v0"},
+    "status": {"const": "local-benchmark-not-qualified"},
+    "mode": {"enum": ["smoke", "recorded"]},
+    "samples": {"type": "integer", "minimum": 3, "maximum": 101},
+    "iterations": {"type": "integer", "minimum": 100, "maximum": 10000000},
+    "rss_samples": {"type": "integer", "minimum": 1, "maximum": 21},
+    "available_implementations": {
+      "type": "array", "minItems": 4, "uniqueItems": true,
+      "items": {"enum": ["c", "cpp", "joan-native", "julia", "rust"]}
+    },
+    "unavailable_implementations": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "reason"],
+        "properties": {
+          "id": {"enum": ["c", "cpp", "joan-native", "julia", "rust"]},
+          "reason": {"const": "toolchain-not-installed"}
+        }
+      }
+    },
+    "environment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["architecture", "cpu", "logical_cpus", "memory_bytes", "os", "os_release"],
+      "properties": {
+        "architecture": {"type": "string", "minLength": 1},
+        "cpu": {"type": "string", "minLength": 1},
+        "logical_cpus": {"type": "integer", "minimum": 1},
+        "memory_bytes": {"type": "integer", "minimum": 1048576},
+        "os": {"type": "string", "minLength": 1},
+        "os_release": {"type": "string", "minLength": 1}
+      }
+    },
+    "identities": {
+      "type": "object", "additionalProperties": false,
+      "required": ["manifest_sha256", "oracle_sha256", "runner_sha256", "source_tree", "sources"],
+      "properties": {
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "oracle_sha256": {"$ref": "#/$defs/sha256"},
+        "runner_sha256": {"$ref": "#/$defs/sha256"},
+        "source_tree": {
+          "type": "object", "additionalProperties": false,
+          "required": ["algorithm", "profile", "value"],
+          "properties": {
+            "algorithm": {"const": "sha256"},
+            "profile": {"const": "joan-source-tree-v2"},
+            "value": {"$ref": "#/$defs/sha256"}
+          }
+        },
+        "sources": {
+          "type": "object", "additionalProperties": false,
+          "required": ["c", "cpp", "joan-native", "julia", "rust"],
+          "properties": {
+            "c": {"$ref": "#/$defs/sha256"}, "cpp": {"$ref": "#/$defs/sha256"},
+            "joan-native": {"$ref": "#/$defs/sha256"}, "julia": {"$ref": "#/$defs/sha256"},
+            "rust": {"$ref": "#/$defs/sha256"}
+          }
+        }
+      }
+    },
+    "measurement_contract": {
+      "type": "object", "additionalProperties": false,
+      "required": ["compile", "inner_runtime", "peak_rss", "process_time"],
+      "properties": {
+        "compile": {"type": "string", "minLength": 40},
+        "inner_runtime": {"type": "string", "minLength": 40},
+        "peak_rss": {"type": "string", "minLength": 40},
+        "process_time": {"type": "string", "minLength": 40}
+      }
+    },
+    "oracle": {"$ref": "#/$defs/oracle"},
+    "preparation": {
+      "type": "object", "minProperties": 4, "maxProperties": 5,
+      "propertyNames": {"enum": ["c", "cpp", "joan-native", "julia", "rust"]},
+      "additionalProperties": {"$ref": "#/$defs/preparation"}
+    },
+    "qualification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["independent_rerun", "julia_measured", "output_equivalent", "status", "universal_language_superiority_claim"],
+      "properties": {
+        "independent_rerun": {"const": false},
+        "julia_measured": {"type": "boolean"},
+        "output_equivalent": {"const": true},
+        "status": {"const": "not-qualified"},
+        "universal_language_superiority_claim": {"const": false}
+      }
+    },
+    "toolchains": {
+      "type": "array", "minItems": 7, "maxItems": 7,
+      "items": {"$ref": "#/$defs/toolchain"}
+    },
+    "workloads": {
+      "type": "array", "minItems": 5, "maxItems": 5,
+      "items": {"$ref": "#/$defs/workload"}
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"mode": {"const": "recorded"}}, "required": ["mode"]},
+      "then": {
+        "properties": {
+          "iterations": {"const": 1000000},
+          "rss_samples": {"const": 11},
+          "samples": {"const": 101},
+          "oracle": {
+            "properties": {
+              "sample_indices": {"const": [0, 50, 100]},
+              "verified_cases": {"const": 15}
+            }
+          },
+          "workloads": {
+            "items": {
+              "properties": {
+                "schedule": {"minItems": 101, "maxItems": 101},
+                "implementations": {
+                  "additionalProperties": {
+                    "properties": {
+                      "inner_runtime": {"properties": {"samples_ns": {"minItems": 101, "maxItems": 101}}},
+                      "observation_sha256": {"minItems": 101, "maxItems": 101},
+                      "peak_rss": {"properties": {"samples_bytes": {"minItems": 11, "maxItems": 11}}},
+                      "process_time": {"properties": {"samples_ns": {"minItems": 101, "maxItems": 101}}}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "timing": {
+      "type": "object", "additionalProperties": false,
+      "required": ["max_ns", "min_ns", "p50_ns", "p95_ns", "p99_ns", "samples_ns"],
+      "properties": {
+        "max_ns": {"type": "integer", "minimum": 1}, "min_ns": {"type": "integer", "minimum": 1},
+        "p50_ns": {"type": "integer", "minimum": 1}, "p95_ns": {"type": "integer", "minimum": 1},
+        "p99_ns": {"type": "integer", "minimum": 1},
+        "samples_ns": {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 1}}
+      }
+    },
+    "bytes": {
+      "type": "object", "additionalProperties": false,
+      "required": ["max_bytes", "min_bytes", "p50_bytes", "p95_bytes", "p99_bytes", "samples_bytes"],
+      "properties": {
+        "max_bytes": {"type": "integer", "minimum": 1}, "min_bytes": {"type": "integer", "minimum": 1},
+        "p50_bytes": {"type": "integer", "minimum": 1}, "p95_bytes": {"type": "integer", "minimum": 1},
+        "p99_bytes": {"type": "integer", "minimum": 1},
+        "samples_bytes": {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 1}}
+      }
+    },
+    "preparation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_bytes", "artifact_scope", "artifact_sha256", "compile", "compile_flags", "generated_code_bytes", "native_artifact_digest", "note"],
+      "properties": {
+        "artifact_bytes": {"type": "integer", "minimum": 1},
+        "artifact_scope": {"type": "string", "minLength": 10},
+        "artifact_sha256": {"$ref": "#/$defs/sha256"},
+        "compile": {"oneOf": [{"$ref": "#/$defs/timing"}, {"type": "null"}]},
+        "compile_flags": {"type": "array", "minItems": 2, "items": {"type": "string", "minLength": 2}},
+        "generated_code_bytes": {"oneOf": [{"type": "integer", "minimum": 1}, {"type": "null"}]},
+        "native_artifact_digest": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "note": {"type": "string", "minLength": 10}
+      }
+    },
+    "implementation_result": {
+      "type": "object", "additionalProperties": false,
+      "required": ["checksum", "inner_runtime", "observation_sha256", "peak_rss", "process_time"],
+      "properties": {
+        "checksum": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+        "inner_runtime": {"$ref": "#/$defs/timing"},
+        "observation_sha256": {"type": "array", "minItems": 3, "maxItems": 101, "items": {"$ref": "#/$defs/sha256"}},
+        "peak_rss": {"$ref": "#/$defs/bytes"},
+        "process_time": {"$ref": "#/$defs/timing"}
+      }
+    },
+    "schedule": {
+      "type": "object", "additionalProperties": false, "required": ["oracle_verified", "order", "sample", "seed"],
+      "properties": {
+        "oracle_verified": {"type": "boolean"},
+        "order": {"type": "array", "minItems": 4, "uniqueItems": true, "items": {"enum": ["c", "cpp", "joan-native", "julia", "rust"]}},
+        "sample": {"type": "integer", "minimum": 0, "maximum": 100},
+        "seed": {"type": "string", "pattern": "^[1-9][0-9]{0,19}$"}
+      }
+    },
+    "oracle_observation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["checksum", "instructions_executed", "observation_sha256", "sample", "seed", "workload"],
+      "properties": {
+        "checksum": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+        "instructions_executed": {"type": "integer", "minimum": 1},
+        "observation_sha256": {"$ref": "#/$defs/sha256"},
+        "sample": {"type": "integer", "minimum": 0, "maximum": 100},
+        "seed": {"type": "string", "pattern": "^[1-9][0-9]{0,19}$"},
+        "workload": {"enum": ["cost-model", "deadline-slack", "dispatch-decision", "route-score", "split-budget"]}
+      }
+    },
+    "oracle": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "independent_from_measured_implementations", "observations", "sample_indices", "source_sha256", "verified_cases"],
+      "properties": {
+        "id": {"const": "node-bigint-independent-v0"},
+        "independent_from_measured_implementations": {"const": true},
+        "observations": {"type": "array", "minItems": 15, "maxItems": 15, "items": {"$ref": "#/$defs/oracle_observation"}},
+        "sample_indices": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"type": "integer", "minimum": 0, "maximum": 100}},
+        "source_sha256": {"$ref": "#/$defs/sha256"},
+        "verified_cases": {"const": 15}
+      }
+    },
+    "workload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["description", "id", "implementations", "output_equivalent", "schedule"],
+      "properties": {
+        "description": {"type": "string", "minLength": 20},
+        "id": {"enum": ["cost-model", "deadline-slack", "dispatch-decision", "route-score", "split-budget"]},
+        "implementations": {
+          "type": "object", "minProperties": 4, "maxProperties": 5,
+          "propertyNames": {"enum": ["c", "cpp", "joan-native", "julia", "rust"]},
+          "additionalProperties": {"$ref": "#/$defs/implementation_result"}
+        },
+        "output_equivalent": {"const": true},
+        "schedule": {"type": "array", "minItems": 3, "maxItems": 101, "items": {"$ref": "#/$defs/schedule"}}
+      }
+    },
+    "toolchain": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["available", "executable", "executable_sha256", "id", "version"],
+          "properties": {
+            "available": {"const": true}, "executable": {"type": "string", "minLength": 1},
+            "executable_sha256": {"$ref": "#/$defs/sha256"}, "id": {"type": "string", "minLength": 1},
+            "version": {"type": "string", "minLength": 1}
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["available", "id", "reason"],
+          "properties": {
+            "available": {"const": false}, "id": {"type": "string", "minLength": 1},
+            "reason": {"const": "toolchain-not-installed"}
+          }
+        }
+      ]
+    }
+  }
+}

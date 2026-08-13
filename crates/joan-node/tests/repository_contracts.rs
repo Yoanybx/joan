@@ -3,6 +3,7 @@
 use joan_canonical::parse_strict;
 use joan_canonical::{RegisteredDomainV1, digest_bytes_v1};
 use joan_compiler::{canonicalize_source_ast, compile_source};
+use joan_native::compile_bytecode;
 use joan_package::{
     PACKAGE_MANIFEST_SCHEMA, PackageCoordinate, PackageManifest, PackageModule, encode_manifest,
     resolve_package,
@@ -227,6 +228,35 @@ fn package_manifest_and_receipt_match_their_schemas() -> Result<(), Box<dyn std:
 }
 
 #[test]
+fn native_receipts_match_their_schemas() -> Result<(), Box<dyn std::error::Error>> {
+    let artifact = compile_source(
+        r"module native_contract;
+fn multiply(left: i64, right: i64) -> i64 effects [] {
+  return left * right;
+}
+fn main() -> i64 effects [] {
+  return 0;
+}
+",
+    )?;
+    let native = compile_bytecode(&artifact.bytecode)?;
+    let execution = native.invoke(
+        "multiply",
+        &[joan_bytecode::Value::I64(6), joan_bytecode::Value::I64(7)],
+        100,
+    )?;
+    validate_instance(
+        &serde_json::to_value(native.receipt())?,
+        "schemas/native-compile-receipt.v0.schema.json",
+    )?;
+    validate_instance(
+        &serde_json::to_value(execution)?,
+        "schemas/native-execution-receipt.v0.schema.json",
+    )?;
+    Ok(())
+}
+
+#[test]
 fn joan_manifests_match_their_schemas() -> Result<(), Box<dyn std::error::Error>> {
     let root = workspace_root();
     let retriever = LocalSchemaRetriever::load()?;
@@ -343,6 +373,18 @@ fn agent_scorecard_report_matches_its_schema() -> Result<(), Box<dyn std::error:
 }
 
 #[test]
+fn native_backend_report_matches_its_schema_when_supplied() -> Result<(), Box<dyn std::error::Error>>
+{
+    let Ok(path) = std::env::var("JOAN_NATIVE_BACKEND_REPORT_INPUT") else {
+        return Ok(());
+    };
+    validate_instance(
+        &read_json(Path::new(&path))?,
+        "schemas/native-backend-benchmark-report.v0.schema.json",
+    )
+}
+
+#[test]
 fn verification_receipts_match_their_schema() -> Result<(), Box<dyn std::error::Error>> {
     let root = workspace_root();
     let receipt_directory = root.join(".joan/evidence/runs");
@@ -405,7 +447,7 @@ fn workspace_root() -> PathBuf {
         )
 }
 
-fn manifest_schema_pairs() -> [(&'static str, &'static str); 13] {
+fn manifest_schema_pairs() -> [(&'static str, &'static str); 15] {
     [
         (
             ".joan/adoption.json",
@@ -458,6 +500,14 @@ fn manifest_schema_pairs() -> [(&'static str, &'static str); 13] {
         (
             "benchmarks/results/2026-08-12-mac15-4-agent-scorecard.json",
             "schemas/agent-scorecard-report.v1.schema.json",
+        ),
+        (
+            "benchmarks/native-backend/manifest-v0.json",
+            "schemas/native-backend-benchmark-manifest.v0.schema.json",
+        ),
+        (
+            "benchmarks/results/2026-08-13-mac15-4-native-backend.json",
+            "schemas/native-backend-benchmark-report.v0.schema.json",
         ),
     ]
 }

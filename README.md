@@ -4,7 +4,11 @@ JOAN is an experimental, agent-native language and verification substrate for de
 
 Original creator and founder: **Joan Alberto Barrios Cruz**. Project-designated corporate owner: **LED ACTION LLC**, Florida document number **L23000299152**. The signed-assignment requirement is recorded in [OWNERSHIP.md](OWNERSHIP.md). See [AUTHORS.md](AUTHORS.md), [ORIGIN.md](ORIGIN.md) and [GOVERNANCE.md](GOVERNANCE.md).
 
-Current status: `alpha language preview`. Real `.joan` source can now be parsed, checked, formatted, compiled to deterministic bytecode and executed in a bounded VM. It is not a native-code compiler, complete programming language or global network, and it has no claim of universal superiority, zero bugs or prompt-injection immunity.
+Current status: `alpha language preview`. Real `.joan` source can be parsed, checked, formatted,
+compiled to deterministic bytecode and executed in a bounded VM. A frozen pure scalar subset can
+also be JIT-compiled with Cranelift behind explicit `native` commands. This is not a complete native
+compiler, host sandbox or global network, and it has no claim of universal superiority, zero bugs
+or prompt-injection immunity.
 
 ## First verified value
 
@@ -16,6 +20,8 @@ cargo run -p joan-node -- check examples/agent-handoff.joan --json
 cargo run -p joan-node -- fmt examples/agent-handoff.joan --check
 cargo run -p joan-node -- compile examples/agent-handoff.joan --json
 cargo run -p joan-node -- run examples/agent-handoff.joan --json
+cargo run -p joan-node -- native compile vectors/native/pure-v0.joan --json
+cargo run -p joan-node -- native run vectors/native/pure-v0.joan --function score --arguments vectors/native/arguments-v0.json --budget 100 --json
 cargo run -p joan-node -- run examples/linear-agent-handoff.joan --json
 cargo run -p joan-node -- run examples/tenant-safe-handoff.joan --json
 cargo run -p joan-node -- repo inspect . --json
@@ -27,6 +33,8 @@ cargo run -p joan-node -- trust pr evaluate . --base HEAD^ --head HEAD --json
 ./scripts/benchmark-digest.sh 4096 5000
 ./scripts/verify-agent-scorecard.sh
 ./scripts/verify-native-abi.sh
+./scripts/verify-native-backend.sh
+./scripts/verify-native-benchmark.sh
 ./scripts/verify-payment-cost.sh
 ./scripts/verify-all.sh
 ```
@@ -49,6 +57,7 @@ The inspection command is designed to be offline and read-only. It reads only al
 - `joan-instruction`: typed authority attenuation, instruction decisions and safe repository discovery.
 - `joan-lattice`: bounded canonical M2M frame codec with borrowed payload views.
 - `joan-abi`: 64-bit C ABI for bounded payload-zero-copy Lattice validation and typed semantic binding.
+- `joan-native`: experimental Cranelift JIT for the verified, effect-free scalar subset.
 - `joan-runtime`: external-authority effect planning with atomic one-use approval consumption.
 - `joan-case`: content-addressed automatic dispute lifecycle.
 - `joan-evidence`: immutable-at-lock evidence graph.
@@ -62,7 +71,7 @@ The inspection command is designed to be offline and read-only. It reads only al
 
 Repository text is data or guidance, never execution authority. JOAN can propose or evaluate an action, but an external host must supply the exact authority required for any effect.
 
-Read [AGENTS.md](AGENTS.md), [JOAN.md](JOAN.md), [SECURITY.md](SECURITY.md), [GOVERNANCE.md](GOVERNANCE.md), [spec/language-v0.md](spec/language-v0.md), [spec/linear-authority-v1.md](spec/linear-authority-v1.md), [spec/information-flow-v1.md](spec/information-flow-v1.md), [spec/differential-language-v1.md](spec/differential-language-v1.md), [spec/agent-scorecard-v1.md](spec/agent-scorecard-v1.md), [spec/pr-trust-envelope-v0.md](spec/pr-trust-envelope-v0.md), [spec/bytecode-verification-v0.md](spec/bytecode-verification-v0.md), [spec/package-resolution-v0.md](spec/package-resolution-v0.md), [spec/language-landscape-v0.md](spec/language-landscape-v0.md), [spec/lattice-m2m-v0.md](spec/lattice-m2m-v0.md), [spec/agent-runtime-v0.md](spec/agent-runtime-v0.md), [spec/mesh-network-v0.md](spec/mesh-network-v0.md), [spec/company-value-capture-v0.md](spec/company-value-capture-v0.md), [spec/external-agent-stack-assessment-v0.md](spec/external-agent-stack-assessment-v0.md), [spec/canonical-profile-jce1.md](spec/canonical-profile-jce1.md) and [spec/conformance-jce1.md](spec/conformance-jce1.md) before changing or integrating the prototype.
+Read [AGENTS.md](AGENTS.md), [JOAN.md](JOAN.md), [SECURITY.md](SECURITY.md), [GOVERNANCE.md](GOVERNANCE.md), [spec/language-v0.md](spec/language-v0.md), [spec/linear-authority-v1.md](spec/linear-authority-v1.md), [spec/information-flow-v1.md](spec/information-flow-v1.md), [spec/differential-language-v1.md](spec/differential-language-v1.md), [spec/agent-scorecard-v1.md](spec/agent-scorecard-v1.md), [spec/pr-trust-envelope-v0.md](spec/pr-trust-envelope-v0.md), [spec/bytecode-verification-v0.md](spec/bytecode-verification-v0.md), [spec/package-resolution-v0.md](spec/package-resolution-v0.md), [spec/language-landscape-v0.md](spec/language-landscape-v0.md), [spec/lattice-m2m-v0.md](spec/lattice-m2m-v0.md), [spec/agent-runtime-v0.md](spec/agent-runtime-v0.md), [spec/native-backend-v0.md](spec/native-backend-v0.md), [spec/mesh-network-v0.md](spec/mesh-network-v0.md), [spec/product-completion-gates-v0.md](spec/product-completion-gates-v0.md), [spec/company-value-capture-v0.md](spec/company-value-capture-v0.md), [spec/external-agent-stack-assessment-v0.md](spec/external-agent-stack-assessment-v0.md), [spec/canonical-profile-jce1.md](spec/canonical-profile-jce1.md) and [spec/conformance-jce1.md](spec/conformance-jce1.md) before changing or integrating the prototype.
 
 Operational metrics, bug intake and the fail-closed update policy are documented in [OPERATIONS.md](OPERATIONS.md). JOAN has no hidden runtime telemetry; GitHub metrics are aggregate adoption proxies and never prove active-user counts.
 
@@ -83,11 +92,12 @@ Machine evidence follows [spec/source-tree-evidence-v2.md](spec/source-tree-evid
 Run `scripts/verify-differential-language.sh` to compare the Rust parser/checker with the dependency-free Node.js reference over 44 frozen cases and 32 deterministic mutations. A 76/76 pass reduces implementation-correlated risk but is not an external audit or a performance claim.
 
 The experimental native boundary in `include/joan.h` exposes fixed-width C/C++
-layouts and relative Lattice spans without retaining input pointers. It is a
-validated interoperability boundary, not a native JOAN backend or a claim of
-speed superiority. Its source-bound local receipt is retained at
+layouts and relative Lattice spans without retaining input pointers. Separately,
+`joan-native` JIT-compiles the verified effect-free scalar subset and remains in-process;
+neither component is a host sandbox or a claim of speed superiority. The ABI's source-bound local receipt is retained at
 `.joan/evidence/native-abi-v1.json`. See
-[spec/native-abi-v1.md](spec/native-abi-v1.md).
+[spec/native-abi-v1.md](spec/native-abi-v1.md) and
+[spec/native-backend-v0.md](spec/native-backend-v0.md).
 
 ## License and commercial authority
 

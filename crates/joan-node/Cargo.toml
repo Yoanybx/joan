@@ -20,6 +20,7 @@ joan-dispute = { path = "../joan-dispute" }
 joan-guardian = { path = "../joan-guardian" }
 joan-identity = { path = "../joan-identity" }
 joan-instruction = { path = "../joan-instruction" }
+joan-native = { path = "../joan-native" }
 joan-patch = { path = "../joan-patch" }
 joan-package = { path = "../joan-package" }
 joan-sim = { path = "../joan-sim" }

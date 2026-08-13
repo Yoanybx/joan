@@ -33,6 +33,29 @@ Future claims must separately measure:
 
 Memory, startup, binary size, energy, adversarial worst case and cross-platform variance must be reported alongside throughput before any broad comparison.
 
+## Experimental native scalar corpus
+
+`benchmarks/native-backend/manifest-v0.json` freezes five dynamic scalar workloads for JOAN
+native, C, C++, Rust, and Julia. Every implementation uses SplitMix64 inputs, checked arithmetic,
+the same per-opcode fuel accounting, and the same FNV-1a outcome accumulator. Output equivalence
+requires both checksum and instruction-count equality.
+
+The smoke gate retains raw inner-runtime, process-time, RSS, compile, ordering, source, toolchain,
+and environment observations. Julia is marked unavailable when its toolchain is absent. Executable
+size and generated JIT code size are separate scopes and must not be compared as if equivalent.
+Recorded mode is fail-closed at exactly 101 runtime samples, 1,000,000 iterations per sample, and
+11 RSS samples. The report is always `local-benchmark-not-qualified`; a conforming independent
+host rerun is required before any workload-specific performance statement.
+
+Workload names are resolved before timing and all timed harnesses use an enum selector. C, C++,
+Rust, and Cranelift target the current host CPU. Execution order is balanced by position in complete
+implementation-sized blocks. A separate dependency-free Node/BigInt oracle freezes samples 0, 50,
+and 100 for every workload; all remaining samples require exact cross-implementation agreement.
+Reports bind source, compiler flags, artifacts, generated native identity, raw observation hashes,
+and the oracle source. They must be written outside the source tree to avoid self-referential hashes.
+Process time is retained for operations analysis but is not cross-lifecycle comparable because JOAN
+and Julia compile source on process start while C, C++, and Rust execute prebuilt artifacts.
+
 ## AI-agent task paths
 
 `spec/agent-scorecard-v1.md` defines a non-compensable comparison against C,

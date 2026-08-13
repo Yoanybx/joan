@@ -1,0 +1,29 @@
+module native_kernels;
+
+fn adjusted_signal(signal: i64) -> i64 effects [] {
+  return signal + 1;
+}
+
+fn cost_model(tokens: i64, price: i64, storage: i64) -> i64 effects [] {
+  return tokens * price + storage;
+}
+
+fn deadline_slack(deadline: i64, elapsed: i64, reserve: i64) -> i64 effects [] {
+  return deadline - elapsed - reserve;
+}
+
+fn dispatch_decision(load: i64, limit: i64, authorized: bool) -> bool effects [] {
+  return (load <= limit) && authorized;
+}
+
+fn route_score(signal: i64, confidence: i64) -> i64 effects [] {
+  return adjusted_signal(signal) * confidence - signal;
+}
+
+fn split_budget(total: i64, workers: i64) -> i64 effects [] {
+  return total / workers + total % workers;
+}
+
+fn main() -> i64 effects [] {
+  return 0;
+}

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/native-compile-receipt.v0.schema.json",
+  "title": "JOAN Native Compile Receipt v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifact_digest",
+    "backend",
+    "bytecode_digest",
+    "code_bytes",
+    "codegen_version",
+    "flags",
+    "function_count",
+    "optimization_profile",
+    "relocation_count",
+    "schema",
+    "semantic_digest",
+    "status",
+    "subset",
+    "target"
+  ],
+  "properties": {
+    "artifact_digest": {"$ref": "#/$defs/nativeArtifactDigest"},
+    "backend": {"const": "joan.cranelift-jit.v0"},
+    "bytecode_digest": {"$ref": "#/$defs/digest"},
+    "code_bytes": {"type": "integer", "minimum": 1, "maximum": 16777216},
+    "codegen_version": {"const": "0.134.3"},
+    "flags": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 3}
+    },
+    "function_count": {"type": "integer", "minimum": 1, "maximum": 256},
+    "optimization_profile": {"const": "speed"},
+    "relocation_count": {"type": "integer", "minimum": 0, "maximum": 5120000},
+    "schema": {"const": "joan.native-compile-receipt.v0"},
+    "semantic_digest": {"$ref": "#/$defs/digest"},
+    "status": {"const": "compiled"},
+    "subset": {"const": "joan.native-subset.v0"},
+    "target": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "digest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "domain", "profile", "value"],
+      "properties": {
+        "algorithm": {"const": "sha256"},
+        "domain": {"type": "string", "minLength": 1},
+        "profile": {"type": "string", "minLength": 1},
+        "value": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "nativeArtifactDigest": {
+      "allOf": [
+        {"$ref": "#/$defs/digest"},
+        {"properties": {"domain": {"const": "joan.native-artifact.v1"}, "profile": {"const": "joan-hash-v1"}}}
+      ]
+    }
+  }
+}

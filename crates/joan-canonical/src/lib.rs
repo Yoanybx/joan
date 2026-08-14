@@ -130,6 +130,18 @@ pub enum RegisteredDomainV1 {
     PrTrustEvidence,
     /// Complete pull-request trust envelope identity.
     PrTrustEnvelope,
+    /// Declarative specification for one bounded generated tool.
+    ToolSpec,
+    /// Static verification receipt for one bounded tool specification.
+    ToolSpecVerification,
+    /// Complete generated tool bundle identity.
+    ToolBundle,
+    /// Independent tool verification receipt identity.
+    ToolVerification,
+    /// Guardian-bound tool finalization receipt identity.
+    ToolFinalization,
+    /// Final tool promotion decision identity.
+    ToolPromotion,
 }
 
 impl RegisteredDomainV1 {
@@ -162,6 +174,12 @@ impl RegisteredDomainV1 {
             Self::PrTrustPolicy => "joan.pr-trust-policy.v1",
             Self::PrTrustEvidence => "joan.pr-trust-evidence.v1",
             Self::PrTrustEnvelope => "joan.pr-trust-envelope.v1",
+            Self::ToolSpec => "joan.tool-spec.v1",
+            Self::ToolSpecVerification => "joan.tool-spec-verification.v1",
+            Self::ToolBundle => "joan.tool-bundle.v1",
+            Self::ToolVerification => "joan.tool-verification.v1",
+            Self::ToolFinalization => "joan.tool-finalization.v1",
+            Self::ToolPromotion => "joan.tool-promotion.v1",
         }
     }
 
@@ -193,6 +211,12 @@ impl RegisteredDomainV1 {
             "joan.pr-trust-policy.v1" => Self::PrTrustPolicy,
             "joan.pr-trust-evidence.v1" => Self::PrTrustEvidence,
             "joan.pr-trust-envelope.v1" => Self::PrTrustEnvelope,
+            "joan.tool-spec.v1" => Self::ToolSpec,
+            "joan.tool-spec-verification.v1" => Self::ToolSpecVerification,
+            "joan.tool-bundle.v1" => Self::ToolBundle,
+            "joan.tool-verification.v1" => Self::ToolVerification,
+            "joan.tool-finalization.v1" => Self::ToolFinalization,
+            "joan.tool-promotion.v1" => Self::ToolPromotion,
             _ => return Err(Jce1Error::UnregisteredDomain(value.to_owned())),
         };
         Ok(domain)

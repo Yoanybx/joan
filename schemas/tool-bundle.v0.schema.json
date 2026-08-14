@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/tool-bundle.v0.schema.json",
+  "title": "JOAN Tool Bundle v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "spec_digest", "source", "source_digest", "bytecode", "bytecode_digest", "generation_passes", "bundle_digest"],
+  "properties": {
+    "schema": {"const": "joan.tool-bundle.v0"},
+    "spec_digest": {"$ref": "#/$defs/specDigest"},
+    "source": {"type": "string", "minLength": 1, "maxLength": 1048576},
+    "source_digest": {"$ref": "#/$defs/sourceDigest"},
+    "bytecode": {"oneOf": [{"$ref": "bytecode-program.v1.schema.json"}, {"$ref": "bytecode-program.v2.schema.json"}, {"$ref": "bytecode-program.v3.schema.json"}]},
+    "bytecode_digest": {"$ref": "digest.v1.schema.json"},
+    "generation_passes": {"const": 3},
+    "bundle_digest": {"$ref": "#/$defs/bundleDigest"}
+  },
+  "allOf": [
+    {"if": {"properties": {"bytecode": {"properties": {"schema": {"const": "joan.bytecode-program.v1"}}}}}, "then": {"properties": {"bytecode_digest": {"$ref": "#/$defs/bytecodeDigestV1"}}}},
+    {"if": {"properties": {"bytecode": {"properties": {"schema": {"const": "joan.bytecode-program.v2"}}}}}, "then": {"properties": {"bytecode_digest": {"$ref": "#/$defs/bytecodeDigestV2"}}}},
+    {"if": {"properties": {"bytecode": {"properties": {"schema": {"const": "joan.bytecode-program.v3"}}}}}, "then": {"properties": {"bytecode_digest": {"$ref": "#/$defs/bytecodeDigestV3"}}}}
+  ],
+  "$defs": {
+    "specDigest": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"properties": {"domain": {"const": "joan.tool-spec.v1"}}}]},
+    "sourceDigest": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"properties": {"domain": {"const": "joan.source.v1"}}}]},
+    "bundleDigest": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"properties": {"domain": {"const": "joan.tool-bundle.v1"}}}]},
+    "bytecodeDigestV1": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"properties": {"domain": {"const": "joan.bytecode-program.v1"}}}]},
+    "bytecodeDigestV2": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"properties": {"domain": {"const": "joan.bytecode-program.v2"}}}]},
+    "bytecodeDigestV3": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"properties": {"domain": {"const": "joan.bytecode-program.v3"}}}]}
+  }
+}

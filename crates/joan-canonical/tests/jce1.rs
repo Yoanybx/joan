@@ -133,6 +133,30 @@ fn pr_trust_domains_are_registered() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+fn tool_forge_domains_are_registered() -> Result<(), Box<dyn std::error::Error>> {
+    for (name, expected) in [
+        ("joan.tool-spec.v1", RegisteredDomainV1::ToolSpec),
+        (
+            "joan.tool-spec-verification.v1",
+            RegisteredDomainV1::ToolSpecVerification,
+        ),
+        ("joan.tool-bundle.v1", RegisteredDomainV1::ToolBundle),
+        (
+            "joan.tool-verification.v1",
+            RegisteredDomainV1::ToolVerification,
+        ),
+        (
+            "joan.tool-finalization.v1",
+            RegisteredDomainV1::ToolFinalization,
+        ),
+        ("joan.tool-promotion.v1", RegisteredDomainV1::ToolPromotion),
+    ] {
+        assert_eq!(RegisteredDomainV1::parse(name)?, expected);
+    }
+    Ok(())
+}
+
+#[test]
 fn typed_digest_rejects_profile_domain_and_payload_substitution()
 -> Result<(), Box<dyn std::error::Error>> {
     let payload = b"JOAN JCE1 fixed payload";

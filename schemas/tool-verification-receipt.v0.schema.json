@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/tool-verification-receipt.v0.schema.json",
+  "title": "JOAN Tool Verification Receipt v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "spec_digest", "bundle_digest", "status", "tests_passed", "generations_byte_identical", "external_effects_executed", "findings", "receipt_digest"],
+  "properties": {
+    "schema": {"const": "joan.tool-verification-receipt.v0"},
+    "spec_digest": {"$ref": "#/$defs/specDigest"},
+    "bundle_digest": {"$ref": "#/$defs/bundleDigest"},
+    "status": {"enum": ["verified", "rejected"]},
+    "tests_passed": {"type": "integer", "minimum": 0, "maximum": 64},
+    "generations_byte_identical": {"type": "boolean"},
+    "external_effects_executed": {"const": false},
+    "findings": {"type": "array", "maxItems": 256, "items": {"$ref": "#/$defs/finding"}},
+    "receipt_digest": {"$ref": "#/$defs/receiptDigest"}
+  },
+  "allOf": [
+    {"if": {"properties": {"status": {"const": "verified"}}}, "then": {"properties": {"generations_byte_identical": {"const": true}, "findings": {"maxItems": 0}}}},
+    {"if": {"properties": {"status": {"const": "rejected"}}}, "then": {"properties": {"findings": {"minItems": 1}}}}
+  ],
+  "$defs": {
+    "specDigest": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"properties": {"domain": {"const": "joan.tool-spec.v1"}}}]},
+    "bundleDigest": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"properties": {"domain": {"const": "joan.tool-bundle.v1"}}}]},
+    "receiptDigest": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"properties": {"domain": {"const": "joan.tool-verification.v1"}}}]},
+    "finding": {"type": "object", "additionalProperties": false, "required": ["code", "message"], "properties": {"code": {"type": "string", "pattern": "^TF[0-9]{4}$"}, "message": {"type": "string", "minLength": 1, "maxLength": 256}}}
+  }
+}

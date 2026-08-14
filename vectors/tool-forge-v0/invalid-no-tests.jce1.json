@@ -1,0 +1,1 @@
+{"instruction_budget":64,"name":"invalid_tool","operation":"add-i64","purpose":"testing","schema":"joan.tool-spec.v0","tenant":"agent_alpha","tests":[]}

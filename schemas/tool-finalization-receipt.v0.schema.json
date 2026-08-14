@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/tool-finalization-receipt.v0.schema.json",
+  "title": "JOAN Tool Finalization Receipt v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "bundle_digest", "verification_digest", "status", "guardian", "findings", "receipt_digest"],
+  "properties": {
+    "schema": {"const": "joan.tool-finalization-receipt.v0"},
+    "bundle_digest": {"$ref": "#/$defs/bundleDigest"},
+    "verification_digest": {"$ref": "#/$defs/verificationDigest"},
+    "status": {"enum": ["finalized", "quarantined"]},
+    "guardian": {"oneOf": [{"allOf": [{"$ref": "guardian-decision-receipt.v0.schema.json"}, {"properties": {"candidate_root": {"$ref": "#/$defs/bundleDigest"}}}]}, {"type": "null"}]},
+    "findings": {"type": "array", "maxItems": 256, "items": {"$ref": "#/$defs/finding"}},
+    "receipt_digest": {"$ref": "#/$defs/receiptDigest"}
+  },
+  "allOf": [
+    {"if": {"properties": {"status": {"const": "finalized"}}}, "then": {"properties": {"guardian": {"type": "object"}, "findings": {"maxItems": 0}}}},
+    {"if": {"properties": {"status": {"const": "quarantined"}}}, "then": {"properties": {"findings": {"minItems": 1}}}}
+  ],
+  "$defs": {
+    "bundleDigest": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"properties": {"domain": {"const": "joan.tool-bundle.v1"}}}]},
+    "verificationDigest": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"properties": {"domain": {"const": "joan.tool-verification.v1"}}}]},
+    "receiptDigest": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"properties": {"domain": {"const": "joan.tool-finalization.v1"}}}]},
+    "finding": {"type": "object", "additionalProperties": false, "required": ["code", "message"], "properties": {"code": {"type": "string", "pattern": "^TF[0-9]{4}$"}, "message": {"type": "string", "minLength": 1, "maxLength": 256}}}
+  }
+}

@@ -3,13 +3,18 @@
 use joan_canonical::parse_strict;
 use joan_canonical::{RegisteredDomainV1, digest_bytes_v1};
 use joan_compiler::{canonicalize_source_ast, compile_source};
+use joan_guardian::{GuardianCandidate, GuardianRole, GuardianVote, VoteDecision};
 use joan_native::compile_bytecode;
 use joan_package::{
     PACKAGE_MANIFEST_SCHEMA, PackageCoordinate, PackageManifest, PackageModule, encode_manifest,
     resolve_package,
 };
+use joan_tool_forge::{
+    ToolOperation, ToolSpec, ToolTestCase, Value as ToolValue, evaluate_promotion, finalize_tool,
+    forge_tool, verify_spec, verify_tool,
+};
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::fs;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
@@ -61,6 +66,7 @@ fn every_machine_contract_is_strict_json() -> Result<(), Box<dyn std::error::Err
     collect_json(&root.join("vectors/jce1"), &mut files)?;
     collect_json(&root.join("vectors/language-differential"), &mut files)?;
     collect_json(&root.join("vectors/payment-cost"), &mut files)?;
+    collect_json(&root.join("vectors/tool-forge-v0"), &mut files)?;
     collect_json(&root.join("benchmarks/agent-scorecard"), &mut files)?;
     assert!(!files.is_empty());
     for path in files {
@@ -223,6 +229,112 @@ fn package_manifest_and_receipt_match_their_schemas() -> Result<(), Box<dyn std:
     validate_instance(
         &serde_json::to_value(receipt)?,
         "schemas/package-resolution-receipt.v0.schema.json",
+    )?;
+    Ok(())
+}
+
+#[test]
+fn tool_forge_artifacts_match_their_schemas() -> Result<(), Box<dyn std::error::Error>> {
+    let spec = ToolSpec {
+        schema: "joan.tool-spec.v0".to_owned(),
+        name: "add_cost".to_owned(),
+        tenant: "agent_alpha".to_owned(),
+        purpose: "costing".to_owned(),
+        instruction_budget: 64,
+        operation: ToolOperation::AddI64,
+        tests: vec![ToolTestCase {
+            name: "answer".to_owned(),
+            arguments: vec![ToolValue::I64(20), ToolValue::I64(22)],
+            expected: ToolValue::I64(42),
+        }],
+    };
+    let spec_receipt = verify_spec(&spec)?;
+    let bundle = forge_tool(&spec)?;
+    let verification = verify_tool(&spec, &bundle)?;
+    let evidence = vec![bundle.source_digest.clone(), bundle.bytecode_digest.clone()];
+    let vote = |guardian_id: &str, role: GuardianRole| GuardianVote {
+        guardian_id: guardian_id.to_owned(),
+        role,
+        candidate_root: bundle.bundle_digest.clone(),
+        decision: VoteDecision::Approve,
+        evidence: evidence.clone(),
+    };
+    let candidate = GuardianCandidate {
+        schema: "joan.guardian-candidate.v0".to_owned(),
+        candidate_root: bundle.bundle_digest.clone(),
+        proposer_id: "tool-generator".to_owned(),
+        required_roles: BTreeSet::from([
+            GuardianRole::SemanticVerifier,
+            GuardianRole::TestGuardian,
+            GuardianRole::PolicyGatekeeper,
+        ]),
+        approval_threshold: 3,
+        votes: vec![
+            vote("semantic-verifier", GuardianRole::SemanticVerifier),
+            vote("test-verifier", GuardianRole::TestGuardian),
+            vote("policy-verifier", GuardianRole::PolicyGatekeeper),
+        ],
+    };
+    let finalization = finalize_tool(&spec, &bundle, &verification, &candidate)?;
+    let promotion = evaluate_promotion(&spec, &bundle, &verification, &candidate, &finalization)?;
+    for (instance, schema) in [
+        (
+            serde_json::to_value(&spec)?,
+            "schemas/tool-spec.v0.schema.json",
+        ),
+        (
+            serde_json::to_value(&spec_receipt)?,
+            "schemas/tool-spec-verification-receipt.v0.schema.json",
+        ),
+        (
+            serde_json::to_value(&bundle)?,
+            "schemas/tool-bundle.v0.schema.json",
+        ),
+        (
+            serde_json::to_value(&verification)?,
+            "schemas/tool-verification-receipt.v0.schema.json",
+        ),
+        (
+            serde_json::to_value(&finalization)?,
+            "schemas/tool-finalization-receipt.v0.schema.json",
+        ),
+        (
+            serde_json::to_value(&promotion)?,
+            "schemas/tool-promotion-decision.v0.schema.json",
+        ),
+    ] {
+        validate_instance(&instance, schema)?;
+    }
+
+    let mut contradictory_spec_receipt = serde_json::to_value(&spec_receipt)?;
+    contradictory_spec_receipt["findings"] = serde_json::json!([{
+        "code": "TF0001",
+        "message": "verified receipts cannot contain findings"
+    }]);
+    assert_invalid_instance(
+        &contradictory_spec_receipt,
+        "schemas/tool-spec-verification-receipt.v0.schema.json",
+    )?;
+
+    let mut wrong_domain = serde_json::to_value(&verification)?;
+    wrong_domain["receipt_digest"]["domain"] = Value::String("joan.tool-spec.v1".to_owned());
+    assert_invalid_instance(
+        &wrong_domain,
+        "schemas/tool-verification-receipt.v0.schema.json",
+    )?;
+
+    let mut fabricated_finalization = serde_json::to_value(&finalization)?;
+    fabricated_finalization["guardian"] = Value::Null;
+    assert_invalid_instance(
+        &fabricated_finalization,
+        "schemas/tool-finalization-receipt.v0.schema.json",
+    )?;
+
+    let mut contradictory_promotion = serde_json::to_value(&promotion)?;
+    contradictory_promotion["reasons"] = serde_json::json!(["unexpected"]);
+    assert_invalid_instance(
+        &contradictory_promotion,
+        "schemas/tool-promotion-decision.v0.schema.json",
     )?;
     Ok(())
 }
@@ -542,6 +654,20 @@ fn validate_instance(
         .build(&schema)?;
     if let Err(error) = validator.validate(instance) {
         return Err(format!("instance does not match {schema_path}: {error}").into());
+    }
+    Ok(())
+}
+
+fn assert_invalid_instance(
+    instance: &Value,
+    schema_path: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let schema = read_json(&workspace_root().join(schema_path))?;
+    let validator = jsonschema::draft202012::options()
+        .with_retriever(LocalSchemaRetriever::load()?)
+        .build(&schema)?;
+    if validator.is_valid(instance) {
+        return Err(format!("invalid instance unexpectedly matches {schema_path}").into());
     }
     Ok(())
 }

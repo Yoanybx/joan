@@ -6,7 +6,7 @@
   "required": ["schema", "candidate_root", "outcome", "approvals", "approved_roles", "missing_roles", "denying_guardians", "independence_profile", "receipt_digest"],
   "properties": {
     "schema": {"const": "joan.guardian-decision-receipt.v0"},
-    "candidate_root": {"$ref": "digest.v0.schema.json"},
+    "candidate_root": {"oneOf": [{"$ref": "digest.v0.schema.json"}, {"$ref": "digest.v1.schema.json"}]},
     "outcome": {"enum": ["approved", "denied", "pending"]},
     "approvals": {"type": "integer", "minimum": 0},
     "approved_roles": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},

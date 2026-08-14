@@ -26,6 +26,7 @@ joan-package = { path = "../joan-package" }
 joan-sim = { path = "../joan-sim" }
 joan-syntax = { path = "../joan-syntax" }
 joan-trust = { path = "../joan-trust" }
+joan-tool-forge = { path = "../joan-tool-forge" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

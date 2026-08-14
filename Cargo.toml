@@ -24,6 +24,7 @@ members = [
   "crates/joan-node",
   "crates/joan-syntax",
   "crates/joan-trust",
+  "crates/joan-tool-forge",
 ]
 
 [workspace.package]

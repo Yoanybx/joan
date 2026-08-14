@@ -34,6 +34,10 @@
       "argv": ["./scripts/verify-payment-cost.sh"]
     },
     {
+      "id": "tool-forge",
+      "argv": ["./scripts/verify-tool-forge.sh"]
+    },
+    {
       "id": "cargo-deny",
       "argv": ["cargo", "deny", "--locked", "check"]
     },

@@ -20,6 +20,10 @@ use joan_node::{
 use joan_package::resolve_package;
 use joan_patch::{GraphBundle, SemanticPatch, apply_patch};
 use joan_sim::SimulationConfig;
+use joan_tool_forge::{
+    ToolBundle, ToolFinalizationReceipt, ToolSpec, ToolVerificationReceipt, evaluate_promotion,
+    finalize_tool, forge_tool, verify_spec, verify_tool,
+};
 use joan_trust::{encode_envelope, evaluate_pr, verify_pr_envelope};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -166,6 +170,65 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             let candidate: GuardianCandidate = read_json(candidate)?;
             write_json(&joan_guardian::evaluate_candidate(&candidate)?)?;
         }
+        [group, subject, command, spec, flag]
+            if group == "tool" && subject == "spec" && command == "verify" && flag == "--json" =>
+        {
+            let spec: ToolSpec = read_exact_jce1_json(spec, 1_048_576)?;
+            write_jce1_json(&verify_spec(&spec)?)?;
+        }
+        [group, command, spec, flag]
+            if group == "tool" && command == "forge" && flag == "--json" =>
+        {
+            let spec: ToolSpec = read_exact_jce1_json(spec, 1_048_576)?;
+            write_jce1_json(&forge_tool(&spec)?)?;
+        }
+        [group, command, spec, bundle, flag]
+            if group == "tool" && command == "verify" && flag == "--json" =>
+        {
+            let spec: ToolSpec = read_exact_jce1_json(spec, 1_048_576)?;
+            let bundle: ToolBundle = read_exact_jce1_json(bundle, 4 * 1_048_576)?;
+            write_jce1_json(&verify_tool(&spec, &bundle)?)?;
+        }
+        [group, command, spec, bundle, verification, candidate, flag]
+            if group == "tool" && command == "finalize" && flag == "--json" =>
+        {
+            let spec: ToolSpec = read_exact_jce1_json(spec, 1_048_576)?;
+            let bundle: ToolBundle = read_exact_jce1_json(bundle, 4 * 1_048_576)?;
+            let verification: ToolVerificationReceipt =
+                read_exact_jce1_json(verification, 1_048_576)?;
+            let candidate: GuardianCandidate = read_exact_jce1_json(candidate, 1_048_576)?;
+            write_jce1_json(&finalize_tool(&spec, &bundle, &verification, &candidate)?)?;
+        }
+        [
+            group,
+            subject,
+            command,
+            spec,
+            bundle,
+            verification,
+            candidate,
+            finalization,
+            flag,
+        ] if group == "tool"
+            && subject == "promotion"
+            && command == "evaluate"
+            && flag == "--json" =>
+        {
+            let spec: ToolSpec = read_exact_jce1_json(spec, 1_048_576)?;
+            let bundle: ToolBundle = read_exact_jce1_json(bundle, 4 * 1_048_576)?;
+            let verification: ToolVerificationReceipt =
+                read_exact_jce1_json(verification, 1_048_576)?;
+            let candidate: GuardianCandidate = read_exact_jce1_json(candidate, 1_048_576)?;
+            let finalization: ToolFinalizationReceipt =
+                read_exact_jce1_json(finalization, 1_048_576)?;
+            write_jce1_json(&evaluate_promotion(
+                &spec,
+                &bundle,
+                &verification,
+                &candidate,
+                &finalization,
+            )?)?;
+        }
         [group, command] if group == "node" && command == "self-check" => {
             write_json(&node_self_check()?)?;
         }
@@ -246,7 +309,7 @@ fn verify_jce1_suite(path: &str) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn usage() -> &'static str {
-    "usage:\n  joan check <program.joan> [--json]\n  joan fmt <program.joan> [--check]\n  joan compile <program.joan> --json\n  joan run <program.joan> --json\n  joan native compile <program.joan> --json\n  joan native run <program.joan> --function <name> --arguments <values.json> --budget <count> --json\n  joan canonicalize <file|->\n  joan canonicalize-v1 <file|->\n  joan canonical-set-v1 <array-file|->\n  joan digest <domain> <file|->\n  joan digest-v1 <registered-domain> <file|->\n  joan conformance jce1 <suite.json> --json\n  joan benchmark digest-v1 --bytes <count> --iterations <count> --json\n  joan identity verify <bundle.json>\n  joan bytecode verify <bytecode.json> --json\n  joan patch verify <graph.json> <patch.json>\n  joan package resolve <manifest.json> --store <dir> --json\n  joan guardian evaluate <candidate.json>\n  joan node self-check\n  joan repo inspect <path> --json\n  joan adoption evaluate <trial.json> --json\n  joan dispute evaluate <bundle.json> --json\n  joan dispute simulate --cases <count> --seed <seed> --json\n  joan instructions audit <repo> --authority-envelope <file> --task <file> --json\n  joan trust pr evaluate <repo> --base <commit> --head <commit> --json\n  joan trust pr verify <repo> <envelope.json> --json"
+    "usage:\n  joan check <program.joan> [--json]\n  joan fmt <program.joan> [--check]\n  joan compile <program.joan> --json\n  joan run <program.joan> --json\n  joan native compile <program.joan> --json\n  joan native run <program.joan> --function <name> --arguments <values.json> --budget <count> --json\n  joan canonicalize <file|->\n  joan canonicalize-v1 <file|->\n  joan canonical-set-v1 <array-file|->\n  joan digest <domain> <file|->\n  joan digest-v1 <registered-domain> <file|->\n  joan conformance jce1 <suite.json> --json\n  joan benchmark digest-v1 --bytes <count> --iterations <count> --json\n  joan identity verify <bundle.json>\n  joan bytecode verify <bytecode.json> --json\n  joan patch verify <graph.json> <patch.json>\n  joan package resolve <manifest.json> --store <dir> --json\n  joan guardian evaluate <candidate.json>\n  joan tool spec verify <spec.jce1> --json\n  joan tool forge <spec.jce1> --json\n  joan tool verify <spec.jce1> <bundle.jce1> --json\n  joan tool finalize <spec.jce1> <bundle.jce1> <verification.jce1> <guardian-candidate.jce1> --json\n  joan tool promotion evaluate <spec.jce1> <bundle.jce1> <verification.jce1> <guardian-candidate.jce1> <finalization.jce1> --json\n  joan node self-check\n  joan repo inspect <path> --json\n  joan adoption evaluate <trial.json> --json\n  joan dispute evaluate <bundle.json> --json\n  joan dispute simulate --cases <count> --seed <seed> --json\n  joan instructions audit <repo> --authority-envelope <file> --task <file> --json\n  joan trust pr evaluate <repo> --base <commit> --head <commit> --json\n  joan trust pr verify <repo> <envelope.json> --json"
 }
 
 fn language_result<T>(result: Result<T, LanguageError>) -> Result<T, Box<dyn std::error::Error>> {
@@ -296,7 +359,10 @@ fn read_bounded_bytes(path: &str, max_bytes: usize) -> Result<Vec<u8>, Box<dyn s
         if metadata.len() > u64::try_from(max_bytes)? {
             return Err(format!("input exceeds {max_bytes} byte limit").into());
         }
-        fs::read(path)?
+        let limit = u64::try_from(max_bytes)?.saturating_add(1);
+        let mut bytes = Vec::new();
+        fs::File::open(path)?.take(limit).read_to_end(&mut bytes)?;
+        bytes
     };
     if bytes.len() > max_bytes {
         return Err(format!("input exceeds {max_bytes} byte limit").into());
@@ -333,6 +399,13 @@ fn read_json<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T, Box<dyn s
 fn write_json<T: Serialize>(value: &T) -> Result<(), Box<dyn std::error::Error>> {
     let canonical = from_serializable(value)?;
     io::stdout().write_all(&to_canonical_bytes(&canonical)?)?;
+    io::stdout().write_all(b"\n")?;
+    Ok(())
+}
+
+fn write_jce1_json<T: Serialize>(value: &T) -> Result<(), Box<dyn std::error::Error>> {
+    let canonical = joan_canonical::from_serializable_v1(value)?;
+    io::stdout().write_all(&to_canonical_bytes_v1(&canonical)?)?;
     io::stdout().write_all(b"\n")?;
     Ok(())
 }

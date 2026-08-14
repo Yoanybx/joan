@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/tool-promotion-decision.v0.schema.json",
+  "title": "JOAN Tool Promotion Decision v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "finalization_digest", "status", "reasons", "decision_digest"],
+  "properties": {
+    "schema": {"const": "joan.tool-promotion-decision.v0"},
+    "finalization_digest": {"$ref": "#/$defs/finalizationDigest"},
+    "status": {"enum": ["eligible", "quarantined"]},
+    "reasons": {"type": "array", "maxItems": 64, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 128}},
+    "decision_digest": {"$ref": "#/$defs/decisionDigest"}
+  },
+  "allOf": [
+    {"if": {"properties": {"status": {"const": "eligible"}}}, "then": {"properties": {"reasons": {"maxItems": 0}}}},
+    {"if": {"properties": {"status": {"const": "quarantined"}}}, "then": {"properties": {"reasons": {"minItems": 1}}}}
+  ],
+  "$defs": {
+    "finalizationDigest": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"properties": {"domain": {"const": "joan.tool-finalization.v1"}}}]},
+    "decisionDigest": {"allOf": [{"$ref": "digest.v1.schema.json"}, {"properties": {"domain": {"const": "joan.tool-promotion.v1"}}}]}
+  }
+}

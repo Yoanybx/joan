@@ -24,6 +24,8 @@ mkdir -p "$benchmark_tmp"
 work="$(mktemp -d "$benchmark_tmp/joan-native-benchmark-gate.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 
+node tools/native-backend-benchmark.mjs --self-test >/dev/null
+
 cargo build --quiet --release --locked -p joan-node -p joan-native \
   --features joan-native/benchmark-tools --bin joan --bin joan-native-bench
 
@@ -71,6 +73,9 @@ if (
   report.oracle.observations.length !== 15
 ) {
   throw new Error("native benchmark qualification guard failed");
+}
+if (!report.measurement_contract.observation_digest.includes("excluding only compile_ns and runtime_ns")) {
+  throw new Error("native benchmark semantic observation digest contract is absent");
 }
 for (const workload of report.workloads) {
   const positionCounts = Object.fromEntries(

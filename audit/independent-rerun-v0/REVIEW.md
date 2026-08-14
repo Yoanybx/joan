@@ -12,7 +12,7 @@ This package reproduces the five native pure-kernel benchmarks from an exact Git
 6. Preserve every JSON artifact and its GitHub artifact attestation, when available.
 7. Report disagreements without changing the source, reference report, or generated receipt.
 
-The runner executes a recorded benchmark, the complete repository verification gate, a platform-local native ABI report, and a fatal semantic comparison. Timing samples may vary. Program identities, oracle results, required implementation checksums, and observation digests must not vary.
+The runner executes a recorded benchmark, the complete repository verification gate, a platform-local native ABI report, and a fatal semantic comparison. Timing samples may vary. Program identities, oracle results, required implementation checksums, and semantic observation digests must not vary. A semantic observation digest binds every canonical observation field except `compile_ns` and `runtime_ns`; those measurements remain present as raw samples but are intentionally excluded from cross-host identity.
 
 ## Independence boundary
 

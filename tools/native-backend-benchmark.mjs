@@ -35,6 +35,39 @@ function canonicalize(value) {
   return value;
 }
 
+function semanticObservationDigest(observation) {
+  const semantic = structuredClone(observation);
+  delete semantic.compile_ns;
+  delete semantic.runtime_ns;
+  return sha256(JSON.stringify(canonicalize(semantic)));
+}
+
+function selfTestSemanticObservationDigest() {
+  const baseline = {
+    schema: "joan.native-kernel-observation.v0",
+    status: "completed",
+    workload: "cost-model",
+    iterations: 1_000_000,
+    seed: "5354584147903952384",
+    checksum: "044b3d44f787f7b3",
+    compile_ns: 10,
+    runtime_ns: 20,
+    instructions_executed: 6_000_000,
+    artifact_digest: "1f3cbbeded357aebe50985ad7eddbe3ced227ea1ebd726b37c3981ffb610e70e",
+    generated_code_bytes: 2_296,
+  };
+  const timingMutation = { ...baseline, compile_ns: 30, runtime_ns: 40 };
+  const semanticMutation = { ...baseline, checksum: "144b3d44f787f7b3" };
+  assert(
+    semanticObservationDigest(baseline) === semanticObservationDigest(timingMutation),
+    "semantic observation digest includes timing",
+  );
+  assert(
+    semanticObservationDigest(baseline) !== semanticObservationDigest(semanticMutation),
+    "semantic observation digest ignores result drift",
+  );
+}
+
 function run(command, argumentsList, label) {
   const started = process.hrtime.bigint();
   const execution = spawnSync(command, argumentsList, {
@@ -235,6 +268,11 @@ function validateManifest(manifest) {
 }
 
 const argumentsList = process.argv.slice(2);
+if (argumentsList.length === 1 && argumentsList[0] === "--self-test") {
+  selfTestSemanticObservationDigest();
+  process.stdout.write(`${JSON.stringify({ status: "passed", timing_fields_excluded: ["compile_ns", "runtime_ns"] })}\n`);
+  process.exit(0);
+}
 assert(argumentsList.length >= 2, "usage: native-backend-benchmark.mjs <manifest> <report> [options]");
 const manifestPath = sourcePath(argumentsList[0]);
 const reportPath = resolve(argumentsList[1]);
@@ -352,7 +390,7 @@ try {
         oracleCases.push({
           checksum: oracle.checksum,
           instructions_executed: oracle.instructions_executed,
-          observation_sha256: sha256(oracleExecution.stdout),
+          observation_sha256: semanticObservationDigest(oracle),
           sample,
           seed,
           workload: workload.id,
@@ -375,7 +413,7 @@ try {
         observations[implementation].checksum = observation.checksum;
         observations[implementation].inner.push(observation.runtime_ns);
         observations[implementation].process.push(execution.elapsed_ns);
-        observations[implementation].observationHashes.push(sha256(execution.stdout));
+        observations[implementation].observationHashes.push(semanticObservationDigest(observation));
         if (sample < rssSampleCount) {
           observations[implementation].rss.push(peakRss(descriptor, implementation, workload.id, iterations, seed));
         }
@@ -424,6 +462,7 @@ try {
     measurement_contract: {
       compile: "Fresh compiler process: source-to-finalized JIT for JOAN; source-to-executable for C, C++, and Rust.",
       inner_runtime: "Dynamic input generation, enum dispatch, bounded checked kernel call, fuel accounting, and checksum; excludes compilation and JSON.",
+      observation_digest: "SHA-256 over canonical observation JSON excluding only compile_ns and runtime_ns; all semantic fields remain bound.",
       peak_rss: "Peak resident bytes for the complete fresh process; not generated-code-only memory.",
       process_time: "JOAN and Julia include source compilation; C, C++, and Rust execute prepared artifacts, so this field is not cross-lifecycle comparable.",
     },

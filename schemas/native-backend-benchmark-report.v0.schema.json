@@ -71,10 +71,11 @@
     },
     "measurement_contract": {
       "type": "object", "additionalProperties": false,
-      "required": ["compile", "inner_runtime", "peak_rss", "process_time"],
+      "required": ["compile", "inner_runtime", "observation_digest", "peak_rss", "process_time"],
       "properties": {
         "compile": {"type": "string", "minLength": 40},
         "inner_runtime": {"type": "string", "minLength": 40},
+        "observation_digest": {"type": "string", "minLength": 40},
         "peak_rss": {"type": "string", "minLength": 40},
         "process_time": {"type": "string", "minLength": 40}
       }

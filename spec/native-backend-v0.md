@@ -111,3 +111,8 @@ Passing native conformance proves only that the tested host generated VM-equival
 the frozen corpus. Performance claims require equivalent dynamic workloads, raw randomized
 samples, separate compile/warmup/runtime metrics, memory and size observations, source/toolchain
 digests, safety-regression gates, clean-clone reproduction, and an independent rerun.
+
+Independent reruns compare a canonical semantic-observation digest. The digest binds all emitted
+observation fields except `compile_ns` and `runtime_ns`, whose values are retained as measurements
+but cannot be execution identity because they vary with host load. Any checksum, seed, instruction
+count, artifact identity, generated-code size, status, workload, or iteration change remains fatal.

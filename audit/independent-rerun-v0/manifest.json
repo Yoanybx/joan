@@ -4,7 +4,7 @@
   "profile": "native-backend-independent-rerun-v0",
   "reference": {
     "path": "benchmarks/results/2026-08-13-mac15-4-native-backend.json",
-    "sha256": "66a40fc2353e1a66dae36f7c94c99c65d9910113fa675217652c23f158060529",
+    "sha256": "0c748529f4de206085a229fa74825cb6c6e95ec8d69a081b30a604c1f7c6e211",
     "schema": "joan.native-backend-benchmark-report.v0",
     "status": "local-benchmark-not-qualified"
   },

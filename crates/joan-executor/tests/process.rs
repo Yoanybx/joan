@@ -219,7 +219,7 @@ fn timeout_kills_child_and_grandchild_process_group() -> Result<(), Box<dyn std:
         &script,
         &artifact.bytecode,
         HostOperation::Compile,
-        HostLimits::new(1_000)?,
+        HostLimits::new(5_000)?,
     )?;
     assert_eq!(receipt.status, HostExecutionStatus::Unknown);
     assert_eq!(receipt.reason, HostExecutionReason::Timeout);

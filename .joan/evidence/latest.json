@@ -2,12 +2,12 @@
   "schema": "joan.evidence-index.v2",
   "version": "0.1.0-alpha.1",
   "status": "local-verification-passed-with-receipts",
-  "generated_at": "2026-08-15T16:03:52.675Z",
+  "generated_at": "2026-08-15T17:11:08.647Z",
   "source": {
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "a554889fd4e97a1007df50c23c8282ec8458974983a8ab09b6ad9c3f4d99e23a"
+      "value": "2e73c5055019c1c09edea8ebb18a79a108f7fad853a08673d5d4e85f3996adf7"
     },
     "file_count": 349,
     "excludes": [
@@ -97,35 +97,35 @@
     "runs": [
       {
         "ordinal": 1,
-        "run_id": "9cf41692-28e0-45eb-9698-7d2fefb3d2a0",
+        "run_id": "64ebe741-65f5-4685-8249-8f21b3ed4a6c",
         "path": ".joan/evidence/runs/run-1.json",
-        "file_sha256": "3ca3eec536e0c89c44279feaae93c7d0b9177f3c491804faa232ed776521a701",
+        "file_sha256": "5aada44ac866c4f11e7b56cc1046e99648dbb2d6eff0e79c92c31e0e079b4cc5",
         "status": "passed",
-        "started_at": "2026-08-15T15:42:35.563Z",
-        "completed_at": "2026-08-15T15:48:54.502Z",
-        "source_digest": "a554889fd4e97a1007df50c23c8282ec8458974983a8ab09b6ad9c3f4d99e23a",
+        "started_at": "2026-08-15T16:50:49.348Z",
+        "completed_at": "2026-08-15T16:56:29.764Z",
+        "source_digest": "2e73c5055019c1c09edea8ebb18a79a108f7fad853a08673d5d4e85f3996adf7",
         "gate_count": 11
       },
       {
         "ordinal": 2,
-        "run_id": "30a08085-050c-4006-a275-d721eb5a7aaa",
+        "run_id": "d07d9b86-940e-4d93-b3e9-dba7f75ceace",
         "path": ".joan/evidence/runs/run-2.json",
-        "file_sha256": "059e900afc80ea3cdfe4add902f59b052f6ced724ec6a922d3921182eaae66ec",
+        "file_sha256": "c6f15d110c90c624a7edd1c1f52e18b8897cd1173ee7bc92a44dfa1a70f01a76",
         "status": "passed",
-        "started_at": "2026-08-15T15:50:47.237Z",
-        "completed_at": "2026-08-15T15:56:49.670Z",
-        "source_digest": "a554889fd4e97a1007df50c23c8282ec8458974983a8ab09b6ad9c3f4d99e23a",
+        "started_at": "2026-08-15T16:56:58.342Z",
+        "completed_at": "2026-08-15T17:00:10.629Z",
+        "source_digest": "2e73c5055019c1c09edea8ebb18a79a108f7fad853a08673d5d4e85f3996adf7",
         "gate_count": 11
       },
       {
         "ordinal": 3,
-        "run_id": "e5b7b097-0a6f-4495-93c3-5c99c0ed0595",
+        "run_id": "81352e02-5a4a-49d5-bd53-f4ec93a4b822",
         "path": ".joan/evidence/runs/run-3.json",
-        "file_sha256": "d5213332fe5c1d81f61ec678f11cc8538f4c2a95a1dfdac2aa480226b1ad4cb9",
+        "file_sha256": "593119c29cb198319b376d83690f83e4773f20fd0101e9c5d64a4d8ff303d982",
         "status": "passed",
-        "started_at": "2026-08-15T15:57:46.513Z",
-        "completed_at": "2026-08-15T16:02:50.826Z",
-        "source_digest": "a554889fd4e97a1007df50c23c8282ec8458974983a8ab09b6ad9c3f4d99e23a",
+        "started_at": "2026-08-15T17:00:46.217Z",
+        "completed_at": "2026-08-15T17:09:35.480Z",
+        "source_digest": "2e73c5055019c1c09edea8ebb18a79a108f7fad853a08673d5d4e85f3996adf7",
         "gate_count": 11
       }
     ],

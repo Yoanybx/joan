@@ -1,0 +1,43 @@
+{
+  "schema": "joan.publication-readiness.v0",
+  "status": "blocked",
+  "project": "JOAN Language and JOAN Network",
+  "original_creator": "Joan Alberto Barrios Cruz",
+  "corporate_owner": "LED ACTION LLC",
+  "official_repository": {
+    "configured": false,
+    "owner": null,
+    "name": null
+  },
+  "legal": {
+    "assignment_instrument_recorded": false,
+    "asset_inventory_approved": false,
+    "license_decision_approved": false,
+    "license_profile": "all-rights-reserved-genesis",
+    "contributor_terms_approved": false,
+    "trademark_clearance_recorded": false
+  },
+  "security": {
+    "private_vulnerability_reporting_enabled": false,
+    "recovery_procedure_tested": false
+  },
+  "release": {
+    "public_release_approved": false,
+    "protected_environment": "release",
+    "environment_protection_configured": false,
+    "tag_rules_configured": false,
+    "codeowners_configured": false,
+    "signing_identity_bound": false,
+    "hosted_ci_passed": false,
+    "independent_rerun_verified": false
+  },
+  "authorization": {
+    "source": "protected-environment-variables",
+    "required_variables": [
+      "JOAN_RELEASE_APPROVAL_ID",
+      "JOAN_RELEASE_APPROVED_COMMIT",
+      "JOAN_RELEASE_APPROVED_TAG"
+    ]
+  },
+  "publication_effect": "not-executed"
+}

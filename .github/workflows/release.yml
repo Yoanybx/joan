@@ -13,7 +13,31 @@ permissions:
   contents: read
 
 jobs:
+  authorize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact tagged source without credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install pinned Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24.19.0
+          package-manager-cache: false
+      - name: Require protected corporate release authorization
+        env:
+          JOAN_RELEASE_APPROVAL_ID: ${{ vars.JOAN_RELEASE_APPROVAL_ID }}
+          JOAN_RELEASE_APPROVED_COMMIT: ${{ vars.JOAN_RELEASE_APPROVED_COMMIT }}
+          JOAN_RELEASE_APPROVED_TAG: ${{ vars.JOAN_RELEASE_APPROVED_TAG }}
+        run: ./scripts/verify-publication-readiness.sh release
+
   build:
+    needs: authorize
     strategy:
       fail-fast: false
       matrix:

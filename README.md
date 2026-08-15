@@ -95,6 +95,15 @@ Release and workspace dependency inventories follow
 generated twice, rejects checkout paths and is bound to source, lockfile and
 tool hashes. It is an inventory, not proof of safety or a license grant.
 
+Public release readiness is deliberately blocked by
+[`.joan/publication-readiness.json`](.joan/publication-readiness.json). The
+source gate checks legal, repository, security, custody, CI and signing state;
+the release workflow additionally requires protected environment metadata for
+the exact repository, commit and tag. See
+[LEGAL-ASSET-INVENTORY.md](LEGAL-ASSET-INVENTORY.md),
+[RELEASE-CUSTODY.md](RELEASE-CUSTODY.md) and [TRADEMARKS.md](TRADEMARKS.md).
+Those records do not select a license or execute a publication.
+
 Run `scripts/verify-differential-language.sh` to compare the Rust parser/checker with the dependency-free Node.js reference over 44 frozen cases and 32 deterministic mutations. A 76/76 pass reduces implementation-correlated risk but is not an external audit or a performance claim.
 
 The experimental native boundary in `include/joan.h` exposes fixed-width C/C++

@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/publication-readiness.v0.schema.json",
+  "title": "JOAN Publication Readiness v0",
+  "type": "object",
+  "required": ["schema", "status", "project", "original_creator", "corporate_owner", "official_repository", "legal", "security", "release", "authorization", "publication_effect"],
+  "properties": {
+    "schema": {"const": "joan.publication-readiness.v0"},
+    "status": {"enum": ["blocked", "ready"]},
+    "project": {"const": "JOAN Language and JOAN Network"},
+    "original_creator": {"const": "Joan Alberto Barrios Cruz"},
+    "corporate_owner": {"const": "LED ACTION LLC"},
+    "official_repository": {
+      "type": "object",
+      "required": ["configured", "owner", "name"],
+      "properties": {
+        "configured": {"type": "boolean"},
+        "owner": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$"},
+        "name": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9._-]{1,100}$"}
+      },
+      "additionalProperties": false
+    },
+    "legal": {
+      "type": "object",
+      "required": ["assignment_instrument_recorded", "asset_inventory_approved", "license_decision_approved", "license_profile", "contributor_terms_approved", "trademark_clearance_recorded"],
+      "properties": {
+        "assignment_instrument_recorded": {"type": "boolean"},
+        "asset_inventory_approved": {"type": "boolean"},
+        "license_decision_approved": {"type": "boolean"},
+        "license_profile": {"type": "string", "minLength": 1, "maxLength": 100},
+        "contributor_terms_approved": {"type": "boolean"},
+        "trademark_clearance_recorded": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "security": {
+      "type": "object",
+      "required": ["private_vulnerability_reporting_enabled", "recovery_procedure_tested"],
+      "properties": {
+        "private_vulnerability_reporting_enabled": {"type": "boolean"},
+        "recovery_procedure_tested": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "release": {
+      "type": "object",
+      "required": ["public_release_approved", "protected_environment", "environment_protection_configured", "tag_rules_configured", "codeowners_configured", "signing_identity_bound", "hosted_ci_passed", "independent_rerun_verified"],
+      "properties": {
+        "public_release_approved": {"type": "boolean"},
+        "protected_environment": {"const": "release"},
+        "environment_protection_configured": {"type": "boolean"},
+        "tag_rules_configured": {"type": "boolean"},
+        "codeowners_configured": {"type": "boolean"},
+        "signing_identity_bound": {"type": "boolean"},
+        "hosted_ci_passed": {"type": "boolean"},
+        "independent_rerun_verified": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "authorization": {
+      "type": "object",
+      "required": ["source", "required_variables"],
+      "properties": {
+        "source": {"const": "protected-environment-variables"},
+        "required_variables": {
+          "const": ["JOAN_RELEASE_APPROVAL_ID", "JOAN_RELEASE_APPROVED_COMMIT", "JOAN_RELEASE_APPROVED_TAG"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "publication_effect": {"const": "not-executed"}
+  },
+  "additionalProperties": false
+}

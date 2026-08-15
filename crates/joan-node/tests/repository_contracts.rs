@@ -35,8 +35,12 @@ fn protected_founder_records_are_consistent() -> Result<(), Box<dyn std::error::
         "ORIGIN.md",
         "OWNERSHIP.md",
         "GOVERNANCE.md",
+        "LEGAL-ASSET-INVENTORY.md",
+        "RELEASE-CUSTODY.md",
+        "TRADEMARKS.md",
         ".joan/origin.json",
         ".joan/project.json",
+        ".joan/publication-readiness.json",
     ] {
         let content = fs::read_to_string(root.join(path))?;
         assert!(
@@ -410,6 +414,88 @@ fn manifest_schemas_reject_unknown_fields() -> Result<(), Box<dyn std::error::Er
 }
 
 #[test]
+fn publication_workflow_remains_fail_closed() -> Result<(), Box<dyn std::error::Error>> {
+    let root = workspace_root();
+    let readiness = read_json(&root.join(".joan/publication-readiness.json"))?;
+    assert_eq!(readiness["status"], "blocked");
+    assert_eq!(readiness["publication_effect"], "not-executed");
+    assert_eq!(readiness["official_repository"]["configured"], false);
+    assert_eq!(readiness["legal"]["license_decision_approved"], false);
+    assert_eq!(readiness["release"]["public_release_approved"], false);
+    assert_eq!(readiness["release"]["codeowners_configured"], false);
+    assert!(!root.join(".github/CODEOWNERS").exists());
+
+    for path in [
+        "LEGAL-ASSET-INVENTORY.md",
+        "RELEASE-CUSTODY.md",
+        "TRADEMARKS.md",
+        "scripts/verify-publication-readiness.sh",
+        "tools/publication-readiness.mjs",
+        "tools/publication-readiness.test.mjs",
+    ] {
+        assert!(
+            root.join(path).is_file(),
+            "publication control is absent: {path}"
+        );
+    }
+
+    let workflow = fs::read_to_string(root.join(".github/workflows/release.yml"))?;
+    for contract in [
+        "authorize:",
+        "needs: authorize",
+        "environment: release",
+        "JOAN_RELEASE_APPROVAL_ID",
+        "JOAN_RELEASE_APPROVED_COMMIT",
+        "JOAN_RELEASE_APPROVED_TAG",
+        "./scripts/verify-publication-readiness.sh release",
+    ] {
+        assert!(
+            workflow.contains(contract),
+            "release authorization contract is absent: {contract}"
+        );
+    }
+
+    let contributing = fs::read_to_string(root.join("CONTRIBUTING.md"))?;
+    assert!(contributing.contains("not accepting external code contributions"));
+    assert!(contributing.contains("this file is not that agreement"));
+
+    let packager = fs::read_to_string(root.join("scripts/package-release.sh"))?;
+    for contract in [
+        "find \"$stage\" -exec touch -h -t 200001010000.00",
+        "find \"$package\" -print | LC_ALL=C sort",
+        "--format ustar --no-recursion",
+        "gzip -n -9 -c",
+    ] {
+        assert!(
+            packager.contains(contract),
+            "reproducible release-package contract is absent: {contract}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn duplicate_dependency_exceptions_are_exact() -> Result<(), Box<dyn std::error::Error>> {
+    let root = workspace_root();
+    let policy = fs::read_to_string(root.join("deny.toml"))?;
+    assert!(policy.contains("multiple-versions = \"deny\""));
+    assert!(policy.contains("crate = \"hashbrown@0.16.1\""));
+    assert!(policy.contains("gimli 0.33.0 in pinned Cranelift 0.134.3"));
+    assert!(policy.contains("crate = \"windows-sys@0.52.0\""));
+    assert!(policy.contains("region 3.0.2 in pinned cranelift-jit 0.134.3"));
+    assert_eq!(
+        policy
+            .lines()
+            .filter(|line| line.trim_start().starts_with("{ crate ="))
+            .count(),
+        2,
+        "dependency policy must contain exactly two duplicate exceptions"
+    );
+    assert!(root.join("scripts/verify-dependency-policy.sh").is_file());
+    Ok(())
+}
+
+#[test]
 fn differential_language_report_matches_its_schema() -> Result<(), Box<dyn std::error::Error>> {
     let root = workspace_root();
     let temporary = tempfile::tempdir()?;
@@ -711,7 +797,7 @@ fn workspace_root() -> PathBuf {
         )
 }
 
-fn manifest_schema_pairs() -> [(&'static str, &'static str); 16] {
+fn manifest_schema_pairs() -> [(&'static str, &'static str); 17] {
     [
         (
             ".joan/adoption.json",
@@ -732,6 +818,10 @@ fn manifest_schema_pairs() -> [(&'static str, &'static str); 16] {
         (
             ".joan/project.json",
             "schemas/project-manifest.v0.schema.json",
+        ),
+        (
+            ".joan/publication-readiness.json",
+            "schemas/publication-readiness.v0.schema.json",
         ),
         (
             ".joan/pr-trust.json",

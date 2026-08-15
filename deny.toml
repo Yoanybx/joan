@@ -19,9 +19,13 @@ unused-allowed-license = "allow"
 ignore = true
 
 [bans]
-multiple-versions = "warn"
+multiple-versions = "deny"
 wildcards = "deny"
 allow-wildcard-paths = true
+skip = [
+  { crate = "hashbrown@0.16.1", reason = "gimli 0.33.0 in pinned Cranelift 0.134.3 requires this older branch" },
+  { crate = "windows-sys@0.52.0", reason = "region 3.0.2 in pinned cranelift-jit 0.134.3 requires this older branch" },
+]
 
 [sources]
 unknown-registry = "deny"

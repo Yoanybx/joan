@@ -42,6 +42,14 @@ Release archives contain the generated `SBOM/` directory. An SBOM inventories
 declared components; it does not establish vulnerability absence, ownership or
 permission to use JOAN.
 
+The dependency policy denies every unreviewed duplicate version. Two exact
+older transitive versions required by pinned Cranelift dependencies are
+documented in `deny.toml`; stale exceptions and any new duplicate fail:
+
+```bash
+./scripts/verify-dependency-policy.sh
+```
+
 ## Bug intake
 
 Use the structured GitHub `Bug report` form for reproducible, non-sensitive defects. Never publish credentials, private source or undisclosed exploit details. Security reports follow `SECURITY.md` and remain separate from public issue metrics.
@@ -57,6 +65,18 @@ JOAN does not yet have an official GitHub remote or a stable release channel. Un
 3. The release workflow builds from an immutable tag, publishes checksums and GitHub provenance attestations, and records the exact source commit.
 4. Clients download only from the configured official repository, verify provenance and checksums, install side by side, run `joan node self-check`, then switch atomically.
 5. The prior verified binary remains available for rollback.
+
+The current machine-readable publication state is blocked and can be inspected
+without authorizing an effect:
+
+```bash
+./scripts/verify-publication-readiness.sh source
+```
+
+Tag workflows first enter the protected `release` environment. They require the
+exact approval identity, commit and tag described in `RELEASE-CUSTODY.md`, plus
+all readiness flags. Missing metadata fails before build. The gate is a
+technical control, not proof of legal sufficiency or independent review.
 
 Unattended self-update remains prohibited until release-key recovery, downgrade prevention and compromise response are implemented and independently tested. Once `.joan/update-policy.json` is deliberately enabled with the exact official repository, an operator can install one explicit tag with:
 

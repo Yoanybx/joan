@@ -55,14 +55,37 @@ sbom_directory="$temporary_directory/sbom"
 bash scripts/generate-sbom.sh "$target" "$sbom_directory" >/dev/null
 
 cp "$binary" "$stage/joan"
-cp README.md LICENSE NOTICE COPYRIGHT AUTHORS.md SECURITY.md OPERATIONS.md "$stage/"
+cp README.md LICENSE NOTICE COPYRIGHT AUTHORS.md SECURITY.md OPERATIONS.md TRADEMARKS.md "$stage/"
 cp vectors/jce1/conformance-v1.json "$stage/jce1-conformance-v1.json"
 mkdir -p "$stage/SBOM"
 cp -R "$sbom_directory/." "$stage/SBOM/"
 printf 'tag=%s\ntarget=%s\nsource_commit=%s\n' "$tag" "$target" "$source_commit" > "$stage/RELEASE-METADATA"
 
+find "$stage" -type d -exec chmod 0755 {} +
+find "$stage" -type f -exec chmod 0644 {} +
+chmod 0755 "$stage/joan"
+find "$stage" -exec touch -h -t 200001010000.00 {} +
+
 archive="$output_directory/$package.tar.gz"
-tar -czf "$archive" -C "$temporary_directory" "$package"
+archive_tar="$temporary_directory/$package.tar"
+archive_list="$temporary_directory/archive.list"
+(
+  cd "$temporary_directory"
+  find "$package" -print | LC_ALL=C sort > "$archive_list"
+)
+
+if tar --version 2>/dev/null | grep -q 'bsdtar'; then
+  tar -c --format ustar --no-recursion \
+    --uid 0 --gid 0 --uname root --gname root \
+    --no-xattrs --no-acls --no-fflags \
+    -f "$archive_tar" -C "$temporary_directory" -T "$archive_list"
+else
+  tar -c --format ustar --no-recursion \
+    --owner=0 --group=0 --numeric-owner \
+    --no-xattrs --no-acls --no-selinux \
+    -f "$archive_tar" -C "$temporary_directory" -T "$archive_list"
+fi
+gzip -n -9 -c "$archive_tar" > "$archive"
 (cd "$output_directory" && shasum -a 256 "$(basename "$archive")" > "$(basename "$archive").sha256")
 
 printf '%s\n' "$archive"

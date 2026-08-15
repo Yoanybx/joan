@@ -10,6 +10,12 @@ for tool in cargo-audit cargo-cyclonedx cargo-deny; do
   fi
 done
 
+printf '%s\n' '==> fail-closed publication readiness'
+bash scripts/verify-publication-readiness.sh source
+
+printf '%s\n' '==> exact transitive dependency exceptions'
+bash scripts/verify-dependency-policy.sh
+
 if [[ -n "${JOAN_VERIFICATION_RECEIPT_OUTPUT:-}" ]]; then
   receipt="$JOAN_VERIFICATION_RECEIPT_OUTPUT"
   mkdir -p "$(dirname "$receipt")"

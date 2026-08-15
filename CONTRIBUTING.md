@@ -1,8 +1,11 @@
 # Contributing
 
-JOAN accepts narrowly scoped changes that preserve deterministic behavior and explicit authority boundaries.
+JOAN Genesis is not accepting external code contributions. Issues may describe
+non-sensitive defects or bounded proposals, but no patch, pull request, generated
+code, or agent output may be merged until LED ACTION LLC approves written
+contributor terms and a compatible public license.
 
-Before proposing a change:
+For internal reviewed changes:
 
 1. describe the invariant or defect;
 2. identify affected schemas and compatibility;
@@ -13,4 +16,13 @@ Before proposing a change:
 
 Protocol changes require a versioned migration path. Security controls cannot be weakened solely to preserve a previous fixture.
 
-Genesis is not yet accepting external code contributions under a public license. No contribution may be merged until contributor terms preserve the founder's ability to maintain, relicense and commercialize the official JOAN implementation. A future CLA/DCO policy requires legal review before public launch.
+Submitting material does not grant JOAN permission to use it and does not grant
+the submitter rights to JOAN names, marks, official releases, or commercial
+services. Do not submit third-party code, confidential information, credentials,
+personal data, patent-sensitive material, or undisclosed vulnerabilities.
+
+No contribution may be merged until contributor terms preserve the selected
+licensing model, required attribution, provenance, patent terms, and LED ACTION
+LLC's ability to maintain and commercialize the official implementation. A
+future CLA or DCO policy requires owner and legal approval before public launch;
+this file is not that agreement.

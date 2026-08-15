@@ -31,7 +31,9 @@ jobs:
           node-version: 24.19.0
           package-manager-cache: false
       - name: Install pinned supply-chain gates
-        run: cargo install --locked cargo-audit@0.22.2 cargo-deny@0.20.2
+        run: |
+          cargo install --locked cargo-audit@0.22.2 cargo-deny@0.20.2
+          cargo install --locked cargo-cyclonedx@0.5.9
       - name: Execute recorded rerun package
         env:
           CARGO_TARGET_DIR: ${{ runner.temp }}/joan-cargo-target

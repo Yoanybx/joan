@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/sbom-evidence.v0.schema.json",
+  "title": "JOAN SBOM Evidence v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "status",
+    "source",
+    "source_commit",
+    "source_date_epoch",
+    "cargo_lock_sha256",
+    "generator",
+    "target",
+    "runtime",
+    "workspace",
+    "reproducibility"
+  ],
+  "properties": {
+    "schema": {"const": "joan.sbom-evidence.v0"},
+    "version": {"const": "0.1.0-alpha.1"},
+    "status": {"const": "passed"},
+    "source": {"$ref": "#/$defs/source"},
+    "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "source_date_epoch": {"type": "integer", "minimum": 1},
+    "cargo_lock_sha256": {"$ref": "#/$defs/sha256"},
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "executable_sha256"],
+      "properties": {
+        "name": {"const": "cargo-cyclonedx"},
+        "version": {"const": "0.5.9"},
+        "executable_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "target": {"type": "string", "pattern": "^(all|[A-Za-z0-9_.-]+)$"},
+    "runtime": {"$ref": "#/$defs/artifact"},
+    "workspace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "package_count", "external_dependency_count"],
+      "properties": {
+        "index": {"$ref": "#/$defs/artifact"},
+        "package_count": {"type": "integer", "minimum": 1},
+        "external_dependency_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "reproducibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runs", "byte_identical", "random_serial_omitted", "local_paths_absent"],
+      "properties": {
+        "runs": {"const": 2},
+        "byte_identical": {"const": true},
+        "random_serial_omitted": {"const": true},
+        "local_paths_absent": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tree_digest", "file_count", "excludes"],
+      "properties": {
+        "tree_digest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "profile", "value"],
+          "properties": {
+            "algorithm": {"const": "sha256"},
+            "profile": {"const": "joan-source-tree-v2"},
+            "value": {"$ref": "#/$defs/sha256"}
+          }
+        },
+        "file_count": {"type": "integer", "minimum": 1},
+        "excludes": {"const": [".git", "target", ".joan/evidence", "**/.DS_Store", "**/._*"]}
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes", "component_count", "dependency_count"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "bytes": {"type": "integer", "minimum": 1},
+        "component_count": {"type": "integer", "minimum": 1},
+        "dependency_count": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/sbom-workspace-index.v0.schema.json",
+  "title": "JOAN Workspace SBOM Index v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "format", "spec_version", "packages"],
+  "properties": {
+    "schema": {"const": "joan.sbom-workspace-index.v0"},
+    "version": {"const": "0.1.0-alpha.1"},
+    "format": {"const": "CycloneDX JSON"},
+    "spec_version": {"const": "1.5"},
+    "packages": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "version",
+          "path",
+          "sha256",
+          "bytes",
+          "component_count",
+          "dependency_count"
+        ],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+          "version": {"type": "string", "minLength": 1},
+          "path": {"type": "string", "pattern": "^workspace/[a-z0-9-]+\\.cdx\\.json$"},
+          "sha256": {"$ref": "#/$defs/sha256"},
+          "bytes": {"type": "integer", "minimum": 1},
+          "component_count": {"type": "integer", "minimum": 1},
+          "dependency_count": {"type": "integer", "minimum": 1}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

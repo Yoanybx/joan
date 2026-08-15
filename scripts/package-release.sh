@@ -32,11 +32,16 @@ if [[ ! -x "$binary" ]]; then
 fi
 
 package="joan-${tag#v}-$target"
-if [[ -n "${GITHUB_SHA:-}" ]]; then
-  source_commit="$GITHUB_SHA"
-else
-  source_commit="$(git rev-parse HEAD)"
+head_commit="$(git rev-parse HEAD)"
+if [[ -n "$(git status --porcelain=v1 --untracked-files=all)" ]]; then
+  printf '%s\n' 'release packaging requires a clean Git checkout' >&2
+  exit 3
 fi
+if [[ -n "${GITHUB_SHA:-}" && "$GITHUB_SHA" != "$head_commit" ]]; then
+  printf 'GITHUB_SHA does not match checked-out HEAD: %s != %s\n' "$GITHUB_SHA" "$head_commit" >&2
+  exit 3
+fi
+source_commit="${GITHUB_SHA:-$head_commit}"
 if [[ ! "$source_commit" =~ ^[0-9a-f]{40}$ ]]; then
   printf 'invalid source commit identity: %s\n' "$source_commit" >&2
   exit 3
@@ -46,9 +51,14 @@ trap 'rm -rf "$temporary_directory"' EXIT
 stage="$temporary_directory/$package"
 mkdir -p "$stage" "$output_directory"
 
+sbom_directory="$temporary_directory/sbom"
+bash scripts/generate-sbom.sh "$target" "$sbom_directory" >/dev/null
+
 cp "$binary" "$stage/joan"
 cp README.md LICENSE NOTICE COPYRIGHT AUTHORS.md SECURITY.md OPERATIONS.md "$stage/"
 cp vectors/jce1/conformance-v1.json "$stage/jce1-conformance-v1.json"
+mkdir -p "$stage/SBOM"
+cp -R "$sbom_directory/." "$stage/SBOM/"
 printf 'tag=%s\ntarget=%s\nsource_commit=%s\n' "$tag" "$target" "$source_commit" > "$stage/RELEASE-METADATA"
 
 archive="$output_directory/$package.tar.gz"

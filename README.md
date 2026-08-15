@@ -36,6 +36,7 @@ cargo run -p joan-node -- trust pr evaluate . --base HEAD^ --head HEAD --json
 ./scripts/verify-native-backend.sh
 ./scripts/verify-native-benchmark.sh
 ./scripts/verify-payment-cost.sh
+./scripts/verify-sbom.sh
 ./scripts/verify-all.sh
 ```
 
@@ -88,6 +89,11 @@ recorded in
 Payment-cost evidence follows [spec/payment-cost-proof-v0.md](spec/payment-cost-proof-v0.md). JOAN v0 charges no protocol fee and compares qualified settlement modes using fixed-point total effective cost. The checked-in scenario is illustrative evidence of deterministic selection, not proof that JOAN is universally the cheapest payment system.
 
 Machine evidence follows [spec/source-tree-evidence-v2.md](spec/source-tree-evidence-v2.md); [v1](spec/source-tree-evidence-v1.md) remains frozen for historical receipts. A passing index is derived from three complete local execution receipts and binds JCE1 and the language preview to the exact source tree, normative specifications and executable gates. This is reproducible local evidence, not independent attestation.
+
+Release and workspace dependency inventories follow
+[spec/sbom-evidence-v0.md](spec/sbom-evidence-v0.md). The CycloneDX output is
+generated twice, rejects checkout paths and is bound to source, lockfile and
+tool hashes. It is an inventory, not proof of safety or a license grant.
 
 Run `scripts/verify-differential-language.sh` to compare the Rust parser/checker with the dependency-free Node.js reference over 44 frozen cases and 32 deterministic mutations. A 76/76 pass reduces implementation-correlated risk but is not an external audit or a performance claim.
 

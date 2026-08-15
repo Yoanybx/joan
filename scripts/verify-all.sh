@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-for tool in cargo-audit cargo-deny; do
+for tool in cargo-audit cargo-cyclonedx cargo-deny; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     printf 'required verification tool is unavailable: %s\n' "$tool" >&2
     exit 3
@@ -22,6 +22,9 @@ node tools/verification-runner.mjs "$receipt"
 
 printf '%s\n' '==> machine evidence and receipt drift check'
 node tools/evidence-index.mjs check
+
+printf '%s\n' '==> reproducible CycloneDX software bill of materials'
+bash scripts/verify-sbom.sh
 
 printf '%s\n' '==> differential language parser/checker'
 bash scripts/test-differential-reference-preflight.sh

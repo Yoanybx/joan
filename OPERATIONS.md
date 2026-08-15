@@ -16,7 +16,7 @@ The token is read from the environment and is never printed or persisted. Withou
 
 ## Reproducible local evidence
 
-Install the pinned `cargo-audit` and `cargo-deny` versions used by CI, then run:
+Install the pinned `cargo-audit`, `cargo-deny` and `cargo-cyclonedx` versions used by CI, then run:
 
 ```bash
 ./scripts/verify-all.sh
@@ -29,6 +29,18 @@ Maintainers may refresh `.joan/evidence/latest.json` only after every local gate
 ```
 
 The evidence index binds the source tree, inventory, JCE1 suite and exact specification, the 10,000-case simulation test, digest benchmark, payment-cost vector and supply-chain outcomes. Every accepted refresh requires three complete execution receipts. Each receipt records command arguments, executable hashes, timestamps, exit status and output hashes. `verify-all.sh` rejects source, tool or recorded-result drift. Three passes on one Mac are not a release, external audit or independent reproduction.
+
+The SBOM gate generates CycloneDX 1.5 twice in an external temporary directory,
+rejects path leaks or graph drift and requires byte-identical output. To inspect
+the complete runtime/workspace artifact without packaging a release:
+
+```bash
+./scripts/generate-sbom.sh all /absolute/external/output/directory
+```
+
+Release archives contain the generated `SBOM/` directory. An SBOM inventories
+declared components; it does not establish vulnerability absence, ownership or
+permission to use JOAN.
 
 ## Bug intake
 

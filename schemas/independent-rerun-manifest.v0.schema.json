@@ -30,15 +30,16 @@
         "optional_implementations": {"const": ["julia"]},
         "required_tools": {
           "type": "array",
-          "minItems": 10,
+          "minItems": 14,
           "uniqueItems": true,
-          "items": {"enum": ["bash", "cargo", "cargo-audit", "cargo-deny", "cc", "c++", "clang", "clang++", "git", "nm", "node", "rg", "rustc"]}
+          "items": {"enum": ["bash", "cargo", "cargo-audit", "cargo-cyclonedx", "cargo-deny", "cc", "c++", "clang", "clang++", "git", "nm", "node", "rg", "rustc"]}
         },
         "pinned_versions": {
           "const": {
             "node": "v24.19.0",
             "rustc_prefix": "rustc 1.94.1 ",
             "cargo_audit": "cargo-audit 0.22.2",
+            "cargo_cyclonedx": "cargo-cyclonedx-cyclonedx 0.5.9",
             "cargo_deny": "cargo-deny 0.20.2"
           }
         },

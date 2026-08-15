@@ -12,11 +12,12 @@
     "command": ["bash", "scripts/run-independent-rerun.sh", "<absolute-output-directory>"],
     "required_implementations": ["joan-native", "c", "cpp", "rust"],
     "optional_implementations": ["julia"],
-    "required_tools": ["bash", "cargo", "cargo-audit", "cargo-deny", "cc", "c++", "clang", "clang++", "git", "nm", "node", "rg", "rustc"],
+    "required_tools": ["bash", "cargo", "cargo-audit", "cargo-cyclonedx", "cargo-deny", "cc", "c++", "clang", "clang++", "git", "nm", "node", "rg", "rustc"],
     "pinned_versions": {
       "node": "v24.19.0",
       "rustc_prefix": "rustc 1.94.1 ",
       "cargo_audit": "cargo-audit 0.22.2",
+      "cargo_cyclonedx": "cargo-cyclonedx-cyclonedx 0.5.9",
       "cargo_deny": "cargo-deny 0.20.2"
     },
     "supported_hosts": ["darwin", "linux"]
@@ -31,10 +32,17 @@
       "reference/native-benchmark-oracle.mjs",
       "schemas/independent-rerun-manifest.v0.schema.json",
       "schemas/independent-rerun-receipt.v0.schema.json",
+      "schemas/sbom-evidence.v0.schema.json",
+      "schemas/sbom-workspace-index.v0.schema.json",
+      "spec/sbom-evidence-v0.md",
+      "scripts/generate-sbom.sh",
       "scripts/run-independent-rerun.sh",
+      "scripts/verify-sbom.sh",
       "scripts/verify-independent-rerun.sh",
       "tools/independent-rerun.mjs",
-      "tools/native-backend-benchmark.mjs"
+      "tools/native-backend-benchmark.mjs",
+      "tools/sbom-evidence.mjs",
+      "tools/sbom-evidence.test.mjs"
     ],
     "excluded_material": ["credentials", "legal-signatures", "private-notes", "payment-effects"]
   },

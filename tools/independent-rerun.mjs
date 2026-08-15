@@ -65,6 +65,7 @@ function validateManifest(manifest, manifestPath) {
     node: "v24.19.0",
     rustc_prefix: "rustc 1.94.1 ",
     cargo_audit: "cargo-audit 0.22.2",
+    cargo_cyclonedx: "cargo-cyclonedx-cyclonedx 0.5.9",
     cargo_deny: "cargo-deny 0.20.2",
   }, "pinned tool versions");
   requireEqual(manifest.qualification.external_operator_required, true, "external operator requirement");

@@ -509,6 +509,22 @@ fn independent_rerun_receipt_matches_its_schema_when_supplied()
 }
 
 #[test]
+fn sbom_artifacts_match_their_schemas_when_supplied() -> Result<(), Box<dyn std::error::Error>> {
+    let Ok(directory) = std::env::var("JOAN_SBOM_ARTIFACT_DIRECTORY") else {
+        return Ok(());
+    };
+    let directory = Path::new(&directory);
+    validate_instance(
+        &read_json(&directory.join("receipt.json"))?,
+        "schemas/sbom-evidence.v0.schema.json",
+    )?;
+    validate_instance(
+        &read_json(&directory.join("workspace-index.json"))?,
+        "schemas/sbom-workspace-index.v0.schema.json",
+    )
+}
+
+#[test]
 fn verification_receipts_match_their_schema() -> Result<(), Box<dyn std::error::Error>> {
     let root = workspace_root();
     let receipt_directory = root.join(".joan/evidence/runs");

@@ -42,7 +42,7 @@ case "$(uname -s)" in
     ;;
 esac
 
-for tool in bash cargo cargo-audit cargo-deny cc c++ clang clang++ git nm node rg rustc; do
+for tool in bash cargo cargo-audit cargo-cyclonedx cargo-deny cc c++ clang clang++ git nm node rg rustc; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     printf 'required independent rerun tool is unavailable: %s\n' "$tool" >&2
     exit 3
@@ -62,6 +62,11 @@ if [[ "$(cargo-audit --version)" != "cargo-audit 0.22.2" ]]; then
 fi
 if [[ "$(cargo-deny --version)" != "cargo-deny 0.20.2" ]]; then
   printf 'independent rerun requires cargo-deny 0.20.2; found %s\n' "$(cargo-deny --version)" >&2
+  exit 3
+fi
+if [[ "$(cargo-cyclonedx cyclonedx --version)" != "cargo-cyclonedx-cyclonedx 0.5.9" ]]; then
+  printf 'independent rerun requires cargo-cyclonedx 0.5.9; found %s\n' \
+    "$(cargo-cyclonedx cyclonedx --version)" >&2
   exit 3
 fi
 

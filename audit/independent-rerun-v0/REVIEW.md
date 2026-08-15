@@ -6,7 +6,7 @@ This package reproduces the five native pure-kernel benchmarks from an exact Git
 
 1. Clone the repository from its official GitHub remote without receiving files by another channel.
 2. Record the commit SHA and keep the checkout clean.
-3. Install the toolchains listed in `manifest.json`. Node.js 24.19.0 is the pinned JavaScript runtime.
+3. Install the toolchains listed in `manifest.json`. Node.js 24.19.0 is the pinned JavaScript runtime; `cargo-cyclonedx 0.5.9` is required for the reproducible SBOM gate.
 4. Set `CARGO_TARGET_DIR` to an absolute directory outside the checkout.
 5. Run `bash scripts/run-independent-rerun.sh <absolute-output-directory>`.
 6. Preserve every JSON artifact and its GitHub artifact attestation, when available.

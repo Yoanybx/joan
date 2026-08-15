@@ -22,7 +22,7 @@
   "max_changed_files": 1024,
   "max_changed_bytes": 67108864,
   "required_verification_runs": 3,
-  "required_gate_count": 10,
+  "required_gate_count": 11,
   "required_jce1_passed": 27,
   "network_policy": "denied-no-network-client",
   "write_policy": "denied",

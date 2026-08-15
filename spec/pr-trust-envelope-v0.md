@@ -40,10 +40,16 @@ and requires byte-for-byte semantic equality.
 
 The evaluator independently reconstructs `joan-source-tree-v2`. It validates
 the current evidence index, exact index digest, three unique receipt files and
-their raw SHA-256, source identity, ordered 10/10 gate outcomes, repeatability,
+their raw SHA-256, source identity, ordered 11/11 gate outcomes, repeatability,
 JCE1 27/27, JDR1 10,000-case observation and zero known vulnerabilities in the
 recorded `cargo-audit` result. It also binds the current runner and gate-config
-file hashes.
+file hashes in both the index and each current receipt.
+
+The current authorization path requires the checked-out source tree, runner,
+gate configuration and 11-gate profile to match exactly. A separate internal
+historical verifier can inspect legacy 10-gate receipts after the source tree
+advances, but that path never produces a PR Trust Envelope or authorizes the
+current checkout.
 
 These are three local runs from one host and operator. They are not independent
 attestations. A modified implementation can generate new self-consistent local

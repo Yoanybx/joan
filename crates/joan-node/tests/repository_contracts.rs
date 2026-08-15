@@ -535,6 +535,130 @@ fn verification_receipts_match_their_schema() -> Result<(), Box<dyn std::error::
 }
 
 #[test]
+fn eleven_gate_receipt_requires_gate_config_digest() -> Result<(), Box<dyn std::error::Error>> {
+    let root = workspace_root();
+    let schema = read_json(&root.join("schemas/verification-run-receipt.v1.schema.json"))?;
+    let validator = jsonschema::draft202012::options()
+        .should_validate_formats(true)
+        .build(&schema)?;
+    let current_receipt = current_receipt_schema_fixture(&root)?;
+    if let Err(error) = validator.validate(&current_receipt) {
+        return Err(format!("current 11-gate receipt was rejected: {error}").into());
+    }
+
+    let mut receipt = current_receipt.clone();
+    receipt["environment"]
+        .as_object_mut()
+        .ok_or("receipt environment is not an object")?
+        .remove("gate_config_sha256");
+    assert!(
+        !validator.is_valid(&receipt),
+        "11-gate receipt without gate-config digest was accepted"
+    );
+
+    let mut missing_gate = current_receipt.clone();
+    missing_gate["gates"]
+        .as_array_mut()
+        .ok_or("receipt gates are not an array")?
+        .pop();
+    assert!(
+        !validator.is_valid(&missing_gate),
+        "11/11 summary with only 10 gate results was accepted"
+    );
+
+    let mut reordered = current_receipt.clone();
+    reordered["gates"]
+        .as_array_mut()
+        .ok_or("receipt gates are not an array")?
+        .swap(0, 1);
+    assert!(
+        !validator.is_valid(&reordered),
+        "reordered current gate profile was accepted"
+    );
+
+    let mut failed = current_receipt.clone();
+    failed["status"] = Value::String("failed".to_owned());
+    let failed_gates = failed["gates"]
+        .as_array_mut()
+        .ok_or("receipt gates are not an array")?;
+    failed_gates.truncate(3);
+    failed_gates[2]["status"] = Value::String("failed".to_owned());
+    failed_gates[2]["exit_code"] = serde_json::json!(1);
+    failed["summary"] =
+        serde_json::json!({"required": 11, "executed": 3, "passed": 2, "failed": 1});
+    failed["supply_chain"]["cargo_audit"]["status"] = Value::String("failed".to_owned());
+    failed["supply_chain"]["cargo_deny"]["status"] = Value::String("failed".to_owned());
+    if let Err(error) = validator.validate(&failed) {
+        return Err(format!("partial failed receipt was rejected: {error}").into());
+    }
+
+    let mut inconsistent_summary = failed.clone();
+    inconsistent_summary["summary"]["passed"] = serde_json::json!(1);
+    assert!(
+        !validator.is_valid(&inconsistent_summary),
+        "failed receipt with a false passed count was accepted"
+    );
+
+    let mut trailing_gate = failed.clone();
+    trailing_gate["gates"]
+        .as_array_mut()
+        .ok_or("receipt gates are not an array")?
+        .push(current_receipt["gates"][3].clone());
+    trailing_gate["summary"] =
+        serde_json::json!({"required": 11, "executed": 4, "passed": 3, "failed": 1});
+    assert!(
+        !validator.is_valid(&trailing_gate),
+        "failed receipt with a gate after the first failure was accepted"
+    );
+
+    failed["status"] = Value::String("passed".to_owned());
+    assert!(
+        !validator.is_valid(&failed),
+        "partial failed run was accepted as passed"
+    );
+    Ok(())
+}
+
+#[test]
+fn evidence_index_rejects_mixed_gate_profiles() -> Result<(), Box<dyn std::error::Error>> {
+    let root = workspace_root();
+    let schema = read_json(&root.join("schemas/evidence-index.v2.schema.json"))?;
+    let validator = jsonschema::draft202012::options()
+        .should_validate_formats(true)
+        .with_retriever(LocalSchemaRetriever::load()?)
+        .build(&schema)?;
+    let mut index = current_evidence_schema_fixture(&root)?;
+    index["verification"]["runs"][0]["gate_count"] = serde_json::json!(10);
+    assert!(
+        !validator.is_valid(&index),
+        "11-gate profile with a 10-gate run was accepted"
+    );
+    index = current_evidence_schema_fixture(&root)?;
+    index["verification"]["required_gate_ids"]
+        .as_array_mut()
+        .ok_or("required gate IDs are not an array")?
+        .swap(0, 1);
+    assert!(
+        !validator.is_valid(&index),
+        "reordered evidence gate profile was accepted"
+    );
+    index = current_evidence_schema_fixture(&root)?;
+    index["verification"]["runs"] = serde_json::json!([]);
+    index["verification"]["repeatability"] = serde_json::json!({
+        "required_runs": 3,
+        "completed_runs": 0,
+        "unique_run_ids": 0,
+        "same_source": false,
+        "same_observations": false
+    });
+    assert!(
+        !validator.is_valid(&index),
+        "passed evidence index without receipts was accepted"
+    );
+    Ok(())
+}
+
+#[test]
 fn invalid_vectors_remain_rejected() -> Result<(), Box<dyn std::error::Error>> {
     let root = workspace_root().join("vectors/invalid");
     for name in ["duplicate-key.json", "floating-point.json"] {
@@ -715,6 +839,54 @@ fn source_snapshot(root: &Path) -> Result<Value, Box<dyn std::error::Error>> {
         return Err(String::from_utf8_lossy(&output.stderr).into_owned().into());
     }
     Ok(serde_json::from_slice(&output.stdout)?)
+}
+
+fn current_receipt_schema_fixture(root: &Path) -> Result<Value, Box<dyn std::error::Error>> {
+    let mut receipt = read_json(&root.join(".joan/evidence/runs/run-1.json"))?;
+    match receipt["summary"]["required"].as_u64() {
+        Some(10) => {
+            let gates = receipt["gates"]
+                .as_array_mut()
+                .ok_or("receipt gates are not an array")?;
+            let mut tool_forge = gates
+                .get(7)
+                .ok_or("legacy receipt omits payment-cost-vector")?
+                .clone();
+            tool_forge["id"] = Value::String("tool-forge".to_owned());
+            tool_forge["argv"] = serde_json::json!(["./scripts/verify-tool-forge.sh"]);
+            gates.insert(8, tool_forge);
+        }
+        Some(11) => {}
+        _ => return Err("receipt fixture has an unsupported gate profile".into()),
+    }
+    receipt["environment"]["gate_config_sha256"] = Value::String("0".repeat(64));
+    receipt["summary"] =
+        serde_json::json!({"required": 11, "executed": 11, "passed": 11, "failed": 0});
+    Ok(receipt)
+}
+
+fn current_evidence_schema_fixture(root: &Path) -> Result<Value, Box<dyn std::error::Error>> {
+    let mut index = read_json(&root.join(".joan/evidence/latest.json"))?;
+    index["verification"]["required_gate_ids"] = serde_json::json!([
+        "format",
+        "clippy",
+        "tests",
+        "doc-tests",
+        "release-build",
+        "jce1",
+        "c-digest-smoke",
+        "payment-cost-vector",
+        "tool-forge",
+        "cargo-deny",
+        "cargo-audit"
+    ]);
+    for run in index["verification"]["runs"]
+        .as_array_mut()
+        .ok_or("evidence runs are not an array")?
+    {
+        run["gate_count"] = serde_json::json!(11);
+    }
+    Ok(index)
 }
 
 fn collect_json(directory: &Path, files: &mut Vec<PathBuf>) -> Result<(), std::io::Error> {

@@ -12,7 +12,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath } from "node:url";
 
@@ -43,6 +43,7 @@ const JCE1_PREFIX = Buffer.from("JOAN\0HASH\0V1", "ascii");
 const JCE1_PROFILE = "joan-hash-v1";
 const JCE1_DOMAIN = "joan.conformance-vector.v1";
 const REQUIRED_RUNS = 3;
+const CURRENT_GATE_COUNT = 11;
 
 function fail(message) {
   throw new Error(message);
@@ -55,6 +56,11 @@ function run(command, argumentsList) {
     maxBuffer: 128 * 1024 * 1024,
     stdio: ["ignore", "pipe", "pipe"],
   });
+}
+
+function executablePath(command) {
+  if (command.includes("/")) return realpathSync(resolve(ROOT, command));
+  return realpathSync(run("/usr/bin/which", [command]).trim());
 }
 
 function sha256(bytes) {
@@ -271,7 +277,10 @@ function parseTime(value, label) {
 
 function configuredGates() {
   const config = readStrictJson(GATES_PATH);
-  if (config.schema !== "joan.verification-gates.v1" || config.gates.length !== 10) {
+  if (
+    config.schema !== "joan.verification-gates.v1" ||
+    config.gates.length !== CURRENT_GATE_COUNT
+  ) {
     fail("verification gate configuration is invalid");
   }
   if (new Set(config.gates.map((gate) => gate.id)).size !== config.gates.length) {
@@ -280,10 +289,30 @@ function configuredGates() {
   return config.gates;
 }
 
-function validateExecutable(receipt, label) {
-  const path = realpathSync(receipt.executable_path);
-  if (path !== receipt.executable_path) fail(`${label} executable path is not canonical`);
-  if (fileSha256(path) !== receipt.executable_sha256) fail(`${label} executable hash drift detected`);
+function validateExecutable(receipt, label, expectedCommand) {
+  const currentPath = executablePath(expectedCommand);
+  if (expectedCommand.startsWith("./")) {
+    const repositoryPath = expectedCommand.slice(2);
+    const recordedPath = receipt.executable_path.split(sep).join("/");
+    if (
+      !isAbsolute(receipt.executable_path) ||
+      resolve(receipt.executable_path) !== receipt.executable_path ||
+      !recordedPath.endsWith(`/${repositoryPath}`)
+    ) {
+      fail(`${label} executable does not preserve its repository path`);
+    }
+  } else {
+    const recordedPath = realpathSync(receipt.executable_path);
+    if (recordedPath !== receipt.executable_path) {
+      fail(`${label} executable path is not canonical`);
+    }
+    if (recordedPath !== currentPath) {
+      fail(`${label} executable does not match the resolved command`);
+    }
+  }
+  if (fileSha256(currentPath) !== receipt.executable_sha256) {
+    fail(`${label} executable hash drift detected`);
+  }
 }
 
 function validateReceipt(path, state, gates) {
@@ -299,8 +328,18 @@ function validateReceipt(path, state, gates) {
   requireEqual(receipt.source, state.source, "receipt source");
   requireEqual(receipt.observations, state, "receipt observations");
   requireEqual(receipt.environment.runner_sha256, fileSha256(RUNNER_PATH), "runner hash");
+  requireEqual(
+    receipt.environment.gate_config_sha256,
+    fileSha256(GATES_PATH),
+    "gate configuration hash",
+  );
   requireEqual(receipt.gates.length, gates.length, "executed gate count");
-  requireEqual(receipt.summary, { required: 10, executed: 10, passed: 10, failed: 0 }, "gate summary");
+  requireEqual(receipt.summary, {
+    required: gates.length,
+    executed: gates.length,
+    passed: gates.length,
+    failed: 0,
+  }, "gate summary");
   if (parseTime(receipt.started_at, "receipt start") > parseTime(receipt.completed_at, "receipt completion")) {
     fail("receipt completion precedes its start");
   }
@@ -314,7 +353,7 @@ function validateReceipt(path, state, gates) {
     if (parseTime(observed.started_at, `${expected.id} start`) > parseTime(observed.completed_at, `${expected.id} completion`)) {
       fail(`gate ${expected.id} completion precedes its start`);
     }
-    validateExecutable(observed, `gate ${expected.id}`);
+    validateExecutable(observed, `gate ${expected.id}`, expected.argv[0]);
   }
   const requiredTools = ["node", "cargo", "rustc", "cargo-audit", "cargo-deny"];
   requireEqual(
@@ -322,10 +361,19 @@ function validateReceipt(path, state, gates) {
     requiredTools,
     "receipt tool inventory",
   );
-  for (const tool of receipt.environment.tools) validateExecutable({
-    executable_path: tool.path,
-    executable_sha256: tool.sha256,
-  }, `tool ${tool.id}`);
+  const toolCommands = new Map([
+    ["node", process.execPath],
+    ["cargo", "cargo"],
+    ["rustc", "rustc"],
+    ["cargo-audit", "cargo-audit"],
+    ["cargo-deny", "cargo-deny"],
+  ]);
+  for (const tool of receipt.environment.tools) {
+    validateExecutable({
+      executable_path: tool.path,
+      executable_sha256: tool.sha256,
+    }, `tool ${tool.id}`, toolCommands.get(tool.id));
+  }
   requireEqual(receipt.supply_chain.cargo_audit.status, "passed", "cargo audit status");
   requireEqual(receipt.supply_chain.cargo_audit.vulnerabilities_found, 0, "cargo audit vulnerabilities");
   requireEqual(receipt.supply_chain.cargo_deny.status, "passed", "cargo deny status");

@@ -9,6 +9,7 @@ envelope="$(mktemp "${TMPDIR:-/tmp}/joan-pr-trust-envelope.XXXXXX")"
 verified="$(mktemp "${TMPDIR:-/tmp}/joan-pr-trust-verified.XXXXXX")"
 trap 'rm -f "$envelope" "$verified"' EXIT
 
+node tools/evidence-index.mjs check
 cargo build --quiet --locked -p joan-node
 
 "$binary" trust pr evaluate . --base HEAD^ --head HEAD --json > "$envelope"
@@ -36,7 +37,7 @@ if (envelope.network_policy !== "denied-no-network-client") fail("network policy
 if (envelope.write_policy !== "denied") fail("write policy drift");
 if (envelope.telemetry_policy !== "none") fail("telemetry policy drift");
 if (envelope.evidence.verification_run_ids.length !== 3) fail("receipt count drift");
-if (envelope.evidence.required_gate_ids.length !== 10) fail("gate count drift");
+if (envelope.evidence.required_gate_ids.length !== 11) fail("gate count drift");
 if (envelope.evidence.jce1_passed !== 27) fail("JCE1 count drift");
 if (envelope.evidence.dispute_cases !== 10000) fail("dispute count drift");
 if (envelope.evidence.vulnerabilities_found !== 0) fail("vulnerability count drift");

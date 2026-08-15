@@ -33,9 +33,37 @@ const MAX_ENVELOPE_BYTES: usize = 4 * 1_048_576;
 const MAX_SOURCE_FILES: usize = 100_000;
 const MAX_SOURCE_FILE_BYTES: u64 = 64 * 1_048_576;
 const MAX_SOURCE_TREE_BYTES: u64 = 1_073_741_824;
+const MAX_EXECUTABLE_BYTES: u64 = 512 * 1_048_576;
 const MAX_DIRECTORY_DEPTH: usize = 64;
 const SOURCE_TREE_PREFIX: &[u8] = b"JOAN\0SOURCE-TREE\0V2";
 const EXPECTED_EXCLUDES: [&str; 5] = [".git", "target", ".joan/evidence", "**/.DS_Store", "**/._*"];
+const VERIFICATION_RUNNER_PATH: &str = "tools/verification-runner.mjs";
+const VERIFICATION_GATES_PATH: &str = "tools/verification-gates.v1.json";
+const LEGACY_GATE_IDS: [&str; 10] = [
+    "format",
+    "clippy",
+    "tests",
+    "doc-tests",
+    "release-build",
+    "jce1",
+    "c-digest-smoke",
+    "payment-cost-vector",
+    "cargo-deny",
+    "cargo-audit",
+];
+const CURRENT_GATE_IDS: [&str; 11] = [
+    "format",
+    "clippy",
+    "tests",
+    "doc-tests",
+    "release-build",
+    "jce1",
+    "c-digest-smoke",
+    "payment-cost-vector",
+    "tool-forge",
+    "cargo-deny",
+    "cargo-audit",
+];
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -267,6 +295,16 @@ struct VerificationSummary {
     failed: u64,
 }
 
+struct ReceiptValidationContext<'a> {
+    root: &'a Path,
+    source: &'a SourceTreeSnapshot,
+    required_gate_ids: &'a [String],
+    supply_chain: &'a JsonValue,
+    runner_sha256: &'a str,
+    gate_config_sha256: &'a str,
+    require_current_tooling: bool,
+}
+
 /// PR evaluation failure. Every variant rejects without executing host effects.
 #[derive(Debug, Error)]
 pub enum TrustError {
@@ -448,7 +486,7 @@ fn validate_policy(policy: &PrTrustPolicy) -> Result<(), TrustError> {
         || !(1..=1_024).contains(&policy.max_changed_files)
         || !(1..=64 * 1_048_576).contains(&policy.max_changed_bytes)
         || policy.required_verification_runs != 3
-        || policy.required_gate_count != 10
+        || policy.required_gate_count != 11
         || policy.required_jce1_passed != 27
     {
         return Err(TrustError::Invalid(
@@ -650,15 +688,25 @@ fn inspect_candidate(
     })
 }
 
-#[allow(
-    clippy::too_many_lines,
-    reason = "one flat evidence boundary keeps all local-receipt claim gates visible together"
-)]
 fn verify_evidence(
     root: &Path,
     policy: &PrTrustPolicy,
     source: &SourceTreeSnapshot,
 ) -> Result<EvidenceBinding, TrustError> {
+    verify_evidence_with_mode(root, policy, source, true)
+}
+
+#[allow(
+    clippy::too_many_lines,
+    reason = "current and historical evidence share all receipt invariants except current-tooling authorization"
+)]
+fn verify_evidence_with_mode(
+    root: &Path,
+    policy: &PrTrustPolicy,
+    source: &SourceTreeSnapshot,
+    require_current_tooling: bool,
+) -> Result<EvidenceBinding, TrustError> {
+    validate_source_tree_snapshot(source)?;
     let path = safe_existing_path(root, &policy.evidence_index_path, PathKind::File)?;
     let bytes = read_bounded_file(&path, MAX_EVIDENCE_INDEX_BYTES)?;
     let index: EvidenceIndex = decode_strict(&bytes)?;
@@ -673,9 +721,18 @@ fn verify_evidence(
             "evidence index identity, status or source tree is invalid".to_owned(),
         ));
     }
-    if index.verification.required_gate_ids.len()
-        != usize::try_from(policy.required_gate_count)
-            .map_err(|_| TrustError::Invalid("gate count exceeds usize".to_owned()))?
+    let indexed_gate_count = u64::try_from(index.verification.required_gate_ids.len())
+        .map_err(|_| TrustError::Invalid("gate count exceeds u64".to_owned()))?;
+    validate_gate_profile(
+        &index.verification.required_gate_ids,
+        require_current_tooling,
+    )?;
+    let expected_gate_count = if require_current_tooling {
+        policy.required_gate_count
+    } else {
+        indexed_gate_count
+    };
+    if indexed_gate_count != expected_gate_count
         || !all_unique(&index.verification.required_gate_ids)
         || index.verification.runs.len()
             != usize::try_from(policy.required_verification_runs)
@@ -690,8 +747,20 @@ fn verify_evidence(
             "evidence repeatability or required gate contract is invalid".to_owned(),
         ));
     }
-    validate_current_file_binding(root, &index.verification.runner, "verification runner")?;
-    validate_current_file_binding(root, &index.verification.gate_config, "gate configuration")?;
+    let runner_sha256 = validate_evidence_file_binding(
+        root,
+        &index.verification.runner,
+        "verification runner",
+        VERIFICATION_RUNNER_PATH,
+        require_current_tooling,
+    )?;
+    let gate_config_sha256 = validate_evidence_file_binding(
+        root,
+        &index.verification.gate_config,
+        "gate configuration",
+        VERIFICATION_GATES_PATH,
+        require_current_tooling,
+    )?;
     let jce1_passed = json_u64(&index.conformance, "/jce1/passed", "JCE1 passed")?;
     let dispute_cases = json_u64(&index.conformance, "/jdr1/cases", "JDR1 cases")?;
     let vulnerabilities_found = json_u64(
@@ -731,12 +800,21 @@ fn verify_evidence(
     }
     let mut run_ids = Vec::new();
     let mut first_observations: Option<JsonValue> = None;
+    let receipt_context = ReceiptValidationContext {
+        root,
+        source,
+        required_gate_ids: &index.verification.required_gate_ids,
+        supply_chain: &index.supply_chain,
+        runner_sha256: &runner_sha256,
+        gate_config_sha256: &gate_config_sha256,
+        require_current_tooling,
+    };
     for (position, run) in index.verification.runs.iter().enumerate() {
         let expected_ordinal = u64::try_from(position + 1)
             .map_err(|_| TrustError::Invalid("run ordinal exceeds u64".to_owned()))?;
         if run.ordinal != expected_ordinal
             || run.status != "passed"
-            || run.gate_count != policy.required_gate_count
+            || run.gate_count != expected_gate_count
             || run.source_digest != source.tree_digest.value
             || run.started_at.is_empty()
             || run.completed_at.is_empty()
@@ -761,13 +839,7 @@ fn verify_evidence(
             )));
         }
         let receipt: VerificationReceipt = decode_strict(&receipt_bytes)?;
-        validate_verification_receipt(
-            &receipt,
-            run,
-            source,
-            &index.verification.required_gate_ids,
-            &index.supply_chain,
-        )?;
+        validate_verification_receipt(&receipt, run, &receipt_context)?;
         if let Some(observations) = &first_observations {
             if observations != &receipt.observations {
                 return Err(TrustError::Invalid(
@@ -786,7 +858,12 @@ fn verify_evidence(
     }
     Ok(EvidenceBinding {
         schema: "joan.pr-evidence-binding.v0".to_owned(),
-        status: "three-local-runs-bound".to_owned(),
+        status: if require_current_tooling {
+            "three-local-runs-bound"
+        } else {
+            "historical-three-local-runs-inspection-only"
+        }
+        .to_owned(),
         source: source.clone(),
         evidence_index_digest: digest_bytes_v1(RegisteredDomainV1::PrTrustEvidence, &bytes)?,
         verification_run_ids: run_ids,
@@ -794,66 +871,373 @@ fn verify_evidence(
         jce1_passed,
         dispute_cases,
         vulnerabilities_found,
-        claim_scope: "local-receipts-not-independent-attestation".to_owned(),
+        claim_scope: if require_current_tooling {
+            "local-receipts-not-independent-attestation"
+        } else {
+            "historical-local-receipts-not-current-authorization"
+        }
+        .to_owned(),
     })
 }
 
 fn validate_verification_receipt(
     receipt: &VerificationReceipt,
     summary: &EvidenceRunSummary,
-    source: &SourceTreeSnapshot,
-    required_gate_ids: &[String],
-    supply_chain: &JsonValue,
+    context: &ReceiptValidationContext<'_>,
 ) -> Result<(), TrustError> {
+    let required_gate_count = u64::try_from(context.required_gate_ids.len())
+        .map_err(|_| TrustError::Invalid("receipt gate count exceeds u64".to_owned()))?;
     if receipt.schema != "joan.verification-run-receipt.v1"
         || receipt.version != env!("CARGO_PKG_VERSION")
         || receipt.run_id != summary.run_id
         || receipt.status != "passed"
         || receipt.started_at != summary.started_at
         || receipt.completed_at != summary.completed_at
-        || receipt.source != *source
-        || receipt.summary.required != 10
-        || receipt.summary.executed != 10
-        || receipt.summary.passed != 10
+        || receipt.source != *context.source
+        || receipt.summary.required != required_gate_count
+        || receipt.summary.executed != required_gate_count
+        || receipt.summary.passed != required_gate_count
         || receipt.summary.failed != 0
-        || receipt.gates.len() != required_gate_ids.len()
-        || receipt.supply_chain != *supply_chain
+        || receipt.gates.len() != context.required_gate_ids.len()
+        || receipt.supply_chain != *context.supply_chain
     {
         return Err(TrustError::Invalid(format!(
             "verification receipt {} contract mismatch",
             summary.ordinal
         )));
     }
-    validate_receipt_environment(&receipt.environment)?;
-    for (gate, expected_id) in receipt.gates.iter().zip(required_gate_ids) {
-        if json_str(gate, "/id", "gate id")? != expected_id
-            || json_str(gate, "/status", "gate status")? != "passed"
-            || json_i64(gate, "/exit_code", "gate exit code")? != 0
+    validate_timestamp_pair(
+        &receipt.started_at,
+        &receipt.completed_at,
+        "verification receipt",
+    )?;
+    validate_receipt_environment(
+        context.root,
+        &receipt.environment,
+        context.runner_sha256,
+        context.gate_config_sha256,
+        required_gate_count == 11,
+        context.require_current_tooling,
+    )?;
+    for (gate, expected_id) in receipt.gates.iter().zip(context.required_gate_ids) {
+        validate_gate_receipt(
+            context.root,
+            gate,
+            expected_id,
+            context.require_current_tooling,
+        )?;
+    }
+    Ok(())
+}
+
+fn validate_receipt_environment(
+    root: &Path,
+    environment: &JsonValue,
+    runner_sha256: &str,
+    gate_config_sha256: &str,
+    gate_config_required: bool,
+    require_current_tooling: bool,
+) -> Result<(), TrustError> {
+    if json_str(environment, "/runner_sha256", "receipt runner SHA-256")? != runner_sha256 {
+        return Err(TrustError::Invalid(
+            "receipt runner SHA-256 does not match evidence index".to_owned(),
+        ));
+    }
+    match environment
+        .pointer("/gate_config_sha256")
+        .and_then(JsonValue::as_str)
+    {
+        Some(observed) => {
+            validate_hex(observed, 64, "receipt gate configuration SHA-256")?;
+            if observed != gate_config_sha256 {
+                return Err(TrustError::Invalid(
+                    "receipt gate configuration SHA-256 does not match evidence index".to_owned(),
+                ));
+            }
+        }
+        None if !gate_config_required => {}
+        None => {
+            return Err(TrustError::Invalid(
+                "current receipt omits gate configuration SHA-256".to_owned(),
+            ));
+        }
+    }
+    let tools = environment
+        .pointer("/tools")
+        .and_then(JsonValue::as_array)
+        .ok_or_else(|| TrustError::Invalid("receipt tool inventory is missing".to_owned()))?;
+    let expected = ["node", "cargo", "rustc", "cargo-audit", "cargo-deny"];
+    if tools.len() != expected.len() {
+        return Err(TrustError::Invalid("receipt tool count drift".to_owned()));
+    }
+    for (tool, expected_id) in tools.iter().zip(expected) {
+        if json_str(tool, "/id", "tool id")? != expected_id
+            || json_str(tool, "/version", "tool version")?.is_empty()
         {
+            return Err(TrustError::Invalid(
+                "receipt tool inventory is not the required ordered set".to_owned(),
+            ));
+        }
+        validate_executable_binding(
+            json_str(tool, "/path", "tool path")?,
+            json_str(tool, "/sha256", "tool SHA-256")?,
+            &format!("tool `{expected_id}`"),
+            require_current_tooling,
+        )?;
+        if require_current_tooling {
+            validate_resolved_command_path(
+                root,
+                expected_id,
+                json_str(tool, "/path", "tool path")?,
+                &format!("tool `{expected_id}`"),
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_gate_receipt(
+    root: &Path,
+    gate: &JsonValue,
+    expected_id: &str,
+    require_current_tooling: bool,
+) -> Result<(), TrustError> {
+    if json_str(gate, "/id", "gate id")? != expected_id
+        || json_str(gate, "/status", "gate status")? != "passed"
+        || json_i64(gate, "/exit_code", "gate exit code")? != 0
+        || gate.pointer("/signal") != Some(&JsonValue::Null)
+    {
+        return Err(TrustError::Invalid(format!(
+            "verification gate `{expected_id}` did not pass exactly"
+        )));
+    }
+    let expected_argv = expected_gate_argv(expected_id)?;
+    let observed_argv = gate
+        .pointer("/argv")
+        .and_then(JsonValue::as_array)
+        .ok_or_else(|| TrustError::Invalid(format!("gate `{expected_id}` argv is missing")))?;
+    if observed_argv.len() != expected_argv.len()
+        || !observed_argv
+            .iter()
+            .zip(expected_argv.iter().copied())
+            .all(|(observed, expected)| observed.as_str() == Some(expected))
+    {
+        return Err(TrustError::Invalid(format!(
+            "verification gate `{expected_id}` argv drift"
+        )));
+    }
+    let executable_path = json_str(gate, "/executable_path", "gate executable path")?;
+    let repository_command = expected_argv[0].starts_with("./");
+    validate_executable_binding(
+        executable_path,
+        json_str(gate, "/executable_sha256", "gate executable SHA-256")?,
+        &format!("gate `{expected_id}` executable"),
+        require_current_tooling && !repository_command,
+    )?;
+    if require_current_tooling {
+        if repository_command {
+            validate_repository_command_path(
+                root,
+                expected_argv[0],
+                executable_path,
+                json_str(gate, "/executable_sha256", "gate executable SHA-256")?,
+                &format!("gate `{expected_id}` executable"),
+            )?;
+        } else {
+            validate_resolved_command_path(
+                root,
+                expected_argv[0],
+                executable_path,
+                &format!("gate `{expected_id}` executable"),
+            )?;
+        }
+    }
+    validate_timestamp_pair(
+        json_str(gate, "/started_at", "gate start timestamp")?,
+        json_str(gate, "/completed_at", "gate completion timestamp")?,
+        &format!("gate `{expected_id}`"),
+    )?;
+    for stream in ["stdout", "stderr"] {
+        let prefix = format!("/{stream}");
+        let value = gate.pointer(&prefix).ok_or_else(|| {
+            TrustError::Invalid(format!("gate `{expected_id}` {stream} receipt is missing"))
+        })?;
+        let bytes = json_u64(value, "/bytes", "gate stream byte count")?;
+        if bytes > 128 * 1_048_576 {
             return Err(TrustError::Invalid(format!(
-                "verification gate `{expected_id}` did not pass exactly"
+                "gate `{expected_id}` {stream} exceeds the receipt bound"
+            )));
+        }
+        validate_hex(
+            json_str(value, "/sha256", "gate stream SHA-256")?,
+            64,
+            "gate stream SHA-256",
+        )?;
+    }
+    Ok(())
+}
+
+fn validate_executable_binding(
+    path: &str,
+    expected_sha256: &str,
+    label: &str,
+    require_current_file: bool,
+) -> Result<(), TrustError> {
+    validate_hex(expected_sha256, 64, label)?;
+    let candidate = Path::new(path);
+    if !candidate.is_absolute() {
+        return Err(TrustError::Invalid(format!("{label} path is not absolute")));
+    }
+    if require_current_file {
+        let canonical = fs::canonicalize(candidate)?;
+        if canonical.to_str() != Some(path) {
+            return Err(TrustError::Invalid(format!(
+                "{label} path is not canonical UTF-8"
+            )));
+        }
+        let metadata = fs::symlink_metadata(&canonical)?;
+        if !metadata.is_file() {
+            return Err(TrustError::Invalid(format!(
+                "{label} is not a regular file"
+            )));
+        }
+        let bytes = read_bounded_file(&canonical, MAX_EXECUTABLE_BYTES)?;
+        if raw_sha256(&bytes) != expected_sha256 {
+            return Err(TrustError::Invalid(format!(
+                "{label} current file hash mismatch"
             )));
         }
     }
     Ok(())
 }
 
-fn validate_receipt_environment(environment: &JsonValue) -> Result<(), TrustError> {
-    let tools = environment
-        .pointer("/tools")
-        .and_then(JsonValue::as_array)
-        .ok_or_else(|| TrustError::Invalid("receipt tool inventory is missing".to_owned()))?;
-    let observed = tools
-        .iter()
-        .map(|tool| json_str(tool, "/id", "tool id").map(str::to_owned))
-        .collect::<Result<Vec<_>, _>>()?;
-    let expected = ["node", "cargo", "rustc", "cargo-audit", "cargo-deny"];
-    if observed != expected {
-        return Err(TrustError::Invalid(
-            "receipt tool inventory is not the required ordered set".to_owned(),
-        ));
+fn validate_resolved_command_path(
+    root: &Path,
+    command: &str,
+    observed_path: &str,
+    label: &str,
+) -> Result<(), TrustError> {
+    let resolved = if command.contains('/') {
+        fs::canonicalize(root.join(command))?
+    } else {
+        let path = std::env::var_os("PATH")
+            .ok_or_else(|| TrustError::Invalid("PATH is unavailable".to_owned()))?;
+        std::env::split_paths(&path)
+            .map(|directory| directory.join(command))
+            .find_map(|candidate| fs::canonicalize(candidate).ok())
+            .ok_or_else(|| TrustError::Invalid(format!("{label} command is unavailable on PATH")))?
+    };
+    if resolved.to_str() != Some(observed_path) {
+        return Err(TrustError::Invalid(format!(
+            "{label} does not match the command resolved from PATH"
+        )));
     }
     Ok(())
+}
+
+fn validate_repository_command_path(
+    root: &Path,
+    command: &str,
+    observed_path: &str,
+    expected_sha256: &str,
+    label: &str,
+) -> Result<(), TrustError> {
+    let relative = command
+        .strip_prefix("./")
+        .ok_or_else(|| TrustError::Invalid(format!("{label} is not repository-relative")))?;
+    validate_relative_path(relative)?;
+    let observed = Path::new(observed_path);
+    if !observed.is_absolute()
+        || observed
+            .components()
+            .any(|component| matches!(component, Component::CurDir | Component::ParentDir))
+        || !observed.ends_with(relative)
+    {
+        return Err(TrustError::Invalid(format!(
+            "{label} does not preserve its repository path"
+        )));
+    }
+    let current = safe_existing_path(root, relative, PathKind::File)?;
+    if raw_sha256(&read_bounded_file(&current, MAX_EXECUTABLE_BYTES)?) != expected_sha256 {
+        return Err(TrustError::Invalid(format!(
+            "{label} current repository file hash mismatch"
+        )));
+    }
+    Ok(())
+}
+
+fn validate_timestamp_pair(started: &str, completed: &str, label: &str) -> Result<(), TrustError> {
+    if !is_canonical_utc_timestamp(started)
+        || !is_canonical_utc_timestamp(completed)
+        || completed < started
+    {
+        return Err(TrustError::Invalid(format!(
+            "{label} timestamps are invalid or reversed"
+        )));
+    }
+    Ok(())
+}
+
+fn is_canonical_utc_timestamp(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    if bytes.len() != 24
+        || bytes[4] != b'-'
+        || bytes[7] != b'-'
+        || bytes[10] != b'T'
+        || bytes[13] != b':'
+        || bytes[16] != b':'
+        || bytes[19] != b'.'
+        || bytes[23] != b'Z'
+    {
+        return false;
+    }
+    for index in [0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17, 18, 20, 21, 22] {
+        if !bytes[index].is_ascii_digit() {
+            return false;
+        }
+    }
+    let number = |start: usize, end: usize| {
+        bytes[start..end]
+            .iter()
+            .fold(0_u32, |value, digit| value * 10 + u32::from(digit - b'0'))
+    };
+    (1..=12).contains(&number(5, 7))
+        && (1..=31).contains(&number(8, 10))
+        && number(11, 13) <= 23
+        && number(14, 16) <= 59
+        && number(17, 19) <= 59
+}
+
+fn expected_gate_argv(id: &str) -> Result<&'static [&'static str], TrustError> {
+    let argv: &[&str] = match id {
+        "format" => &["cargo", "fmt", "--check"],
+        "clippy" => &[
+            "cargo",
+            "clippy",
+            "--workspace",
+            "--all-targets",
+            "--all-features",
+            "--locked",
+            "--",
+            "-D",
+            "warnings",
+        ],
+        "tests" => &["cargo", "test", "--workspace", "--all-features", "--locked"],
+        "doc-tests" => &["cargo", "test", "--doc", "--workspace", "--locked"],
+        "release-build" => &["cargo", "build", "--workspace", "--release", "--locked"],
+        "jce1" => &["./scripts/verify-jce1.sh"],
+        "c-digest-smoke" => &["./scripts/benchmark-digest.sh", "1024", "1000"],
+        "payment-cost-vector" => &["./scripts/verify-payment-cost.sh"],
+        "tool-forge" => &["./scripts/verify-tool-forge.sh"],
+        "cargo-deny" => &["cargo", "deny", "--locked", "check"],
+        "cargo-audit" => &["cargo", "audit", "--json"],
+        _ => {
+            return Err(TrustError::Invalid(format!(
+                "verification gate `{id}` is unknown"
+            )));
+        }
+    };
+    Ok(argv)
 }
 
 #[allow(
@@ -1021,6 +1405,26 @@ fn source_tree_snapshot(root: &Path) -> Result<SourceTreeSnapshot, TrustError> {
             .map_err(|_| TrustError::Invalid("source file count exceeds u64".to_owned()))?,
         excludes: EXPECTED_EXCLUDES.iter().map(ToString::to_string).collect(),
     })
+}
+
+fn validate_source_tree_snapshot(source: &SourceTreeSnapshot) -> Result<(), TrustError> {
+    if source.tree_digest.algorithm != "sha256"
+        || source.tree_digest.profile != "joan-source-tree-v2"
+        || source.file_count == 0
+        || source.file_count
+            > u64::try_from(MAX_SOURCE_FILES)
+                .map_err(|_| TrustError::Invalid("source file limit exceeds u64".to_owned()))?
+        || !source
+            .excludes
+            .iter()
+            .map(String::as_str)
+            .eq(EXPECTED_EXCLUDES)
+    {
+        return Err(TrustError::Invalid(
+            "source tree snapshot shape is invalid".to_owned(),
+        ));
+    }
+    validate_hex(&source.tree_digest.value, 64, "source tree digest")
 }
 
 fn collect_source_files(
@@ -1328,23 +1732,50 @@ fn decode_strict<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, TrustError> {
     Ok(serde_json::from_value(value.to_serde_value())?)
 }
 
-fn validate_current_file_binding(
+fn validate_gate_profile(
+    required_gate_ids: &[String],
+    require_current_tooling: bool,
+) -> Result<(), TrustError> {
+    let matches = |expected: &[&str]| {
+        required_gate_ids
+            .iter()
+            .map(String::as_str)
+            .eq(expected.iter().copied())
+    };
+    if matches(&CURRENT_GATE_IDS) || (!require_current_tooling && matches(&LEGACY_GATE_IDS)) {
+        return Ok(());
+    }
+    Err(TrustError::Invalid(
+        "verification gate profile is not an allowed ordered profile".to_owned(),
+    ))
+}
+
+fn validate_evidence_file_binding(
     root: &Path,
     value: &JsonValue,
     label: &str,
-) -> Result<(), TrustError> {
+    expected_path: &str,
+    require_current_file: bool,
+) -> Result<String, TrustError> {
     let path = json_str(value, "/path", label)?;
     validate_relative_path(path)?;
-    let expected = json_str(value, "/file_sha256", label)?;
-    validate_hex(expected, 64, label)?;
-    let absolute = safe_existing_path(root, path, PathKind::File)?;
-    let bytes = read_bounded_file(&absolute, 2 * 1_048_576)?;
-    if raw_sha256(&bytes) != expected {
+    if path != expected_path {
         return Err(TrustError::Invalid(format!(
-            "{label} current file hash mismatch"
+            "{label} path is not the canonical repository path"
         )));
     }
-    Ok(())
+    let expected = json_str(value, "/file_sha256", label)?;
+    validate_hex(expected, 64, label)?;
+    if require_current_file {
+        let absolute = safe_existing_path(root, path, PathKind::File)?;
+        let bytes = read_bounded_file(&absolute, 2 * 1_048_576)?;
+        if raw_sha256(&bytes) != expected {
+            return Err(TrustError::Invalid(format!(
+                "{label} current file hash mismatch"
+            )));
+        }
+    }
+    Ok(expected.to_owned())
 }
 
 fn json_str<'a>(value: &'a JsonValue, pointer: &str, label: &str) -> Result<&'a str, TrustError> {
@@ -1450,6 +1881,27 @@ mod tests {
     }
 
     #[test]
+    fn source_snapshot_shape_rejects_historical_spoofing() -> Result<(), TrustError> {
+        let root = workspace_root();
+        let source = source_tree_snapshot(&root)?;
+        validate_source_tree_snapshot(&source)?;
+
+        let mut invalid = source.clone();
+        invalid.tree_digest.profile = "joan-source-tree-v1".to_owned();
+        assert!(validate_source_tree_snapshot(&invalid).is_err());
+        invalid = source.clone();
+        invalid.tree_digest.value = "z".repeat(64);
+        assert!(validate_source_tree_snapshot(&invalid).is_err());
+        invalid = source.clone();
+        invalid.file_count = 0;
+        assert!(validate_source_tree_snapshot(&invalid).is_err());
+        invalid = source;
+        invalid.excludes.swap(0, 1);
+        assert!(validate_source_tree_snapshot(&invalid).is_err());
+        Ok(())
+    }
+
+    #[test]
     fn typed_digest_shape_is_fail_closed() -> Result<(), TrustError> {
         let digest = digest_bytes_v1(RegisteredDomainV1::Source, b"policy")?;
         validate_digest_shape(&digest, RegisteredDomainV1::Source)?;
@@ -1530,11 +1982,227 @@ mod tests {
         let policy = test_policy()?;
         let bytes = fs::read(root.join(".joan/evidence/latest.json"))?;
         let index: EvidenceIndex = decode_strict(&bytes)?;
-        let binding = verify_evidence(&root, &policy, &index.source)?;
+        let binding = verify_evidence_with_mode(&root, &policy, &index.source, false)?;
+        assert_eq!(
+            binding.status,
+            "historical-three-local-runs-inspection-only"
+        );
+        assert_eq!(
+            binding.claim_scope,
+            "historical-local-receipts-not-current-authorization"
+        );
         assert_eq!(binding.verification_run_ids.len(), 3);
         assert_eq!(binding.jce1_passed, 27);
         assert_eq!(binding.dispute_cases, 10_000);
         assert_eq!(binding.vulnerabilities_found, 0);
+        Ok(())
+    }
+
+    #[test]
+    fn gate_profiles_reject_current_downgrade_and_unknown_order() {
+        let legacy = LEGACY_GATE_IDS.map(str::to_owned);
+        let current = CURRENT_GATE_IDS.map(str::to_owned);
+        assert!(validate_gate_profile(&legacy, false).is_ok());
+        assert!(validate_gate_profile(&legacy, true).is_err());
+        assert!(validate_gate_profile(&current, false).is_ok());
+        assert!(validate_gate_profile(&current, true).is_ok());
+
+        let mut reordered = current;
+        reordered.swap(0, 1);
+        assert!(validate_gate_profile(&reordered, false).is_err());
+        assert!(validate_gate_profile(&reordered, true).is_err());
+    }
+
+    #[test]
+    fn current_receipt_requires_exact_runner_and_gate_config_digests()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let root = workspace_root();
+        let index: EvidenceIndex =
+            decode_strict(&fs::read(root.join(".joan/evidence/latest.json"))?)?;
+        let receipt_path = root.join(&index.verification.runs[0].path);
+        let receipt: VerificationReceipt = decode_strict(&fs::read(receipt_path)?)?;
+        let runner_sha256 = json_str(
+            &index.verification.runner,
+            "/file_sha256",
+            "verification runner",
+        )?;
+        let gate_config_sha256 = json_str(
+            &index.verification.gate_config,
+            "/file_sha256",
+            "gate configuration",
+        )?;
+
+        let mut historical_environment = receipt.environment.clone();
+        historical_environment
+            .as_object_mut()
+            .ok_or("receipt environment is not an object")?
+            .remove("gate_config_sha256");
+        validate_receipt_environment(
+            &root,
+            &historical_environment,
+            runner_sha256,
+            gate_config_sha256,
+            false,
+            false,
+        )?;
+        assert!(
+            validate_receipt_environment(
+                &root,
+                &historical_environment,
+                runner_sha256,
+                gate_config_sha256,
+                true,
+                true,
+            )
+            .is_err()
+        );
+
+        let mut current_environment = receipt.environment.clone();
+        current_environment
+            .as_object_mut()
+            .ok_or("receipt environment is not an object")?
+            .insert(
+                "gate_config_sha256".to_owned(),
+                JsonValue::String(gate_config_sha256.to_owned()),
+            );
+        bind_tool_to_current_executable(&mut current_environment, 0, "node")?;
+        validate_receipt_environment(
+            &root,
+            &current_environment,
+            runner_sha256,
+            gate_config_sha256,
+            true,
+            true,
+        )?;
+
+        current_environment["runner_sha256"] = JsonValue::String("0".repeat(64));
+        assert!(
+            validate_receipt_environment(
+                &root,
+                &current_environment,
+                runner_sha256,
+                gate_config_sha256,
+                true,
+                true,
+            )
+            .is_err()
+        );
+        current_environment["runner_sha256"] = JsonValue::String(runner_sha256.to_owned());
+        current_environment["gate_config_sha256"] = JsonValue::String("0".repeat(64));
+        assert!(
+            validate_receipt_environment(
+                &root,
+                &current_environment,
+                runner_sha256,
+                gate_config_sha256,
+                true,
+                true,
+            )
+            .is_err()
+        );
+
+        current_environment["gate_config_sha256"] =
+            JsonValue::String(gate_config_sha256.to_owned());
+        let cargo_path = current_environment["tools"][1]["path"].clone();
+        let cargo_sha256 = current_environment["tools"][1]["sha256"].clone();
+        current_environment["tools"][0]["path"] = cargo_path;
+        current_environment["tools"][0]["sha256"] = cargo_sha256;
+        assert!(
+            validate_receipt_environment(
+                &root,
+                &current_environment,
+                runner_sha256,
+                gate_config_sha256,
+                true,
+                true,
+            )
+            .is_err()
+        );
+        Ok(())
+    }
+
+    fn bind_tool_to_current_executable(
+        environment: &mut JsonValue,
+        index: usize,
+        command: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let current =
+            std::env::split_paths(&std::env::var_os("PATH").ok_or("PATH is unavailable")?)
+                .map(|directory| directory.join(command))
+                .find_map(|candidate| fs::canonicalize(candidate).ok())
+                .ok_or_else(|| format!("{command} is unavailable on PATH"))?;
+        environment["tools"][index]["path"] = JsonValue::String(
+            current
+                .to_str()
+                .ok_or("current executable path is not UTF-8")?
+                .to_owned(),
+        );
+        environment["tools"][index]["sha256"] = JsonValue::String(raw_sha256(&read_bounded_file(
+            &current,
+            MAX_EXECUTABLE_BYTES,
+        )?));
+        Ok(())
+    }
+
+    #[test]
+    fn gate_receipts_bind_argv_time_signal_and_executable_identity()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let root = workspace_root();
+        let index: EvidenceIndex =
+            decode_strict(&fs::read(root.join(".joan/evidence/latest.json"))?)?;
+        let receipt: VerificationReceipt =
+            decode_strict(&fs::read(root.join(&index.verification.runs[0].path))?)?;
+        let gate = receipt.gates[0].clone();
+        validate_gate_receipt(&root, &gate, "format", true)?;
+
+        let relocated = TempDir::new()?;
+        fs::create_dir_all(relocated.path().join("scripts"))?;
+        fs::copy(
+            root.join("scripts/verify-jce1.sh"),
+            relocated.path().join("scripts/verify-jce1.sh"),
+        )?;
+        validate_gate_receipt(relocated.path(), &receipt.gates[5], "jce1", true)?;
+
+        let mut escaped = receipt.gates[5].clone();
+        escaped["executable_path"] = JsonValue::String(format!(
+            "{}/../repo/scripts/verify-jce1.sh",
+            relocated.path().display()
+        ));
+        assert!(validate_gate_receipt(&root, &escaped, "jce1", true).is_err());
+
+        let mut invalid = gate.clone();
+        invalid["argv"] = serde_json::json!(["cargo", "fmt"]);
+        assert!(validate_gate_receipt(&root, &invalid, "format", false).is_err());
+        invalid = gate.clone();
+        invalid["signal"] = JsonValue::String("SIGTERM".to_owned());
+        assert!(validate_gate_receipt(&root, &invalid, "format", false).is_err());
+        invalid = gate.clone();
+        invalid["executable_sha256"] = JsonValue::String("x".repeat(64));
+        assert!(validate_gate_receipt(&root, &invalid, "format", false).is_err());
+        invalid = gate.clone();
+        invalid["completed_at"] = JsonValue::String("not-a-time".to_owned());
+        assert!(validate_gate_receipt(&root, &invalid, "format", false).is_err());
+        invalid = gate;
+        let node_tool = &receipt.environment["tools"][0];
+        invalid["executable_path"] = node_tool["path"].clone();
+        invalid["executable_sha256"] = node_tool["sha256"].clone();
+        assert!(validate_gate_receipt(&root, &invalid, "format", true).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn stale_source_cannot_use_the_current_authorization_path()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let root = workspace_root();
+        let policy = test_policy()?;
+        let index: EvidenceIndex =
+            decode_strict(&fs::read(root.join(".joan/evidence/latest.json"))?)?;
+        let mut stale = index.source;
+        stale.tree_digest.value = "0".repeat(64);
+        let Err(error) = verify_evidence_with_mode(&root, &policy, &stale, true) else {
+            return Err("stale source unexpectedly authorized as current".into());
+        };
+        assert!(error.to_string().contains("source tree is invalid"));
         Ok(())
     }
 

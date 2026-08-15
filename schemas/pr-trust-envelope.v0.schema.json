@@ -165,10 +165,23 @@
         },
         "required_gate_ids": {
           "type": "array",
-          "minItems": 10,
-          "maxItems": 10,
+          "minItems": 11,
+          "maxItems": 11,
           "uniqueItems": true,
-          "items": {"type": "string", "pattern": "^[a-z0-9-]+$"}
+          "prefixItems": [
+            {"const": "format"},
+            {"const": "clippy"},
+            {"const": "tests"},
+            {"const": "doc-tests"},
+            {"const": "release-build"},
+            {"const": "jce1"},
+            {"const": "c-digest-smoke"},
+            {"const": "payment-cost-vector"},
+            {"const": "tool-forge"},
+            {"const": "cargo-deny"},
+            {"const": "cargo-audit"}
+          ],
+          "items": false
         },
         "jce1_passed": {"const": 27},
         "dispute_cases": {"const": 10000},

@@ -2,14 +2,14 @@
   "schema": "joan.evidence-index.v2",
   "version": "0.1.0-alpha.1",
   "status": "local-verification-passed-with-receipts",
-  "generated_at": "2026-08-14T00:34:21.369Z",
+  "generated_at": "2026-08-15T06:54:47.633Z",
   "source": {
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "6439b1820422dc21a40ad9fc2df9fd6ce9da74c056135dd1964917e4dc232643"
+      "value": "c231db8aabf526a72da2f8f87eebe6e0aafe39103c4548e845689309353532dc"
     },
-    "file_count": 303,
+    "file_count": 315,
     "excludes": [
       ".git",
       "target",
@@ -19,9 +19,9 @@
     ]
   },
   "inventory": {
-    "workspace_crates": 23,
-    "json_schemas": 64,
-    "rust_tests": 191
+    "workspace_crates": 24,
+    "json_schemas": 70,
+    "rust_tests": 210
   },
   "conformance": {
     "jce1": {
@@ -56,7 +56,7 @@
   "supply_chain": {
     "cargo_audit": {
       "advisory_database_commit": "69f93e1d081d8b6fbee010e48f0b5e0d13661415",
-      "dependency_count": 197,
+      "dependency_count": 198,
       "status": "passed",
       "tool_version": "cargo-audit 0.22.2",
       "vulnerabilities_found": 0
@@ -75,11 +75,11 @@
   "verification": {
     "runner": {
       "path": "tools/verification-runner.mjs",
-      "file_sha256": "8d5849c40ac4c58b7bbb58542ace640cb8b3ffb2e0617c1b28e548294339aab4"
+      "file_sha256": "49a49221d4551b212d463c253c55a6930dd1ccc16bbb9fdb8a9d40f3947e2635"
     },
     "gate_config": {
       "path": "tools/verification-gates.v1.json",
-      "file_sha256": "c3c8637243e407ca52331e1d8cf685681900022e358c169c4897e61086bea2ef"
+      "file_sha256": "ff64028ba119e005dcea72caa53da27bfde77194ba0595501b0f5c62728faf95"
     },
     "required_gate_ids": [
       "format",
@@ -90,42 +90,43 @@
       "jce1",
       "c-digest-smoke",
       "payment-cost-vector",
+      "tool-forge",
       "cargo-deny",
       "cargo-audit"
     ],
     "runs": [
       {
         "ordinal": 1,
-        "run_id": "c25af2cf-8a1d-41a0-9083-ec446565c644",
+        "run_id": "6efed49c-4e69-4fd4-af52-690c4ca8e25f",
         "path": ".joan/evidence/runs/run-1.json",
-        "file_sha256": "cac4401e1bb4a3434752c6094969bb38fcd595556c26de9d27b4190edca6f792",
+        "file_sha256": "c64a42a5cec069d5baf70823c68efe505cf88ac4d6389701953c74295482b7dc",
         "status": "passed",
-        "started_at": "2026-08-14T00:04:41.246Z",
-        "completed_at": "2026-08-14T00:12:46.943Z",
-        "source_digest": "6439b1820422dc21a40ad9fc2df9fd6ce9da74c056135dd1964917e4dc232643",
-        "gate_count": 10
+        "started_at": "2026-08-15T06:43:25.480Z",
+        "completed_at": "2026-08-15T06:50:06.356Z",
+        "source_digest": "c231db8aabf526a72da2f8f87eebe6e0aafe39103c4548e845689309353532dc",
+        "gate_count": 11
       },
       {
         "ordinal": 2,
-        "run_id": "39ea7f13-6414-4f6b-afbb-ee69de5b0c12",
+        "run_id": "8a3f2768-3596-4705-b846-b331c2532ad6",
         "path": ".joan/evidence/runs/run-2.json",
-        "file_sha256": "dbce13856d85c6e5813c389c46bddc9cbbf44b77d5e0a464353d770386006ee9",
+        "file_sha256": "8a0a2ca20842e20b9f62897cdab049cc67136d9e34760f046455d5cfb9ea661e",
         "status": "passed",
-        "started_at": "2026-08-14T00:14:53.066Z",
-        "completed_at": "2026-08-14T00:22:15.375Z",
-        "source_digest": "6439b1820422dc21a40ad9fc2df9fd6ce9da74c056135dd1964917e4dc232643",
-        "gate_count": 10
+        "started_at": "2026-08-15T06:50:13.924Z",
+        "completed_at": "2026-08-15T06:52:27.930Z",
+        "source_digest": "c231db8aabf526a72da2f8f87eebe6e0aafe39103c4548e845689309353532dc",
+        "gate_count": 11
       },
       {
         "ordinal": 3,
-        "run_id": "c77069f4-6a8a-467f-aefa-ee98a528e7b5",
+        "run_id": "abb43acb-d76e-4b1b-9819-ffc92b272069",
         "path": ".joan/evidence/runs/run-3.json",
-        "file_sha256": "29f741f680d8aa82b54e56ae91cef75e2369579160473f2fb9fc4187156ba10a",
+        "file_sha256": "35b116f2c6b50ad08e37b7d11221a984e4120ab51363fcea48e0cc51fab5862e",
         "status": "passed",
-        "started_at": "2026-08-14T00:23:09.991Z",
-        "completed_at": "2026-08-14T00:32:25.330Z",
-        "source_digest": "6439b1820422dc21a40ad9fc2df9fd6ce9da74c056135dd1964917e4dc232643",
-        "gate_count": 10
+        "started_at": "2026-08-15T06:52:34.270Z",
+        "completed_at": "2026-08-15T06:54:39.973Z",
+        "source_digest": "c231db8aabf526a72da2f8f87eebe6e0aafe39103c4548e845689309353532dc",
+        "gate_count": 11
       }
     ],
     "repeatability": {
@@ -154,10 +155,10 @@
     },
     "native_backend": {
       "path": "benchmarks/results/2026-08-13-mac15-4-native-backend.json",
-      "file_sha256": "66a40fc2353e1a66dae36f7c94c99c65d9910113fa675217652c23f158060529",
+      "file_sha256": "0c748529f4de206085a229fa74825cb6c6e95ec8d69a081b30a604c1f7c6e211",
       "status": "local-benchmark-not-qualified",
       "mode": "recorded",
-      "measured_source_tree_sha256": "8a4e46e88aa912c2f1f5ef2e3a0102d82275b3a82d53dda7e7a3c084e0435ab6",
+      "measured_source_tree_sha256": "43ec6abe2b8396f18f3fe57b91aa34fcf6a4bd54234d6407c217c7f813d5fc61",
       "workload_count": 5,
       "samples_per_workload": 101,
       "rss_samples_per_implementation": 11,

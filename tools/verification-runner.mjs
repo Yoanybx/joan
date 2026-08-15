@@ -230,6 +230,7 @@ function main() {
       arch: arch(),
       os_release: release(),
       runner_sha256: sha256(readFileSync(RUNNER_PATH)),
+      gate_config_sha256: sha256(readFileSync(GATES_PATH)),
       tools,
     },
     gates: gateReceipts,

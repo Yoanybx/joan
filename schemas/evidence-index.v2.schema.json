@@ -45,6 +45,86 @@
       "items": {"type": "string", "minLength": 1}
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "required_gate_ids": {"maxItems": 10}
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "runs": {
+                "items": {
+                  "properties": {"gate_count": {"const": 10}}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "required_gate_ids": {"minItems": 11}
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "runs": {
+                "items": {
+                  "properties": {"gate_count": {"const": 11}}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "local-verification-passed-with-receipts"}}},
+      "then": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "runs": {
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {"properties": {"ordinal": {"const": 1}}},
+                  {"properties": {"ordinal": {"const": 2}}},
+                  {"properties": {"ordinal": {"const": 3}}}
+                ],
+                "items": false
+              },
+              "repeatability": {
+                "properties": {
+                  "required_runs": {"const": 3},
+                  "completed_runs": {"const": 3},
+                  "unique_run_ids": {"const": 3},
+                  "same_source": {"const": true},
+                  "same_observations": {"const": true}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "source": {
@@ -62,14 +142,8 @@
             "value": {"$ref": "#/$defs/sha256"}
           }
         },
-        "file_count": {"type": "integer", "minimum": 1},
-        "excludes": {
-          "type": "array",
-          "minItems": 5,
-          "maxItems": 5,
-          "uniqueItems": true,
-          "items": {"type": "string", "minLength": 1}
-        }
+        "file_count": {"type": "integer", "minimum": 1, "maximum": 100000},
+        "excludes": {"const": [".git", "target", ".joan/evidence", "**/.DS_Store", "**/._*"]}
       }
     },
     "inventory": {
@@ -155,7 +229,7 @@
         "started_at": {"type": "string", "format": "date-time"},
         "completed_at": {"type": "string", "format": "date-time"},
         "source_digest": {"$ref": "#/$defs/sha256"},
-        "gate_count": {"const": 10}
+        "gate_count": {"enum": [10, 11]}
       }
     },
     "verification": {
@@ -168,9 +242,42 @@
         "required_gate_ids": {
           "type": "array",
           "minItems": 10,
-          "maxItems": 10,
+          "maxItems": 11,
           "uniqueItems": true,
-          "items": {"type": "string", "pattern": "^[a-z0-9-]+$"}
+          "items": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+          "oneOf": [
+            {
+              "prefixItems": [
+                {"const": "format"},
+                {"const": "clippy"},
+                {"const": "tests"},
+                {"const": "doc-tests"},
+                {"const": "release-build"},
+                {"const": "jce1"},
+                {"const": "c-digest-smoke"},
+                {"const": "payment-cost-vector"},
+                {"const": "cargo-deny"},
+                {"const": "cargo-audit"}
+              ],
+              "items": false
+            },
+            {
+              "prefixItems": [
+                {"const": "format"},
+                {"const": "clippy"},
+                {"const": "tests"},
+                {"const": "doc-tests"},
+                {"const": "release-build"},
+                {"const": "jce1"},
+                {"const": "c-digest-smoke"},
+                {"const": "payment-cost-vector"},
+                {"const": "tool-forge"},
+                {"const": "cargo-deny"},
+                {"const": "cargo-audit"}
+              ],
+              "items": false
+            }
+          ]
         },
         "runs": {
           "type": "array",

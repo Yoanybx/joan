@@ -35,6 +35,7 @@
         "arch": {"type": "string", "minLength": 1},
         "os_release": {"type": "string", "minLength": 1},
         "runner_sha256": {"$ref": "#/$defs/sha256"},
+        "gate_config_sha256": {"$ref": "#/$defs/sha256"},
         "tools": {
           "type": "array",
           "minItems": 5,
@@ -45,7 +46,7 @@
     "gates": {
       "type": "array",
       "minItems": 1,
-      "maxItems": 10,
+      "maxItems": 11,
       "items": {"$ref": "#/$defs/gate"}
     },
     "summary": {
@@ -53,15 +54,383 @@
       "additionalProperties": false,
       "required": ["required", "executed", "passed", "failed"],
       "properties": {
-        "required": {"const": 10},
-        "executed": {"type": "integer", "minimum": 1, "maximum": 10},
-        "passed": {"type": "integer", "minimum": 0, "maximum": 10},
+        "required": {"enum": [10, 11]},
+        "executed": {"type": "integer", "minimum": 1, "maximum": 11},
+        "passed": {"type": "integer", "minimum": 0, "maximum": 11},
         "failed": {"type": "integer", "minimum": 0, "maximum": 1}
       }
     },
     "observations": {"type": "object"},
     "supply_chain": {"$ref": "#/$defs/supplyChain"}
   },
+  "allOf": [
+    {
+      "if": {"properties": {"summary": {"properties": {"required": {"const": 10}}}}},
+      "then": {
+        "properties": {
+          "gates": {
+            "maxItems": 10,
+            "prefixItems": [
+              {"properties": {"id": {"const": "format"}}},
+              {"properties": {"id": {"const": "clippy"}}},
+              {"properties": {"id": {"const": "tests"}}},
+              {"properties": {"id": {"const": "doc-tests"}}},
+              {"properties": {"id": {"const": "release-build"}}},
+              {"properties": {"id": {"const": "jce1"}}},
+              {"properties": {"id": {"const": "c-digest-smoke"}}},
+              {"properties": {"id": {"const": "payment-cost-vector"}}},
+              {"properties": {"id": {"const": "cargo-deny"}}},
+              {"properties": {"id": {"const": "cargo-audit"}}}
+            ],
+            "items": false
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"summary": {"properties": {"required": {"const": 11}}}}},
+      "then": {
+        "properties": {
+          "environment": {"required": ["gate_config_sha256"]},
+          "gates": {
+            "maxItems": 11,
+            "prefixItems": [
+              {"properties": {"id": {"const": "format"}}},
+              {"properties": {"id": {"const": "clippy"}}},
+              {"properties": {"id": {"const": "tests"}}},
+              {"properties": {"id": {"const": "doc-tests"}}},
+              {"properties": {"id": {"const": "release-build"}}},
+              {"properties": {"id": {"const": "jce1"}}},
+              {"properties": {"id": {"const": "c-digest-smoke"}}},
+              {"properties": {"id": {"const": "payment-cost-vector"}}},
+              {"properties": {"id": {"const": "tool-forge"}}},
+              {"properties": {"id": {"const": "cargo-deny"}}},
+              {"properties": {"id": {"const": "cargo-audit"}}}
+            ],
+            "items": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {"const": "passed"},
+          "summary": {"properties": {"required": {"const": 10}}}
+        }
+      },
+      "then": {
+        "properties": {
+          "gates": {"minItems": 10, "maxItems": 10, "$ref": "#/$defs/passedGates"},
+          "summary": {
+            "properties": {
+              "executed": {"const": 10},
+              "passed": {"const": 10},
+              "failed": {"const": 0}
+            }
+          },
+          "supply_chain": {"$ref": "#/$defs/passedSupplyChain"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {"const": "passed"},
+          "summary": {"properties": {"required": {"const": 11}}}
+        }
+      },
+      "then": {
+        "properties": {
+          "gates": {"minItems": 11, "maxItems": 11, "$ref": "#/$defs/passedGates"},
+          "summary": {
+            "properties": {
+              "executed": {"const": 11},
+              "passed": {"const": 11},
+              "failed": {"const": 0}
+            }
+          },
+          "supply_chain": {"$ref": "#/$defs/passedSupplyChain"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "failed"}}},
+      "then": {
+        "allOf": [
+          {"properties": {"supply_chain": {"$ref": "#/$defs/failedSupplyChain"}}},
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "gates": {
+                    "minItems": 1,
+                    "maxItems": 1,
+                    "prefixItems": [
+                      {"$ref": "#/$defs/failedGateResult"}
+                    ],
+                    "items": false
+                  },
+                  "summary": {
+                    "properties": {
+                      "executed": {"const": 1},
+                      "passed": {"const": 0},
+                      "failed": {"const": 1}
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "gates": {
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "prefixItems": [
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/failedGateResult"}
+                    ],
+                    "items": false
+                  },
+                  "summary": {
+                    "properties": {
+                      "executed": {"const": 2},
+                      "passed": {"const": 1},
+                      "failed": {"const": 1}
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "gates": {
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "prefixItems": [
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/failedGateResult"}
+                    ],
+                    "items": false
+                  },
+                  "summary": {
+                    "properties": {
+                      "executed": {"const": 3},
+                      "passed": {"const": 2},
+                      "failed": {"const": 1}
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "gates": {
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "prefixItems": [
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/failedGateResult"}
+                    ],
+                    "items": false
+                  },
+                  "summary": {
+                    "properties": {
+                      "executed": {"const": 4},
+                      "passed": {"const": 3},
+                      "failed": {"const": 1}
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "gates": {
+                    "minItems": 5,
+                    "maxItems": 5,
+                    "prefixItems": [
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/failedGateResult"}
+                    ],
+                    "items": false
+                  },
+                  "summary": {
+                    "properties": {
+                      "executed": {"const": 5},
+                      "passed": {"const": 4},
+                      "failed": {"const": 1}
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "gates": {
+                    "minItems": 6,
+                    "maxItems": 6,
+                    "prefixItems": [
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/failedGateResult"}
+                    ],
+                    "items": false
+                  },
+                  "summary": {
+                    "properties": {
+                      "executed": {"const": 6},
+                      "passed": {"const": 5},
+                      "failed": {"const": 1}
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "gates": {
+                    "minItems": 7,
+                    "maxItems": 7,
+                    "prefixItems": [
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/failedGateResult"}
+                    ],
+                    "items": false
+                  },
+                  "summary": {
+                    "properties": {
+                      "executed": {"const": 7},
+                      "passed": {"const": 6},
+                      "failed": {"const": 1}
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "gates": {
+                    "minItems": 8,
+                    "maxItems": 8,
+                    "prefixItems": [
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/failedGateResult"}
+                    ],
+                    "items": false
+                  },
+                  "summary": {
+                    "properties": {
+                      "executed": {"const": 8},
+                      "passed": {"const": 7},
+                      "failed": {"const": 1}
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "gates": {
+                    "minItems": 9,
+                    "maxItems": 9,
+                    "prefixItems": [
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/failedGateResult"}
+                    ],
+                    "items": false
+                  },
+                  "summary": {
+                    "properties": {
+                      "executed": {"const": 9},
+                      "passed": {"const": 8},
+                      "failed": {"const": 1}
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "gates": {
+                    "minItems": 10,
+                    "maxItems": 10,
+                    "prefixItems": [
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/failedGateResult"}
+                    ],
+                    "items": false
+                  },
+                  "summary": {
+                    "properties": {
+                      "executed": {"const": 10},
+                      "passed": {"const": 9},
+                      "failed": {"const": 1}
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "gates": {
+                    "minItems": 11,
+                    "maxItems": 11,
+                    "prefixItems": [
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/passedGateResult"},
+                      {"$ref": "#/$defs/failedGateResult"}
+                    ],
+                    "items": false
+                  },
+                  "summary": {
+                    "properties": {
+                      "executed": {"const": 11},
+                      "passed": {"const": 10},
+                      "failed": {"const": 1}
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
   "$defs": {
     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "source": {
@@ -75,18 +444,12 @@
           "required": ["algorithm", "profile", "value"],
           "properties": {
             "algorithm": {"const": "sha256"},
-            "profile": {"enum": ["joan-source-tree-v1", "joan-source-tree-v2"]},
+            "profile": {"const": "joan-source-tree-v2"},
             "value": {"$ref": "#/$defs/sha256"}
           }
         },
-        "file_count": {"type": "integer", "minimum": 1},
-        "excludes": {
-          "type": "array",
-          "minItems": 3,
-          "maxItems": 5,
-          "uniqueItems": true,
-          "items": {"type": "string", "minLength": 1}
-        }
+        "file_count": {"type": "integer", "minimum": 1, "maximum": 100000},
+        "excludes": {"const": [".git", "target", ".joan/evidence", "**/.DS_Store", "**/._*"]}
       }
     },
     "tool": {
@@ -145,6 +508,39 @@
         "stderr": {"$ref": "#/$defs/stream"}
       }
     },
+    "passedGates": {
+      "items": {
+        "properties": {
+          "status": {"const": "passed"},
+          "exit_code": {"const": 0},
+          "signal": {"const": null}
+        }
+      }
+    },
+    "passedGateResult": {
+      "properties": {
+        "status": {"const": "passed"},
+        "exit_code": {"const": 0},
+        "signal": {"const": null}
+      }
+    },
+    "failedGateResult": {
+      "properties": {
+        "status": {"const": "failed"}
+      }
+    },
+    "passedSupplyChain": {
+      "properties": {
+        "cargo_audit": {"properties": {"status": {"const": "passed"}}},
+        "cargo_deny": {"properties": {"status": {"const": "passed"}}}
+      }
+    },
+    "failedSupplyChain": {
+      "properties": {
+        "cargo_audit": {"properties": {"status": {"const": "failed"}}},
+        "cargo_deny": {"properties": {"status": {"const": "failed"}}}
+      }
+    },
     "supplyChain": {
       "type": "object",
       "additionalProperties": false,
@@ -155,7 +551,7 @@
           "additionalProperties": false,
           "required": ["status", "tool_version", "advisory_database_commit", "dependency_count", "vulnerabilities_found"],
           "properties": {
-            "status": {"const": "passed"},
+            "status": {"enum": ["passed", "failed"]},
             "tool_version": {"type": "string", "minLength": 1},
             "advisory_database_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
             "dependency_count": {"type": "integer", "minimum": 0},
@@ -167,7 +563,7 @@
           "additionalProperties": false,
           "required": ["status", "tool_version", "checks"],
           "properties": {
-            "status": {"const": "passed"},
+            "status": {"enum": ["passed", "failed"]},
             "tool_version": {"type": "string", "minLength": 1},
             "checks": {
               "type": "array",

@@ -1,6 +1,8 @@
 # JOAN Genesis Governance
 
-Status: private Genesis policy draft. Obtain qualified legal advice before public distribution, external contributions or commercial contracting.
+Status: public alpha governance policy. Independent legal review remains pending;
+obtain qualified advice before accepting external contributions or commercial
+contracting.
 
 ## Founder identity
 

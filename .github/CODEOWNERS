@@ -1,0 +1,18 @@
+# Official repository stewardship remains with the authenticated GitHub owner.
+* @Yoanybx
+
+# Security and release controls require explicit owner review.
+/.github/ @Yoanybx
+/.joan/ @Yoanybx
+/Cargo.lock @Yoanybx
+/Cargo.toml @Yoanybx
+/LICENSE @Yoanybx
+/NOTICE @Yoanybx
+/COPYRIGHT @Yoanybx
+/GOVERNANCE.md @Yoanybx
+/OWNERSHIP.md @Yoanybx
+/RELEASE-CUSTODY.md @Yoanybx
+/SECURITY.md @Yoanybx
+/TRADEMARKS.md @Yoanybx
+/schemas/ @Yoanybx
+/spec/ @Yoanybx

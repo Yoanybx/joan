@@ -1,8 +1,8 @@
 {
   "schema": "joan.update-policy.v0",
-  "official_repository": null,
+  "official_repository": "Yoanybx/joan",
   "enabled": false,
-  "channel": "genesis",
+  "channel": "alpha",
   "automatic_updates": false,
   "explicit_tag_required": true,
   "github_attestation_required": true,

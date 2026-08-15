@@ -29,6 +29,7 @@ unknownField.readiness.unexpected = true;
 rejects(unknownField, "source", {}, /fields do not match/u);
 
 const namedButUnconfigured = clone(baseline);
+namedButUnconfigured.readiness.official_repository.configured = false;
 namedButUnconfigured.readiness.official_repository.owner = "led-action";
 namedButUnconfigured.readiness.official_repository.name = "joan";
 rejects(namedButUnconfigured, "source", {}, /must not name/u);

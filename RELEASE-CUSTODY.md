@@ -1,6 +1,6 @@
 # JOAN Release Custody
 
-Status: private Genesis control policy. No secret, private key, recovery code,
+Status: public alpha control policy. No secret, private key, recovery code,
 token, or signed legal instrument belongs in this repository.
 
 ## Corporate control boundary

@@ -1,6 +1,6 @@
 # JOAN Ownership Record
 
-Status: private Genesis record. This is not legal advice or a substitute for signed legal instruments and registration.
+Status: public alpha ownership record. This is not legal advice or a substitute for signed legal instruments and registration.
 
 ## Current state
 

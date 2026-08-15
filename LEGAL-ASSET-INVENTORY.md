@@ -1,7 +1,8 @@
 # JOAN Legal Asset Inventory
 
-Status: private Genesis inventory procedure. This document is not legal advice,
-an assignment instrument, a registration, or permission to use JOAN.
+Status: public alpha inventory procedure. This document is not legal advice,
+an assignment instrument, or a registration. Permissions to use the distributed
+source are stated exclusively in `LICENSE`.
 
 ## Asset owner and creator record
 
@@ -9,7 +10,8 @@ an assignment instrument, a registration, or permission to use JOAN.
 - Project-designated corporate owner: **LED ACTION LLC**
 - Entity record: Florida limited liability company, document number
   **L23000299152**
-- Public or commercial license selected: no
+- Public source license selected by the owner: Apache-2.0
+- License legal review completed: no
 - External code contributions accepted: no
 - Repository-verified assignment record: no
 
@@ -48,6 +50,7 @@ clearance, or the validity of a signature.
 ## Completion gate
 
 `G03` remains incomplete until an authorized company record attaches an exact
-verified source identity to the signed instrument and counsel confirms the
-intended scope. Updating `.joan/publication-readiness.json` without that record
-is a policy violation and does not create legal rights.
+verified source identity to the signed instrument. `G04` records an owner
+decision for Apache-2.0, but independent legal review remains recommended.
+Updating `.joan/publication-readiness.json` cannot create ownership rights or
+substitute for the private instrument.

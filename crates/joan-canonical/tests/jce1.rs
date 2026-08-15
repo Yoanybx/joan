@@ -169,12 +169,24 @@ fn native_host_domains_are_registered() -> Result<(), Box<dyn std::error::Error>
             RegisteredDomainV1::HostExecutionRequest,
         ),
         (
+            "joan.host-execution-request.v2",
+            RegisteredDomainV1::HostExecutionRequestV2,
+        ),
+        (
             "joan.host-executor-response.v1",
             RegisteredDomainV1::HostExecutorResponse,
         ),
         (
+            "joan.host-executor-response.v2",
+            RegisteredDomainV1::HostExecutorResponseV2,
+        ),
+        (
             "joan.host-execution-receipt.v1",
             RegisteredDomainV1::HostExecutionReceipt,
+        ),
+        (
+            "joan.host-execution-receipt.v2",
+            RegisteredDomainV1::HostExecutionReceiptV2,
         ),
     ] {
         assert_eq!(RegisteredDomainV1::parse(name)?, expected);

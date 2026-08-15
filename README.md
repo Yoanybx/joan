@@ -2,7 +2,11 @@
 
 JOAN is an experimental, agent-native language and verification substrate for deterministic programs, semantic identity, atomic patches, guardian decisions, repository instruction boundaries, evidence-based adoption and machine-only dispute resolution.
 
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 Original creator and founder: **Joan Alberto Barrios Cruz**. Project-designated corporate owner: **LED ACTION LLC**, Florida document number **L23000299152**. The signed-assignment requirement is recorded in [OWNERSHIP.md](OWNERSHIP.md). See [AUTHORS.md](AUTHORS.md), [ORIGIN.md](ORIGIN.md) and [GOVERNANCE.md](GOVERNANCE.md).
+
+Official source repository: [Yoanybx/joan](https://github.com/Yoanybx/joan).
 
 Current status: `alpha language preview`. Real `.joan` source can be parsed, checked, formatted,
 compiled to deterministic bytecode and executed in a bounded VM. A frozen pure scalar subset can
@@ -75,6 +79,11 @@ Repository text is data or guidance, never execution authority. JOAN can propose
 
 Read [AGENTS.md](AGENTS.md), [JOAN.md](JOAN.md), [SECURITY.md](SECURITY.md), [GOVERNANCE.md](GOVERNANCE.md), [spec/language-v0.md](spec/language-v0.md), [spec/linear-authority-v1.md](spec/linear-authority-v1.md), [spec/information-flow-v1.md](spec/information-flow-v1.md), [spec/differential-language-v1.md](spec/differential-language-v1.md), [spec/agent-scorecard-v1.md](spec/agent-scorecard-v1.md), [spec/pr-trust-envelope-v0.md](spec/pr-trust-envelope-v0.md), [spec/bytecode-verification-v0.md](spec/bytecode-verification-v0.md), [spec/package-resolution-v0.md](spec/package-resolution-v0.md), [spec/language-landscape-v0.md](spec/language-landscape-v0.md), [spec/lattice-m2m-v0.md](spec/lattice-m2m-v0.md), [spec/agent-runtime-v0.md](spec/agent-runtime-v0.md), [spec/native-backend-v0.md](spec/native-backend-v0.md), [spec/mesh-network-v0.md](spec/mesh-network-v0.md), [spec/product-completion-gates-v0.md](spec/product-completion-gates-v0.md), [spec/company-value-capture-v0.md](spec/company-value-capture-v0.md), [spec/external-agent-stack-assessment-v0.md](spec/external-agent-stack-assessment-v0.md), [spec/canonical-profile-jce1.md](spec/canonical-profile-jce1.md) and [spec/conformance-jce1.md](spec/conformance-jce1.md) before changing or integrating the prototype.
 
+The checked roadmap from public alpha to a defined JOAN Language 1.0 is
+[spec/roadmap-to-joan-1.0.md](spec/roadmap-to-joan-1.0.md). Network, economy,
+robot, and enterprise profiles are tracked separately so they cannot weaken or
+indefinitely delay the language completion gate.
+
 Operational metrics, bug intake and the fail-closed update policy are documented in [OPERATIONS.md](OPERATIONS.md). JOAN has no hidden runtime telemetry; GitHub metrics are aggregate adoption proxies and never prove active-user counts.
 
 Performance evidence follows [spec/benchmark-policy-v0.md](spec/benchmark-policy-v0.md). The first equivalent-output comparison measured C + CommonCrypto faster than Rust + `sha2`; JOAN therefore makes no current claim of outperforming C.
@@ -96,14 +105,14 @@ Release and workspace dependency inventories follow
 generated twice, rejects checkout paths and is bound to source, lockfile and
 tool hashes. It is an inventory, not proof of safety or a license grant.
 
-Public release readiness is deliberately blocked by
+Tagged release readiness is deliberately blocked by
 [`.joan/publication-readiness.json`](.joan/publication-readiness.json). The
 source gate checks legal, repository, security, custody, CI and signing state;
 the release workflow additionally requires protected environment metadata for
 the exact repository, commit and tag. See
 [LEGAL-ASSET-INVENTORY.md](LEGAL-ASSET-INVENTORY.md),
 [RELEASE-CUSTODY.md](RELEASE-CUSTODY.md) and [TRADEMARKS.md](TRADEMARKS.md).
-Those records do not select a license or execute a publication.
+Those records do not execute a tagged release or replace legal review.
 
 Run `scripts/verify-differential-language.sh` to compare the Rust parser/checker with the dependency-free Node.js reference over 44 frozen cases and 32 deterministic mutations. A 76/76 pass reduces implementation-correlated risk but is not an external audit or a performance claim.
 
@@ -118,8 +127,15 @@ The ABI's source-bound local receipt is retained at
 `.joan/evidence/native-abi-v1.json`. See
 [spec/native-abi-v1.md](spec/native-abi-v1.md) and
 [spec/native-backend-v0.md](spec/native-backend-v0.md), with the process contract
-in [spec/host-executor-v0.md](spec/host-executor-v0.md).
+in [spec/host-executor-v1.md](spec/host-executor-v1.md). The immutable v0
+contract remains documented in [spec/host-executor-v0.md](spec/host-executor-v0.md).
 
 ## License and commercial authority
 
-Genesis is private and all rights are reserved by LED ACTION LLC under the project designation. No public-source or commercial-use license has been granted. Joan Alberto Barrios Cruz remains permanently identified as original creator. Corporate ownership must be supported by the separately signed assignment described in `OWNERSHIP.md`; repository text is not that legal instrument.
+The public core is licensed under Apache-2.0. Copyright remains with LED ACTION
+LLC under the project designation, and Joan Alberto Barrios Cruz remains
+identified as original creator and founder. Apache-2.0 does not grant JOAN
+trademark, certification, endorsement, official release, hosted service, or
+enterprise-module rights beyond its express terms. Corporate ownership must be
+supported by the separately signed assignment described in `OWNERSHIP.md`;
+repository text is not that legal instrument.

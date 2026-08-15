@@ -2,10 +2,11 @@
 
 ## Status
 
-This is a business architecture and governance proposal, not a public license,
-price commitment, payment offer, trademark registration, or legal conclusion.
-The repository remains all-rights-reserved until LED ACTION LLC adopts written
-terms after qualified legal and tax review.
+This is a business architecture and governance proposal, not a price
+commitment, payment offer, trademark registration, or legal conclusion. LED
+ACTION LLC selected Apache-2.0 for the public core on 2026-08-15 under the owner
+approval recorded in the execution ledger. `LICENSE` is the controlling grant;
+independent legal and tax review remains recommended.
 
 ## Objective
 
@@ -18,8 +19,7 @@ provenance, enterprise intellectual property, and customer relationships.
 
 ## Free adoption layer
 
-Subject to the future license decision, the following should be implementable
-without a protocol fee:
+Under Apache-2.0, the following should be implementable without a protocol fee:
 
 - the stable JOAN Lattice wire specification;
 - canonical conformance vectors and offline verification;
@@ -95,23 +95,18 @@ Third-party processors, legal work, taxes, certificate review, support labor,
 and signing custody are not free. This design removes mandatory fixed backend
 hosting at launch; it does not promise zero business expense.
 
-## Recommended licensing decision
+## Licensing decision
 
-Do not publish the current all-rights-reserved repository as if it were an open
-project: recipients currently have no general permission to use or distribute
-it. Before public alpha, counsel should select one explicit structure:
+The public core uses **Apache-2.0** to minimize permission friction for agents,
+SDKs, embedded runtimes, independent implementations, and commercial adoption.
+LED ACTION LLC retains copyright in its work, reserved project marks, official
+conformance authority, and separately authored enterprise modules and services.
 
-1. **Adoption-first open core:** a standard license for protocol, compiler, and
-   SDK, with proprietary enterprise modules and controlled trademarks.
-2. **File-level reciprocal core:** MPL-2.0 for selected files, allowing larger
-   proprietary products while requiring distributed modifications to covered
-   files to remain available under MPL terms.
-3. **Dual commercial structure:** a reciprocal license plus a separate paid
-   commercial license where the reciprocal obligations are unacceptable.
-
-The license choice must account for every contributor. A CLA, copyright
-assignment, or other counsel-approved contribution policy is required before
-accepting code that LED ACTION LLC expects to license commercially.
+External patches remain closed until LED ACTION LLC publishes contributor terms
+that establish provenance and preserve the intended business model. Apache-2.0
+does not require the project to accept a pull request. A DCO, CLA, copyright
+assignment, or other counsel-approved policy must be selected before merging
+outside contributions that the company may need to relicense.
 
 ## Brand and key control
 
@@ -167,9 +162,10 @@ public GitHub aggregates, or contractual enterprise reporting.
 
 ## Legal and operational gates
 
-Before public use or revenue collection:
+Before revenue collection or production claims:
 
-- approve the public-source/commercial license and contribution agreement;
+- obtain independent review of the Apache-2.0/open-core structure and approve
+  contributor terms before merging external patches;
 - run JOAN name clearance and trademark strategy;
 - define objective conformance and certification-mark rules;
 - secure GitHub, domain, payment, tax, and signing-key recovery;

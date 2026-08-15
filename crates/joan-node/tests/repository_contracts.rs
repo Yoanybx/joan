@@ -34,7 +34,6 @@ fn protected_founder_records_are_consistent() -> Result<(), Box<dyn std::error::
     for path in [
         "AUTHORS.md",
         "COPYRIGHT",
-        "LICENSE",
         "NOTICE",
         "ORIGIN.md",
         "OWNERSHIP.md",
@@ -59,6 +58,35 @@ fn protected_founder_records_are_consistent() -> Result<(), Box<dyn std::error::
             !content.contains(INCORRECT_ATTRIBUTION),
             "incorrect attribution found in {path}"
         );
+    }
+    Ok(())
+}
+
+#[test]
+fn public_license_and_cargo_metadata_are_apache_2() -> Result<(), Box<dyn std::error::Error>> {
+    let root = workspace_root();
+    let license = fs::read(root.join("LICENSE"))?;
+    let license_digest = digest_bytes_v1(RegisteredDomainV1::Source, &license)?;
+    assert_eq!(
+        license_digest.value, "e60a3f171a2b358717290ac050e1549365c26c9822d76317991d4ebd31d39432",
+        "canonical Apache-2.0 license text drifted"
+    );
+
+    let root_manifest = fs::read_to_string(root.join("Cargo.toml"))?;
+    assert!(root_manifest.contains("license = \"Apache-2.0\""));
+    assert!(!root_manifest.contains("license-file ="));
+
+    for entry in fs::read_dir(root.join("crates"))? {
+        let manifest = entry?.path().join("Cargo.toml");
+        if manifest.is_file() {
+            let content = fs::read_to_string(&manifest)?;
+            assert!(
+                content.contains("license.workspace = true"),
+                "crate license metadata drifted in {}",
+                manifest.display()
+            );
+            assert!(!content.contains("license-file.workspace"));
+        }
     }
     Ok(())
 }
@@ -397,7 +425,7 @@ fn main() -> i64 effects [] {
     let request = decode_request_frame(&frame)?.control;
     validate_instance(
         &serde_json::to_value(&request)?,
-        "schemas/host-execution-request.v0.schema.json",
+        "schemas/host-execution-request.v1.schema.json",
     )?;
 
     let native = compile_bytecode(&artifact.bytecode)?;
@@ -409,30 +437,47 @@ fn main() -> i64 effects [] {
     let response = completed_run_response(&request, native.receipt().clone(), execution)?;
     validate_instance(
         &serde_json::to_value(&response)?,
-        "schemas/host-executor-response.v0.schema.json",
+        "schemas/host-executor-response.v1.schema.json",
     )?;
 
     let receipt = HostExecutionReceipt {
-        schema: "joan.host-execution-receipt.v0".to_owned(),
+        schema: "joan.host-execution-receipt.v1".to_owned(),
         status: HostExecutionStatus::Completed,
         reason: HostExecutionReason::ExecutorCompleted,
+        limits: request.limits,
         request_digest: request.request_digest,
         semantic_digest: request.semantic_digest,
         bytecode_digest: request.bytecode_digest,
         child_exit_code: Some(0),
+        child_unix_signal: None,
         executor_response_digest: Some(response.response_digest),
         compile_receipt: response.compile_receipt,
         execution_receipt: response.execution_receipt,
         detail: None,
         receipt_digest: digest_bytes_v1(
-            RegisteredDomainV1::HostExecutionReceipt,
+            RegisteredDomainV1::HostExecutionReceiptV2,
             b"schema-fixture",
         )?,
     };
     let receipt_value = serde_json::to_value(&receipt)?;
     validate_instance(
         &receipt_value,
-        "schemas/host-execution-receipt.v0.schema.json",
+        "schemas/host-execution-receipt.v1.schema.json",
+    )?;
+
+    let mut contradictory_exit = receipt_value.clone();
+    contradictory_exit["child_unix_signal"] = Value::from(9);
+    assert_invalid_instance(
+        &contradictory_exit,
+        "schemas/host-execution-receipt.v1.schema.json",
+    )?;
+
+    let mut contradictory_memory = receipt_value.clone();
+    contradictory_memory["limits"]["memory_limit_kind"] = Value::String("unavailable".to_owned());
+    contradictory_memory["limits"]["memory_limit_bytes"] = Value::from(1);
+    assert_invalid_instance(
+        &contradictory_memory,
+        "schemas/host-execution-receipt.v1.schema.json",
     )?;
 
     let mut contradictory = receipt_value;
@@ -440,7 +485,7 @@ fn main() -> i64 effects [] {
     contradictory["reason"] = Value::String("timeout".to_owned());
     assert_invalid_instance(
         &contradictory,
-        "schemas/host-execution-receipt.v0.schema.json",
+        "schemas/host-execution-receipt.v1.schema.json",
     )?;
     Ok(())
 }
@@ -492,11 +537,17 @@ fn publication_workflow_remains_fail_closed() -> Result<(), Box<dyn std::error::
     let readiness = read_json(&root.join(".joan/publication-readiness.json"))?;
     assert_eq!(readiness["status"], "blocked");
     assert_eq!(readiness["publication_effect"], "not-executed");
-    assert_eq!(readiness["official_repository"]["configured"], false);
-    assert_eq!(readiness["legal"]["license_decision_approved"], false);
+    assert_eq!(readiness["official_repository"]["configured"], true);
+    assert_eq!(readiness["official_repository"]["owner"], "Yoanybx");
+    assert_eq!(readiness["official_repository"]["name"], "joan");
+    assert_eq!(readiness["legal"]["license_decision_approved"], true);
+    assert_eq!(
+        readiness["legal"]["license_profile"],
+        "apache-2.0-open-core"
+    );
     assert_eq!(readiness["release"]["public_release_approved"], false);
-    assert_eq!(readiness["release"]["codeowners_configured"], false);
-    assert!(!root.join(".github/CODEOWNERS").exists());
+    assert_eq!(readiness["release"]["codeowners_configured"], true);
+    assert!(root.join(".github/CODEOWNERS").is_file());
 
     for path in [
         "LEGAL-ASSET-INVENTORY.md",
@@ -568,6 +619,8 @@ fn duplicate_dependency_exceptions_are_exact() -> Result<(), Box<dyn std::error:
     let root = workspace_root();
     let policy = fs::read_to_string(root.join("deny.toml"))?;
     assert!(policy.contains("multiple-versions = \"deny\""));
+    assert!(policy.contains("crate = \"bitflags@1.3.2\""));
+    assert!(policy.contains("legacy bitflags branch while rustix uses v2"));
     assert!(policy.contains("crate = \"hashbrown@0.16.1\""));
     assert!(policy.contains("gimli 0.33.0 in pinned Cranelift 0.134.3"));
     assert!(policy.contains("crate = \"windows-sys@0.52.0\""));
@@ -577,8 +630,8 @@ fn duplicate_dependency_exceptions_are_exact() -> Result<(), Box<dyn std::error:
             .lines()
             .filter(|line| line.trim_start().starts_with("{ crate ="))
             .count(),
-        2,
-        "dependency policy must contain exactly two duplicate exceptions"
+        3,
+        "dependency policy must contain exactly three duplicate exceptions"
     );
     assert!(root.join("scripts/verify-dependency-policy.sh").is_file());
     Ok(())

@@ -103,7 +103,7 @@ and untyped entrypoints are not exposed to the rest of the crate. Generated code
 to Cranelift user functions declared inside the same module; libcalls, known symbols, and test-case
 symbols fail closed before finalization. The official `joan native compile` and `joan native run`
 commands execute this crate through the adjacent `joan-executor` process and the bounded protocol
-defined in `host-executor-v0.md`; `joan-node` does not link this crate or Cranelift. The low-level
+defined in `host-executor-v1.md`; `joan-node` does not link this crate or Cranelift. The low-level
 Rust API remains available for conformance tests and therefore does not itself isolate generated
 code. Process separation and an empty inherited environment are not an operating-system sandbox:
 kernel-enforced filesystem, network, syscall, process-tree and memory limits remain H08 work.

@@ -46,7 +46,7 @@
     "genesis_year": {"const": "2026"},
     "genesis_branch": {"const": "codex/joan-genesis"},
     "public_release": {"const": false},
-    "remote_configured": {"const": false},
+    "remote_configured": {"type": "boolean"},
     "signing_identity_bound": {"const": false},
     "copyright_registration_recorded": {"const": false},
     "tool_assistance": {"type": "string", "minLength": 1},

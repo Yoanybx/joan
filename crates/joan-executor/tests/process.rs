@@ -8,6 +8,9 @@ use joan_host::{
 use joan_native::compile_bytecode;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::thread;
+use std::time::Duration;
 use tempfile::tempdir;
 
 const PURE: &str = r"module host_process;
@@ -34,7 +37,11 @@ fn sidecar_matches_in_process_native_receipts() -> Result<(), Box<dyn std::error
         HostOperation::Compile,
         HostLimits::default(),
     )?;
-    assert_eq!(compile.status, HostExecutionStatus::Completed);
+    assert_eq!(
+        compile.status,
+        HostExecutionStatus::Completed,
+        "{compile:#?}"
+    );
     assert_eq!(compile.reason, HostExecutionReason::ExecutorCompleted);
     assert_eq!(compile.compile_receipt.as_ref(), Some(direct.receipt()));
 
@@ -69,7 +76,7 @@ fn deterministic_native_rejections_are_failed_not_completed()
         },
         HostLimits::default(),
     )?;
-    assert_eq!(receipt.status, HostExecutionStatus::Failed);
+    assert_eq!(receipt.status, HostExecutionStatus::Failed, "{receipt:#?}");
     assert_eq!(receipt.reason, HostExecutionReason::ExecutorRejected);
     assert!(
         receipt
@@ -176,7 +183,11 @@ fn timeout_malformed_output_flood_and_spawn_fail_closed() -> Result<(), Box<dyn 
         HostLimits::new(250)?,
     )?;
     assert_eq!(hanging_receipt.status, HostExecutionStatus::Unknown);
-    assert_eq!(hanging_receipt.reason, HostExecutionReason::Timeout);
+    assert_eq!(
+        hanging_receipt.reason,
+        HostExecutionReason::Timeout,
+        "{hanging_receipt:#?}"
+    );
 
     let absent = execute_with_path(
         &directory.path().join("absent"),
@@ -186,6 +197,126 @@ fn timeout_malformed_output_flood_and_spawn_fail_closed() -> Result<(), Box<dyn 
     )?;
     assert_eq!(absent.status, HostExecutionStatus::Failed);
     assert_eq!(absent.reason, HostExecutionReason::SpawnFailed);
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn timeout_kills_child_and_grandchild_process_group() -> Result<(), Box<dyn std::error::Error>> {
+    let artifact = compile_source(PURE)?;
+    let directory = tempdir()?;
+    let descendant_pid = directory.path().join("descendant.pid");
+    let descendant_pid_quoted = shell_quote(&descendant_pid);
+    let script = executable_script(
+        directory.path(),
+        "descendant-timeout.sh",
+        &format!(
+            "/bin/sleep 30 &\ndescendant=$!\nprintf '%s' \"$descendant\" > {descendant_pid_quoted}\nexec /bin/sleep 30"
+        ),
+    )?;
+
+    let receipt = execute_with_path(
+        &script,
+        &artifact.bytecode,
+        HostOperation::Compile,
+        HostLimits::new(1_000)?,
+    )?;
+    assert_eq!(receipt.status, HostExecutionStatus::Unknown);
+    assert_eq!(receipt.reason, HostExecutionReason::Timeout);
+    assert!(receipt.child_exit_code.is_none());
+    assert!(receipt.child_unix_signal.is_some());
+
+    let pid = read_recorded_pid(&descendant_pid)?;
+    assert_process_gone(pid)?;
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn terminated_leader_with_live_descendant_is_never_completed()
+-> Result<(), Box<dyn std::error::Error>> {
+    let artifact = compile_source(PURE)?;
+    let directory = tempdir()?;
+    let descendant_pid = directory.path().join("retained-stdout.pid");
+    let descendant_pid_quoted = shell_quote(&descendant_pid);
+    let script = executable_script(
+        directory.path(),
+        "leader-exit.sh",
+        &format!(
+            "/bin/cat >/dev/null\n/bin/sleep 30 &\ndescendant=$!\nprintf '%s' \"$descendant\" > {descendant_pid_quoted}\nkill -TERM $$"
+        ),
+    )?;
+
+    let receipt = execute_with_path(
+        &script,
+        &artifact.bytecode,
+        HostOperation::Compile,
+        HostLimits::new(5_000)?,
+    )?;
+    assert_eq!(receipt.status, HostExecutionStatus::Unknown);
+    assert_eq!(
+        receipt.reason,
+        HostExecutionReason::DescendantDetected,
+        "{receipt:#?}"
+    );
+
+    let pid = read_recorded_pid(&descendant_pid)?;
+    assert_process_gone(pid)?;
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn unix_signal_is_distinct_from_exit_code_and_receipt_is_deterministic()
+-> Result<(), Box<dyn std::error::Error>> {
+    let artifact = compile_source(PURE)?;
+    let directory = tempdir()?;
+    let script = executable_script(
+        directory.path(),
+        "signal.sh",
+        "/bin/cat >/dev/null\nkill -TERM $$",
+    )?;
+
+    let first = execute_with_path(
+        &script,
+        &artifact.bytecode,
+        HostOperation::Compile,
+        HostLimits::default(),
+    )?;
+    let second = execute_with_path(
+        &script,
+        &artifact.bytecode,
+        HostOperation::Compile,
+        HostLimits::default(),
+    )?;
+    assert_eq!(first.status, HostExecutionStatus::Unknown);
+    assert_eq!(first.reason, HostExecutionReason::ChildExitUnknown);
+    assert_eq!(first.child_exit_code, None);
+    assert_eq!(first.child_unix_signal, Some(15));
+    assert_eq!(first, second);
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn repeated_timeouts_do_not_deadlock_the_controller() -> Result<(), Box<dyn std::error::Error>> {
+    let artifact = compile_source(PURE)?;
+    let directory = tempdir()?;
+    let script = executable_script(directory.path(), "spin.sh", "while :; do :; done")?;
+
+    for iteration in 0..100 {
+        let receipt = execute_with_path(
+            &script,
+            &artifact.bytecode,
+            HostOperation::Compile,
+            HostLimits::new(5)?,
+        )?;
+        assert_eq!(
+            receipt.reason,
+            HostExecutionReason::Timeout,
+            "iteration {iteration}: {receipt:#?}"
+        );
+    }
     Ok(())
 }
 
@@ -208,4 +339,25 @@ fn executable_script(
 #[cfg(unix)]
 fn shell_quote(path: &Path) -> String {
     format!("'{}'", path.to_string_lossy().replace('\'', "'\\''"))
+}
+
+#[cfg(unix)]
+fn read_recorded_pid(path: &Path) -> Result<u32, Box<dyn std::error::Error>> {
+    Ok(fs::read_to_string(path)?.trim().parse()?)
+}
+
+#[cfg(unix)]
+fn assert_process_gone(pid: u32) -> Result<(), Box<dyn std::error::Error>> {
+    for _ in 0..100 {
+        if !Command::new("/bin/kill")
+            .args(["-0", &pid.to_string()])
+            .stderr(Stdio::null())
+            .status()?
+            .success()
+        {
+            return Ok(());
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+    Err(format!("descendant process {pid} remained alive").into())
 }

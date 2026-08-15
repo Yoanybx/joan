@@ -730,6 +730,7 @@ dependencies = [
  "joan-canonical",
  "joan-compiler",
  "joan-lattice",
+ "rustix",
  "serde",
  "serde_json",
  "sha2",

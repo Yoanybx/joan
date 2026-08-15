@@ -5,15 +5,15 @@
   "original_creator": "Joan Alberto Barrios Cruz",
   "corporate_owner": "LED ACTION LLC",
   "official_repository": {
-    "configured": false,
-    "owner": null,
-    "name": null
+    "configured": true,
+    "owner": "Yoanybx",
+    "name": "joan"
   },
   "legal": {
     "assignment_instrument_recorded": false,
-    "asset_inventory_approved": false,
-    "license_decision_approved": false,
-    "license_profile": "all-rights-reserved-genesis",
+    "asset_inventory_approved": true,
+    "license_decision_approved": true,
+    "license_profile": "apache-2.0-open-core",
     "contributor_terms_approved": false,
     "trademark_clearance_recorded": false
   },
@@ -26,7 +26,7 @@
     "protected_environment": "release",
     "environment_protection_configured": false,
     "tag_rules_configured": false,
-    "codeowners_configured": false,
+    "codeowners_configured": true,
     "signing_identity_bound": false,
     "hosted_ci_passed": false,
     "independent_rerun_verified": false

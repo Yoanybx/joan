@@ -2,8 +2,8 @@
 
 use joan_host::{
     ExecutorFailureCode, HostError, HostOperation, MAX_HOST_REQUEST_FRAME_BYTES,
-    completed_compile_response, completed_run_response, decode_request_frame,
-    encode_response_frame, failed_executor_response, read_bounded,
+    apply_executor_resource_limits, completed_compile_response, completed_run_response,
+    decode_request_frame, encode_response_frame, failed_executor_response, read_bounded,
 };
 use joan_native::{NativeError, compile_bytecode};
 use std::io::{self, Write as _};
@@ -34,6 +34,7 @@ fn run_one() -> Result<(), HostError> {
         )));
     }
     let request = decode_request_frame(&input)?;
+    apply_executor_resource_limits(request.control.limits)?;
     let native = match compile_bytecode(&request.bytecode) {
         Ok(native) => native,
         Err(error) => {

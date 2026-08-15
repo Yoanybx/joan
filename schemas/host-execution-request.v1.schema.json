@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/host-execution-request.v1.schema.json",
+  "title": "JOAN Host Execution Request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["bytecode_digest", "limits", "operation", "request_digest", "schema", "semantic_digest"],
+  "properties": {
+    "schema": {"const": "joan.host-execution-request.v1"},
+    "operation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {"kind": {"const": "compile"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["arguments", "function", "instruction_budget", "kind"],
+          "properties": {
+            "kind": {"const": "run"},
+            "function": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[\\x20-\\x7e]+$"},
+            "arguments": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/value"}},
+            "instruction_budget": {"type": "integer", "minimum": 1, "maximum": 1000000000}
+          }
+        }
+      ]
+    },
+    "limits": {"$ref": "#/$defs/boundedMemoryLimit"},
+    "semantic_digest": {"$ref": "digest.v1.schema.json"},
+    "bytecode_digest": {"$ref": "digest.v1.schema.json"},
+    "request_digest": {
+      "allOf": [
+        {"$ref": "digest.v1.schema.json"},
+        {"properties": {"domain": {"const": "joan.host-execution-request.v2"}}}
+      ]
+    }
+  },
+  "$defs": {
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["core_size_bytes", "cpu_time_seconds", "file_size_bytes", "memory_limit_bytes", "memory_limit_kind", "open_files", "wall_time_ms"],
+      "properties": {
+        "wall_time_ms": {"type": "integer", "minimum": 1, "maximum": 60000},
+        "cpu_time_seconds": {"type": "integer", "minimum": 1, "maximum": 30},
+        "memory_limit_kind": {"enum": ["address_space", "data_segment", "unavailable"]},
+        "memory_limit_bytes": {"type": "integer", "minimum": 0, "maximum": 17179869184},
+        "open_files": {"type": "integer", "minimum": 16, "maximum": 256},
+        "file_size_bytes": {"type": "integer", "minimum": 0, "maximum": 1048576},
+        "core_size_bytes": {"const": 0}
+      }
+    },
+    "boundedMemoryLimit": {
+      "allOf": [
+        {"$ref": "#/$defs/limits"},
+        {
+          "if": {"properties": {"memory_limit_kind": {"const": "unavailable"}}},
+          "then": {"properties": {"memory_limit_bytes": {"const": 0}}},
+          "else": {"properties": {"memory_limit_bytes": {"minimum": 268435456}}}
+        }
+      ]
+    },
+    "value": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "value"],
+          "properties": {"type": {"const": "i64"}, "value": {"type": "string", "pattern": "^-?(0|[1-9][0-9]*)$"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "value"],
+          "properties": {"type": {"const": "bool"}, "value": {"type": "boolean"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "value"],
+          "properties": {"type": {"const": "string"}, "value": {"type": "string"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {"type": {"const": "unit"}}
+        }
+      ]
+    }
+  }
+}

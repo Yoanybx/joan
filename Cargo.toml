@@ -33,8 +33,11 @@ members = [
 version = "0.1.0-alpha.1"
 edition = "2024"
 rust-version = "1.94.1"
-license-file = "LICENSE"
+license = "Apache-2.0"
 authors = ["Joan Alberto Barrios Cruz"]
+repository = "https://github.com/Yoanybx/joan"
+homepage = "https://github.com/Yoanybx/joan"
+readme = "README.md"
 publish = false
 
 [workspace.dependencies]
@@ -45,6 +48,7 @@ thiserror = "=2.0.20"
 proptest = "=1.11.0"
 tempfile = "=3.27.0"
 jsonschema = { version = "=0.49.9", default-features = false }
+rustix = { version = "=1.1.4", features = ["fs", "process"] }
 cranelift-codegen = "=0.134.3"
 cranelift-frontend = "=0.134.3"
 cranelift-jit = "=0.134.3"

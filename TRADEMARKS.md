@@ -1,6 +1,6 @@
 # JOAN Names and Marks
 
-Status: private Genesis reservation notice. No trademark registration or legal
+Status: public alpha reservation notice. No trademark registration or legal
 clearance is asserted by this file.
 
 JOAN Language, JOAN Network, JOAN Link, JOAN Work, JOAN Clearing, official JOAN
@@ -8,10 +8,11 @@ logos, conformance marks, and release-signing identities are project-designated
 assets of LED ACTION LLC. Joan Alberto Barrios Cruz is the original creator and
 founder recorded by the project.
 
-No license to source code automatically grants permission to use those names or
-marks to imply endorsement, origin, compatibility, certification, or operation
-by LED ACTION LLC. Any future public license must state its trademark boundary
-separately and consistently.
+The Apache License, Version 2.0 covers source code and documentation distributed
+under that license. Section 6 does not grant permission to use these names or
+marks except for reasonable and customary origin descriptions and reproduction
+of the `NOTICE` file. No use may imply endorsement, official origin,
+compatibility certification, or operation by LED ACTION LLC.
 
 Before public use, LED ACTION LLC must obtain a documented clearance search,
 select the exact marks and jurisdictions, record domain and account custody, and

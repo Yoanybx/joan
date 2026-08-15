@@ -124,10 +124,16 @@ pub enum RegisteredDomainV1 {
     NativeCode,
     /// One bounded request sent to a JOAN native executor process.
     HostExecutionRequest,
+    /// One resource-policy-bound request sent to a JOAN native executor process.
+    HostExecutionRequestV2,
     /// One bounded response emitted by a JOAN native executor process.
     HostExecutorResponse,
+    /// One response bound to a resource-policy-bound host request.
+    HostExecutorResponseV2,
     /// Controller receipt for one isolated native execution attempt.
     HostExecutionReceipt,
+    /// Controller receipt with resource policy and signal observability.
+    HostExecutionReceiptV2,
     /// Offline pull-request candidate identity.
     PrCandidate,
     /// Versioned pull-request trust policy identity.
@@ -177,8 +183,11 @@ impl RegisteredDomainV1 {
             Self::NativeArtifact => "joan.native-artifact.v1",
             Self::NativeCode => "joan.native-code.v1",
             Self::HostExecutionRequest => "joan.host-execution-request.v1",
+            Self::HostExecutionRequestV2 => "joan.host-execution-request.v2",
             Self::HostExecutorResponse => "joan.host-executor-response.v1",
+            Self::HostExecutorResponseV2 => "joan.host-executor-response.v2",
             Self::HostExecutionReceipt => "joan.host-execution-receipt.v1",
+            Self::HostExecutionReceiptV2 => "joan.host-execution-receipt.v2",
             Self::PrCandidate => "joan.pr-candidate.v1",
             Self::PrTrustPolicy => "joan.pr-trust-policy.v1",
             Self::PrTrustEvidence => "joan.pr-trust-evidence.v1",
@@ -217,8 +226,11 @@ impl RegisteredDomainV1 {
             "joan.native-artifact.v1" => Self::NativeArtifact,
             "joan.native-code.v1" => Self::NativeCode,
             "joan.host-execution-request.v1" => Self::HostExecutionRequest,
+            "joan.host-execution-request.v2" => Self::HostExecutionRequestV2,
             "joan.host-executor-response.v1" => Self::HostExecutorResponse,
+            "joan.host-executor-response.v2" => Self::HostExecutorResponseV2,
             "joan.host-execution-receipt.v1" => Self::HostExecutionReceipt,
+            "joan.host-execution-receipt.v2" => Self::HostExecutionReceiptV2,
             "joan.pr-candidate.v1" => Self::PrCandidate,
             "joan.pr-trust-policy.v1" => Self::PrTrustPolicy,
             "joan.pr-trust-evidence.v1" => Self::PrTrustEvidence,

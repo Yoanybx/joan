@@ -26,6 +26,9 @@
     "review_paths": [
       "audit/independent-rerun-v0/REVIEW.md",
       "audit/independent-rerun-v0/manifest.json",
+      ".github/workflows/guardian.yml",
+      ".github/workflows/independent-rerun.yml",
+      ".github/workflows/release.yml",
       "benchmarks/native-backend",
       "benchmarks/results/2026-08-13-mac15-4-native-backend.json",
       "crates/joan-native",
@@ -37,12 +40,16 @@
       "spec/sbom-evidence-v0.md",
       "scripts/generate-sbom.sh",
       "scripts/run-independent-rerun.sh",
+      "scripts/verify-all.sh",
       "scripts/verify-sbom.sh",
       "scripts/verify-independent-rerun.sh",
+      "spec/source-tree-evidence-v2.md",
+      "tools/evidence-index.mjs",
       "tools/independent-rerun.mjs",
       "tools/native-backend-benchmark.mjs",
       "tools/sbom-evidence.mjs",
-      "tools/sbom-evidence.test.mjs"
+      "tools/sbom-evidence.test.mjs",
+      "tools/verification-runner.mjs"
     ],
     "excluded_material": ["credentials", "legal-signatures", "private-notes", "payment-effects"]
   },

@@ -2,12 +2,12 @@
   "schema": "joan.evidence-index.v2",
   "version": "0.1.0-alpha.1",
   "status": "local-verification-passed-with-receipts",
-  "generated_at": "2026-08-15T18:51:08.294Z",
+  "generated_at": "2026-08-15T21:10:10.595Z",
   "source": {
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "945500be98d56d403049a5f91a139918d8337acc5873d5c3f2a9b238b2449721"
+      "value": "efc9712eedf8494e29f3a159b1df2bb1eaab36bf71115e1ad54fd9babc631371"
     },
     "file_count": 349,
     "excludes": [
@@ -21,7 +21,7 @@
   "inventory": {
     "workspace_crates": 26,
     "json_schemas": 79,
-    "rust_tests": 230
+    "rust_tests": 231
   },
   "conformance": {
     "jce1": {
@@ -97,35 +97,35 @@
     "runs": [
       {
         "ordinal": 1,
-        "run_id": "4612b2f6-95b2-4dd3-b229-6d1944789cb2",
+        "run_id": "c3bfd04c-6073-4817-9b94-2503272a4d3e",
         "path": ".joan/evidence/runs/run-1.json",
-        "file_sha256": "b008538bf28322079ebb41217e5bd2319aac5f3e204c4e0fdcb7379e03e345d7",
+        "file_sha256": "9203bfc7afd7c04a680be41c7654dd01c18490fd2f6dad9280b3cb7d251b7899",
         "status": "passed",
-        "started_at": "2026-08-15T18:36:01.980Z",
-        "completed_at": "2026-08-15T18:43:26.420Z",
-        "source_digest": "945500be98d56d403049a5f91a139918d8337acc5873d5c3f2a9b238b2449721",
+        "started_at": "2026-08-15T20:50:20.823Z",
+        "completed_at": "2026-08-15T20:58:15.140Z",
+        "source_digest": "efc9712eedf8494e29f3a159b1df2bb1eaab36bf71115e1ad54fd9babc631371",
         "gate_count": 11
       },
       {
         "ordinal": 2,
-        "run_id": "4caae519-24dc-4ef4-b547-336493533ab0",
+        "run_id": "ba915258-57af-4128-8972-46c3622bdf93",
         "path": ".joan/evidence/runs/run-2.json",
-        "file_sha256": "b1b7239367f08ef1d6dd12f96bdcde911cc77bd71b87ca852249c2e5bfd6fada",
+        "file_sha256": "30496507730568769f1f093b219b58a4834f471ad6cdf9f2743b9614b6b218e5",
         "status": "passed",
-        "started_at": "2026-08-15T18:43:59.493Z",
-        "completed_at": "2026-08-15T18:47:13.830Z",
-        "source_digest": "945500be98d56d403049a5f91a139918d8337acc5873d5c3f2a9b238b2449721",
+        "started_at": "2026-08-15T20:58:54.050Z",
+        "completed_at": "2026-08-15T21:04:30.906Z",
+        "source_digest": "efc9712eedf8494e29f3a159b1df2bb1eaab36bf71115e1ad54fd9babc631371",
         "gate_count": 11
       },
       {
         "ordinal": 3,
-        "run_id": "a01ee09a-efb8-4726-b304-2574e6fa65d5",
+        "run_id": "5af2ce03-7278-42e3-a024-08fb61262fcf",
         "path": ".joan/evidence/runs/run-3.json",
-        "file_sha256": "e0e89e0d502f9df3f3d258dfba082ea3e75d6ddde168e87c8c425826b0f2d84c",
+        "file_sha256": "510d75249985b345b91b8d81d811147a911be8391ad08f90a8fcf553a37c2554",
         "status": "passed",
-        "started_at": "2026-08-15T18:47:46.137Z",
-        "completed_at": "2026-08-15T18:50:37.658Z",
-        "source_digest": "945500be98d56d403049a5f91a139918d8337acc5873d5c3f2a9b238b2449721",
+        "started_at": "2026-08-15T21:05:08.786Z",
+        "completed_at": "2026-08-15T21:08:45.423Z",
+        "source_digest": "efc9712eedf8494e29f3a159b1df2bb1eaab36bf71115e1ad54fd9babc631371",
         "gate_count": 11
       }
     ],
@@ -180,7 +180,7 @@
   "limitations": [
     "Three local receipts on one host and operator are not independent external attestations",
     "Local evidence is not an official release, external audit or hostile reproduction",
-    "No official remote, public adoption, distributed network or real payment exists; the native backend covers only the published pure subset",
+    "No public release, validated external adoption, distributed network or real payment exists; the native backend covers only the published pure subset",
     "JDR1 synthetic results do not authorize effects; JDR2 remains unimplemented",
     "The recorded digest benchmark does not establish language superiority",
     "The two-workload agent scorecard is baseline-only and does not establish language superiority",

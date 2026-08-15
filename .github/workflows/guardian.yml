@@ -31,4 +31,4 @@ jobs:
       - name: Require complete local verification gate
         env:
           JOAN_NATIVE_ABI_REPORT: ${{ runner.temp }}/joan-native-abi-v1.json
-        run: ./scripts/verify-all.sh
+        run: ./scripts/verify-all.sh --portable-evidence

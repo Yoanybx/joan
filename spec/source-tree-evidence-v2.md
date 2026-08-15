@@ -48,9 +48,39 @@ this profile.
 ## Gate
 
 `node tools/evidence-index.mjs source` prints only the current source snapshot.
-`node tools/evidence-index.mjs check` additionally recomputes inventory and
-validates three complete local run receipts against the exact gate
-configuration, runner and executable hashes.
+`node tools/evidence-index.mjs check` is the issuer-host gate: it recomputes
+inventory and validates three complete local run receipts against the exact
+gate configuration, runner and executable hashes on the host that emitted
+them.
+
+`node tools/evidence-index.mjs check-current <current-receipt>` validates one
+new external receipt strictly against the current host, source, inventory,
+tool versions and executable bytes. The default `scripts/verify-all.sh` path
+requires both `check` and `check-current`, so its newly generated receipt is
+never left unvalidated.
+
+`node tools/evidence-index.mjs check-portable <current-receipt>` is the
+cross-host gate. It validates a newly generated receipt strictly against the
+current host and validates the three checked-in historical receipts against
+their source, inventory, gate, runner, stream-digest and recorded-executable
+bindings without requiring those historical executable paths to exist on the
+new host. The current receipt must be outside `.joan/evidence/runs`, have a new
+run identifier and bind the current host's executable bytes. Twelve negative
+controls must be rejected on every invocation.
+
+Repository scripts in historical receipts are bound to the current source
+bytes. Non-repository gates are cross-bound to the historical tool inventory.
+Historical test counts remain host-specific observations and are not compared
+to the current host. Because the checked-in receipts do not yet carry an
+external signature or GitHub attestation, the portable report marks those
+records as unauthenticated and does not use them to claim operator identity.
+
+`scripts/verify-all.sh` defaults to the issuer-host gate. Hosted CI and the
+independent rerun package must select the portable contract explicitly with
+`--portable-evidence`; no environment variable can change that decision. A
+portable pass proves cross-host reproducibility of the declared contracts. It
+does not prove operator independence, organizational independence, release
+authorization, production readiness or universal language superiority.
 
 The v2 index also binds the recorded AI-agent scorecard file, its
 `baseline-only-not-qualified` status, workload count, frozen JOAN safety total,

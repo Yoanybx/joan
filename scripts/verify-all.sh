@@ -3,6 +3,14 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+evidence_mode="strict"
+if [[ $# -eq 1 && "$1" == "--portable-evidence" ]]; then
+  evidence_mode="portable"
+elif [[ $# -ne 0 ]]; then
+  printf '%s\n' 'usage: bash scripts/verify-all.sh [--portable-evidence]' >&2
+  exit 2
+fi
+
 for tool in cargo-audit cargo-cyclonedx cargo-deny; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     printf 'required verification tool is unavailable: %s\n' "$tool" >&2
@@ -26,8 +34,14 @@ fi
 
 node tools/verification-runner.mjs "$receipt"
 
-printf '%s\n' '==> machine evidence and receipt drift check'
-node tools/evidence-index.mjs check
+if [[ "$evidence_mode" == "portable" ]]; then
+  printf '%s\n' '==> portable historical evidence plus strict current-host receipt'
+  node tools/evidence-index.mjs check-portable "$receipt"
+else
+  printf '%s\n' '==> strict issuer-host machine evidence and receipt drift check'
+  node tools/evidence-index.mjs check
+  node tools/evidence-index.mjs check-current "$receipt"
+fi
 
 printf '%s\n' '==> reproducible CycloneDX software bill of materials'
 bash scripts/verify-sbom.sh
@@ -60,4 +74,4 @@ bash scripts/verify-agent-scorecard.sh
 printf '%s\n' '==> offline PR trust envelope'
 bash scripts/verify-pr-trust.sh
 
-printf '%s\n' 'JOAN local verification and evidence-receipt gates passed.'
+printf 'JOAN local verification and evidence-receipt gates passed (%s mode).\n' "$evidence_mode"

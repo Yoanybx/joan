@@ -12,6 +12,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
+import { arch, platform, release } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath } from "node:url";
@@ -44,6 +45,27 @@ const JCE1_PROFILE = "joan-hash-v1";
 const JCE1_DOMAIN = "joan.conformance-vector.v1";
 const REQUIRED_RUNS = 3;
 const CURRENT_GATE_COUNT = 11;
+const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
+const SHA1_PATTERN = /^[0-9a-f]{40}$/u;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+const REQUIRED_TOOL_IDS = ["node", "cargo", "rustc", "cargo-audit", "cargo-deny"];
+const TOOL_SPECS = new Map([
+  ["node", { command: process.execPath, versionArgs: ["--version"] }],
+  ["cargo", { command: "cargo", versionArgs: ["--version", "--verbose"] }],
+  ["rustc", { command: "rustc", versionArgs: ["--version", "--verbose"] }],
+  ["cargo-audit", { command: "cargo-audit", versionArgs: ["--version"] }],
+  ["cargo-deny", { command: "cargo-deny", versionArgs: ["--version"] }],
+]);
+const LIMITATIONS = [
+  "Three local receipts on one host and operator are not independent external attestations",
+  "Local evidence is not an official release, external audit or hostile reproduction",
+  "No public release, validated external adoption, distributed network or real payment exists; the native backend covers only the published pure subset",
+  "JDR1 synthetic results do not authorize effects; JDR2 remains unimplemented",
+  "The recorded digest benchmark does not establish language superiority",
+  "The two-workload agent scorecard is baseline-only and does not establish language superiority",
+  "The five-workload native benchmark is local and not independently rerun; it does not establish language superiority",
+  "The payment-cost vector proves local integer accounting only, not universal market superiority",
+];
 
 function fail(message) {
   throw new Error(message);
@@ -269,6 +291,19 @@ function requireEqual(observed, expected, label) {
   if (!equal(observed, expected)) fail(`${label} mismatch`);
 }
 
+function requireCondition(condition, message) {
+  if (!condition) fail(message);
+}
+
+function requireSha256(value, label) {
+  requireCondition(typeof value === "string" && SHA256_PATTERN.test(value), `${label} is not SHA-256`);
+}
+
+function requireExactKeys(value, expected, label) {
+  requireCondition(value !== null && typeof value === "object" && !Array.isArray(value), `${label} is not an object`);
+  requireEqual(Object.keys(value).sort(), [...expected].sort(), `${label} keys`);
+}
+
 function parseTime(value, label) {
   const parsed = Date.parse(value);
   if (!Number.isFinite(parsed)) fail(`${label} is not a valid timestamp`);
@@ -315,15 +350,55 @@ function validateExecutable(receipt, label, expectedCommand) {
   }
 }
 
-function validateReceipt(path, state, gates) {
+function validateRecordedExecutable(receipt, label, expectedCommand) {
+  requireCondition(
+    typeof receipt.executable_path === "string" &&
+      isAbsolute(receipt.executable_path) &&
+      resolve(receipt.executable_path) === receipt.executable_path,
+    `${label} recorded executable path is not absolute and normalized`,
+  );
+  requireSha256(receipt.executable_sha256, `${label} recorded executable digest`);
+  if (expectedCommand.startsWith("./")) {
+    const repositoryPath = expectedCommand.slice(2);
+    const recordedPath = receipt.executable_path.split(sep).join("/");
+    requireCondition(
+      recordedPath.endsWith(`/${repositoryPath}`),
+      `${label} recorded executable does not preserve its repository path`,
+    );
+    requireEqual(
+      receipt.executable_sha256,
+      fileSha256(join(ROOT, repositoryPath)),
+      `${label} repository executable digest`,
+    );
+  }
+}
+
+function loadReceipt(path, location) {
   const absolute = realpathSync(resolve(ROOT, path));
   const receiptRoot = `${realpathSync(RECEIPT_DIRECTORY)}${sep}`;
-  if (!absolute.startsWith(receiptRoot) || !statSync(absolute).isFile()) {
+  if (!statSync(absolute).isFile()) fail("receipt must be a regular file");
+  if (location === "evidence" && !absolute.startsWith(receiptRoot)) {
     fail(`receipt must be a regular file below ${relativePath(RECEIPT_DIRECTORY)}`);
   }
-  const receipt = readStrictJson(absolute);
+  if (location === "external" && absolute.startsWith(receiptRoot)) {
+    fail("current-host receipt must remain outside checked-in evidence");
+  }
+  return { absolute, receipt: readStrictJson(absolute) };
+}
+
+function validateReceiptCore(validated, state, gates) {
+  const { receipt } = validated;
+  requireExactKeys(receipt, [
+    "schema", "version", "run_id", "status", "started_at", "completed_at", "source",
+    "environment", "gates", "summary", "observations", "supply_chain",
+  ], "receipt");
+  requireExactKeys(receipt.environment, [
+    "platform", "arch", "os_release", "runner_sha256", "gate_config_sha256", "tools",
+  ], "receipt environment");
+  requireExactKeys(receipt.summary, ["required", "executed", "passed", "failed"], "receipt summary");
   requireEqual(receipt.schema, "joan.verification-run-receipt.v1", "receipt schema");
   requireEqual(receipt.version, "0.1.0-alpha.1", "receipt version");
+  requireCondition(typeof receipt.run_id === "string" && UUID_PATTERN.test(receipt.run_id), "receipt run ID is not a UUID");
   requireEqual(receipt.status, "passed", "receipt status");
   requireEqual(receipt.source, state.source, "receipt source");
   requireEqual(receipt.observations, state, "receipt observations");
@@ -340,44 +415,149 @@ function validateReceipt(path, state, gates) {
     passed: gates.length,
     failed: 0,
   }, "gate summary");
-  if (parseTime(receipt.started_at, "receipt start") > parseTime(receipt.completed_at, "receipt completion")) {
+  const receiptStarted = parseTime(receipt.started_at, "receipt start");
+  const receiptCompleted = parseTime(receipt.completed_at, "receipt completion");
+  if (receiptStarted > receiptCompleted) {
     fail("receipt completion precedes its start");
+  }
+  let previousGateCompletion = receiptStarted;
+  for (const [label, value] of [
+    ["platform", receipt.environment.platform],
+    ["architecture", receipt.environment.arch],
+    ["OS release", receipt.environment.os_release],
+  ]) {
+    requireCondition(typeof value === "string" && value.length > 0, `receipt ${label} is empty`);
   }
   for (const [index, expected] of gates.entries()) {
     const observed = receipt.gates[index];
+    requireExactKeys(observed, [
+      "id", "argv", "executable_path", "executable_sha256", "started_at", "completed_at",
+      "duration_ms", "status", "exit_code", "signal", "stdout", "stderr",
+    ], `gate ${expected.id}`);
     requireEqual(observed.id, expected.id, `gate ${index} identifier`);
     requireEqual(observed.argv, expected.argv, `gate ${expected.id} argv`);
     requireEqual(observed.status, "passed", `gate ${expected.id} status`);
     requireEqual(observed.exit_code, 0, `gate ${expected.id} exit code`);
     requireEqual(observed.signal, null, `gate ${expected.id} signal`);
-    if (parseTime(observed.started_at, `${expected.id} start`) > parseTime(observed.completed_at, `${expected.id} completion`)) {
+    const gateStarted = parseTime(observed.started_at, `${expected.id} start`);
+    const gateCompleted = parseTime(observed.completed_at, `${expected.id} completion`);
+    if (gateStarted > gateCompleted) {
       fail(`gate ${expected.id} completion precedes its start`);
     }
-    validateExecutable(observed, `gate ${expected.id}`, expected.argv[0]);
+    requireCondition(
+      gateStarted >= receiptStarted && gateCompleted <= receiptCompleted,
+      `gate ${expected.id} falls outside the receipt interval`,
+    );
+    requireCondition(
+      gateStarted >= previousGateCompletion,
+      `gate ${expected.id} is not ordered after the previous gate`,
+    );
+    previousGateCompletion = gateCompleted;
+    requireCondition(
+      Number.isSafeInteger(observed.duration_ms) && observed.duration_ms >= 0,
+      `gate ${expected.id} duration is invalid`,
+    );
+    for (const stream of ["stdout", "stderr"]) {
+      requireExactKeys(observed[stream], ["bytes", "sha256"], `gate ${expected.id} ${stream}`);
+      requireCondition(
+        Number.isSafeInteger(observed[stream].bytes) && observed[stream].bytes >= 0,
+        `gate ${expected.id} ${stream} byte count is invalid`,
+      );
+      requireSha256(observed[stream].sha256, `gate ${expected.id} ${stream} digest`);
+    }
   }
-  const requiredTools = ["node", "cargo", "rustc", "cargo-audit", "cargo-deny"];
   requireEqual(
     receipt.environment.tools.map((tool) => tool.id),
-    requiredTools,
+    REQUIRED_TOOL_IDS,
     "receipt tool inventory",
   );
-  const toolCommands = new Map([
-    ["node", process.execPath],
-    ["cargo", "cargo"],
-    ["rustc", "rustc"],
-    ["cargo-audit", "cargo-audit"],
-    ["cargo-deny", "cargo-deny"],
-  ]);
   for (const tool of receipt.environment.tools) {
-    validateExecutable({
-      executable_path: tool.path,
-      executable_sha256: tool.sha256,
-    }, `tool ${tool.id}`, toolCommands.get(tool.id));
+    requireExactKeys(tool, ["id", "path", "sha256", "version"], `tool ${tool.id}`);
+    requireCondition(typeof tool.version === "string" && tool.version.length > 0, `tool ${tool.id} version is empty`);
   }
+  requireExactKeys(receipt.supply_chain, ["cargo_audit", "cargo_deny"], "supply chain");
+  requireExactKeys(receipt.supply_chain.cargo_audit, [
+    "status", "tool_version", "advisory_database_commit", "dependency_count",
+    "vulnerabilities_found",
+  ], "cargo audit supply chain");
+  requireExactKeys(receipt.supply_chain.cargo_deny, ["status", "tool_version", "checks"], "cargo deny supply chain");
   requireEqual(receipt.supply_chain.cargo_audit.status, "passed", "cargo audit status");
   requireEqual(receipt.supply_chain.cargo_audit.vulnerabilities_found, 0, "cargo audit vulnerabilities");
   requireEqual(receipt.supply_chain.cargo_deny.status, "passed", "cargo deny status");
-  return { absolute, receipt };
+  requireCondition(
+    typeof receipt.supply_chain.cargo_audit.advisory_database_commit === "string" &&
+      SHA1_PATTERN.test(receipt.supply_chain.cargo_audit.advisory_database_commit),
+    "cargo audit advisory database commit is invalid",
+  );
+  requireCondition(
+    Number.isSafeInteger(receipt.supply_chain.cargo_audit.dependency_count) &&
+      receipt.supply_chain.cargo_audit.dependency_count >= 0,
+    "cargo audit dependency count is invalid",
+  );
+  requireEqual(
+    receipt.supply_chain.cargo_deny.checks,
+    ["advisories", "bans", "licenses", "sources"],
+    "cargo deny checks",
+  );
+  const tools = new Map(receipt.environment.tools.map((tool) => [tool.id, tool]));
+  requireEqual(
+    receipt.supply_chain.cargo_audit.tool_version,
+    tools.get("cargo-audit").version,
+    "cargo audit supply-chain version",
+  );
+  requireEqual(
+    receipt.supply_chain.cargo_deny.tool_version,
+    tools.get("cargo-deny").version,
+    "cargo deny supply-chain version",
+  );
+  return validated;
+}
+
+function validateReceiptCurrentHost(validated, state, gates) {
+  validateReceiptCore(validated, state, gates);
+  const { receipt } = validated;
+  requireEqual(receipt.environment.platform, platform(), "current host platform");
+  requireEqual(receipt.environment.arch, arch(), "current host architecture");
+  requireEqual(receipt.environment.os_release, release(), "current host OS release");
+  for (const [index, expected] of gates.entries()) {
+    validateExecutable(receipt.gates[index], `gate ${expected.id}`, expected.argv[0]);
+  }
+  for (const tool of receipt.environment.tools) {
+    const spec = TOOL_SPECS.get(tool.id);
+    validateExecutable({
+      executable_path: tool.path,
+      executable_sha256: tool.sha256,
+    }, `tool ${tool.id}`, spec.command);
+    requireEqual(tool.version, run(spec.command, spec.versionArgs).trim(), `tool ${tool.id} version`);
+  }
+  return validated;
+}
+
+function validateReceiptPortable(validated, state, gates) {
+  validateReceiptCore(validated, state, gates);
+  const { receipt } = validated;
+  const tools = new Map(receipt.environment.tools.map((tool) => [tool.id, tool]));
+  for (const [index, expected] of gates.entries()) {
+    const gate = receipt.gates[index];
+    validateRecordedExecutable(gate, `gate ${expected.id}`, expected.argv[0]);
+    if (!expected.argv[0].startsWith("./")) {
+      const tool = tools.get(expected.argv[0]);
+      requireCondition(tool !== undefined, `gate ${expected.id} has no recorded tool binding`);
+      requireEqual(gate.executable_path, tool.path, `gate ${expected.id} recorded tool path`);
+      requireEqual(gate.executable_sha256, tool.sha256, `gate ${expected.id} recorded tool digest`);
+    }
+  }
+  for (const tool of receipt.environment.tools) {
+    validateRecordedExecutable({
+      executable_path: tool.path,
+      executable_sha256: tool.sha256,
+    }, `tool ${tool.id}`, tool.id);
+  }
+  return validated;
+}
+
+function validateReceipt(path, state, gates) {
+  return validateReceiptCurrentHost(loadReceipt(path, "evidence"), state, gates);
 }
 
 function receiptSummary(validated, ordinal) {
@@ -449,16 +629,7 @@ function buildEvidence(receiptPaths) {
       native_backend: state.native_backend,
       payment_cost: state.payment_cost,
     },
-    limitations: [
-      "Three local receipts on one host and operator are not independent external attestations",
-      "Local evidence is not an official release, external audit or hostile reproduction",
-      "No official remote, public adoption, distributed network or real payment exists; the native backend covers only the published pure subset",
-      "JDR1 synthetic results do not authorize effects; JDR2 remains unimplemented",
-      "The recorded digest benchmark does not establish language superiority",
-      "The two-workload agent scorecard is baseline-only and does not establish language superiority",
-      "The five-workload native benchmark is local and not independently rerun; it does not establish language superiority",
-      "The payment-cost vector proves local integer accounting only, not universal market superiority",
-    ],
+    limitations: LIMITATIONS,
   };
 }
 
@@ -549,6 +720,191 @@ function checkEvidence() {
   })}\n`);
 }
 
+function checkCurrentReceipt(currentReceiptPath) {
+  const state = currentState();
+  const gates = configuredGates();
+  const current = validateReceiptCurrentHost(
+    loadReceipt(currentReceiptPath, "external"),
+    state,
+    gates,
+  );
+  process.stdout.write(`${JSON.stringify({
+    schema: "joan.current-host-receipt-check.v0",
+    status: "passed",
+    source_digest: state.source.tree_digest.value,
+    inventory: state.inventory,
+    run_id: current.receipt.run_id,
+  })}\n`);
+}
+
+function validatePortableStaticBindings(evidence, state, gates) {
+  requireExactKeys(evidence, [
+    "schema", "version", "status", "generated_at", "source", "inventory", "conformance",
+    "supply_chain", "verification", "benchmark", "limitations",
+  ], "evidence index");
+  requireEqual(evidence.schema, "joan.evidence-index.v2", "evidence schema");
+  requireEqual(evidence.version, "0.1.0-alpha.1", "evidence version");
+  requireEqual(evidence.status, "local-verification-passed-with-receipts", "evidence status");
+  parseTime(evidence.generated_at, "evidence generation");
+  requireEqual(evidence.limitations, LIMITATIONS, "evidence limitations");
+  requireEqual(evidence.source, state.source, "source tree");
+  requireEqual(
+    evidence.inventory.workspace_crates,
+    state.inventory.workspace_crates,
+    "portable workspace crate inventory",
+  );
+  requireEqual(
+    evidence.inventory.json_schemas,
+    state.inventory.json_schemas,
+    "portable JSON schema inventory",
+  );
+  requireCondition(Number.isSafeInteger(evidence.inventory.rust_tests), "historical Rust test inventory is invalid");
+  requireEqual(evidence.conformance.jce1.total, state.jce1.total, "JCE1 vector count");
+  requireEqual(evidence.conformance.jce1.passed, state.jce1.total, "JCE1 passed count");
+  requireEqual(evidence.conformance.jce1.suite_digest, state.jce1.suite_digest, "JCE1 suite digest");
+  requireEqual(evidence.conformance.jce1.specification, {
+    path: state.jce1.normative_spec_path,
+    file_sha256: state.jce1.normative_spec_sha256,
+    declared_sha256: state.jce1.declared_spec_sha256,
+    binding: "matched",
+  }, "JCE1 specification binding");
+  requireEqual(evidence.conformance.jdr1, state.simulation, "JDR1 current-source simulation claim");
+  requireEqual(evidence.benchmark, {
+    ...state.benchmark,
+    agent_scorecard: state.agent_scorecard,
+    native_backend: state.native_backend,
+    payment_cost: state.payment_cost,
+  }, "benchmark evidence");
+  requireEqual(evidence.verification.runner, {
+    path: RUNNER_RELATIVE,
+    file_sha256: fileSha256(RUNNER_PATH),
+  }, "verification runner");
+  requireEqual(evidence.verification.gate_config, {
+    path: GATES_RELATIVE,
+    file_sha256: fileSha256(GATES_PATH),
+  }, "verification gate configuration");
+  requireEqual(evidence.verification.required_gate_ids, gates.map((gate) => gate.id), "required gates");
+  requireEqual(evidence.verification.runs.length, REQUIRED_RUNS, "verification receipt count");
+}
+
+function loadPortableContext(currentReceiptPath) {
+  const evidence = readStrictJson(EVIDENCE_PATH);
+  const state = currentState();
+  const gates = configuredGates();
+  const historical = evidence.verification.runs.map((summary) =>
+    loadReceipt(summary.path, "evidence"),
+  );
+  const current = loadReceipt(currentReceiptPath, "external");
+  return { evidence, state, gates, historical, current };
+}
+
+function validatePortableContext(context) {
+  const { evidence, state, gates, historical, current } = context;
+  validatePortableStaticBindings(evidence, state, gates);
+  const historicalState = { ...state, inventory: evidence.inventory };
+  const validated = historical.map((receipt, index) => {
+    const result = validateReceiptPortable(receipt, historicalState, gates);
+    requireEqual(
+      evidence.verification.runs[index],
+      receiptSummary(result, index + 1),
+      `receipt ${index + 1} summary`,
+    );
+    return result;
+  });
+  const historicalIds = validated.map(({ receipt }) => receipt.run_id);
+  requireEqual(new Set(historicalIds).size, REQUIRED_RUNS, "verification receipt run ID count");
+  requireEqual(evidence.verification.repeatability, {
+    required_runs: REQUIRED_RUNS,
+    completed_runs: REQUIRED_RUNS,
+    unique_run_ids: REQUIRED_RUNS,
+    same_source: true,
+    same_observations: true,
+  }, "verification repeatability");
+  requireEqual(evidence.supply_chain, validated.at(-1).receipt.supply_chain, "supply-chain evidence");
+  validateReceiptCurrentHost(current, state, gates);
+  requireCondition(
+    !historicalIds.includes(current.receipt.run_id),
+    "current-host receipt reuses a historical run ID",
+  );
+  return {
+    source_digest: state.source.tree_digest.value,
+    historical_inventory: evidence.inventory,
+    current_inventory: state.inventory,
+    historical_receipts: REQUIRED_RUNS,
+    current_run_id: current.receipt.run_id,
+    historical_records_authenticated: false,
+  };
+}
+
+function expectPortableRejection(context, mutate, label, expectedError) {
+  const candidate = structuredClone(context);
+  mutate(candidate);
+  try {
+    validatePortableContext(candidate);
+  } catch (error) {
+    requireCondition(
+      String(error.message ?? error).includes(expectedError),
+      `portable negative control failed for the wrong reason: ${label}`,
+    );
+    return;
+  }
+  fail(`portable negative control was accepted: ${label}`);
+}
+
+function checkPortableEvidence(currentReceiptPath) {
+  const context = loadPortableContext(currentReceiptPath);
+  const report = validatePortableContext(context);
+  const zeroDigest = "0".repeat(64);
+  const controls = [
+    ["source digest", "source tree mismatch", (candidate) => {
+      candidate.evidence.source.tree_digest.value = zeroDigest;
+    }],
+    ["receipt summary digest", "receipt 1 summary mismatch", (candidate) => {
+      candidate.evidence.verification.runs[0].file_sha256 = zeroDigest;
+    }],
+    ["historical gate argv", "gate format argv mismatch", (candidate) => {
+      candidate.historical[0].receipt.gates[0].argv = ["cargo", "fmt"];
+    }],
+    ["historical executable path", "gate format recorded executable path", (candidate) => {
+      candidate.historical[0].receipt.gates[0].executable_path = "cargo";
+    }],
+    ["historical tool binding", "gate format recorded tool digest mismatch", (candidate) => {
+      candidate.historical[0].receipt.gates[0].executable_sha256 = zeroDigest;
+    }],
+    ["historical repository executable digest", "gate jce1 repository executable digest mismatch", (candidate) => {
+      candidate.historical[0].receipt.gates[5].executable_sha256 = zeroDigest;
+    }],
+    ["universal superiority claim", "benchmark evidence mismatch", (candidate) => {
+      candidate.evidence.benchmark.agent_scorecard.universal_language_superiority_claim = true;
+    }],
+    ["current source binding", "receipt source mismatch", (candidate) => {
+      candidate.current.receipt.source.tree_digest.value = zeroDigest;
+    }],
+    ["current executable digest", "gate format executable hash drift detected", (candidate) => {
+      candidate.current.receipt.gates[0].executable_sha256 = zeroDigest;
+    }],
+    ["current host identity", "current host platform mismatch", (candidate) => {
+      candidate.current.receipt.environment.platform = "forged-platform";
+    }],
+    ["current tool version", "tool node version mismatch", (candidate) => {
+      candidate.current.receipt.environment.tools[0].version = "forged-version";
+    }],
+    ["unknown receipt field", "receipt keys mismatch", (candidate) => {
+      candidate.current.receipt.unexpected = true;
+    }],
+  ];
+  for (const [label, expectedError, mutate] of controls) {
+    expectPortableRejection(context, mutate, label, expectedError);
+  }
+  process.stdout.write(`${JSON.stringify({
+    schema: "joan.portable-evidence-check.v0",
+    status: "passed",
+    ...report,
+    negative_controls_rejected: controls.length,
+    independence_claim: false,
+  })}\n`);
+}
+
 const [, , command, ...argumentsList] = process.argv;
 try {
   if (command === "source" && argumentsList.length === 0) {
@@ -559,8 +915,12 @@ try {
     writeEvidence(argumentsList);
   } else if (command === "check" && argumentsList.length === 0) {
     checkEvidence();
+  } else if (command === "check-current" && argumentsList.length === 1) {
+    checkCurrentReceipt(argumentsList[0]);
+  } else if (command === "check-portable" && argumentsList.length === 1) {
+    checkPortableEvidence(argumentsList[0]);
   } else {
-    fail("usage: node tools/evidence-index.mjs <source|state|write <receipt-1> <receipt-2> <receipt-3>|check>");
+    fail("usage: node tools/evidence-index.mjs <source|state|write <receipt-1> <receipt-2> <receipt-3>|check|check-current <current-receipt>|check-portable <current-receipt>>");
   }
 } catch (error) {
   process.stderr.write(`evidence-index: ${String(error.message ?? error)}\n`);

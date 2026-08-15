@@ -74,7 +74,7 @@ jobs:
       - name: Verify source contracts
         env:
           JOAN_NATIVE_ABI_REPORT: ${{ runner.temp }}/joan-native-abi-v1.json
-        run: ./scripts/verify-all.sh
+        run: ./scripts/verify-all.sh --portable-evidence
       - name: Build target binary
         run: |
           rustup target add "${{ matrix.target }}"

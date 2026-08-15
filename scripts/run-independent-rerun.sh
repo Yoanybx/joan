@@ -101,7 +101,7 @@ export JOAN_NATIVE_ABI_REPORT="$native_abi"
 export JOAN_NATIVE_ABI_TMPDIR="$work"
 export JOAN_NATIVE_BENCHMARK_TMPDIR="$work"
 export JOAN_VERIFICATION_RECEIPT_OUTPUT="$verification"
-bash scripts/verify-all.sh
+bash scripts/verify-all.sh --portable-evidence
 
 node tools/independent-rerun.mjs finalize \
   "$manifest" "$reference" "$recorded" "$verification" "$native_abi" "$receipt" "$started_at"

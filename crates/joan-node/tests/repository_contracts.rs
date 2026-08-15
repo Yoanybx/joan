@@ -615,6 +615,43 @@ fn publication_workflow_remains_fail_closed() -> Result<(), Box<dyn std::error::
 }
 
 #[test]
+fn cross_host_evidence_mode_is_explicit_and_strict_by_default()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root = workspace_root();
+    let verifier = fs::read_to_string(root.join("scripts/verify-all.sh"))?;
+    for contract in [
+        "evidence_mode=\"strict\"",
+        "--portable-evidence",
+        "check-portable \"$receipt\"",
+        "node tools/evidence-index.mjs check",
+        "node tools/evidence-index.mjs check-current \"$receipt\"",
+    ] {
+        assert!(
+            verifier.contains(contract),
+            "verification evidence-mode contract is absent: {contract}"
+        );
+    }
+    assert!(!verifier.contains("JOAN_EVIDENCE_MODE"));
+
+    for path in [
+        ".github/workflows/guardian.yml",
+        ".github/workflows/release.yml",
+        "scripts/run-independent-rerun.sh",
+    ] {
+        let consumer = fs::read_to_string(root.join(path))?;
+        assert!(
+            consumer.contains("verify-all.sh --portable-evidence"),
+            "cross-host consumer does not select portable evidence explicitly: {path}"
+        );
+    }
+
+    let refresh = fs::read_to_string(root.join("scripts/refresh-evidence.sh"))?;
+    assert!(refresh.contains("node tools/evidence-index.mjs check"));
+    assert!(!refresh.contains("check-portable"));
+    Ok(())
+}
+
+#[test]
 fn duplicate_dependency_exceptions_are_exact() -> Result<(), Box<dyn std::error::Error>> {
     let root = workspace_root();
     let policy = fs::read_to_string(root.join("deny.toml"))?;

@@ -35,10 +35,21 @@ const DOMAINS = new Set([
   "joan.effect-application.v1",
   "joan.mock-ledger.v1",
   "joan.benchmark-manifest.v1",
+  "joan.native-artifact.v1",
+  "joan.native-code.v1",
+  "joan.host-execution-request.v1",
+  "joan.host-executor-response.v1",
+  "joan.host-execution-receipt.v1",
   "joan.pr-candidate.v1",
   "joan.pr-trust-policy.v1",
   "joan.pr-trust-evidence.v1",
   "joan.pr-trust-envelope.v1",
+  "joan.tool-spec.v1",
+  "joan.tool-spec-verification.v1",
+  "joan.tool-bundle.v1",
+  "joan.tool-verification.v1",
+  "joan.tool-finalization.v1",
+  "joan.tool-promotion.v1",
 ]);
 
 class Jce1Error extends Error {

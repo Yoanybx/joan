@@ -21,7 +21,11 @@ use joan_bytecode::{
 use joan_canonical::{
     Digest, Jce1Error, RegisteredDomainV1, digest_bytes_v1, digest_serializable_v1,
 };
-use serde::{Deserialize, Serialize};
+pub use joan_host::{
+    NATIVE_COMPILE_RECEIPT_V0, NATIVE_EXECUTION_RECEIPT_V0, NativeCompileReceipt,
+    NativeExecutionReceipt,
+};
+use serde::Serialize;
 use std::collections::BTreeMap;
 use thiserror::Error;
 
@@ -33,10 +37,6 @@ pub const NATIVE_SUBSET_V0: &str = "joan.native-subset.v0";
 pub const NATIVE_BACKEND_V0: &str = "joan.cranelift-jit.v0";
 /// Frozen Cranelift optimization profile for the native backend.
 pub const NATIVE_OPTIMIZATION_PROFILE_V0: &str = "speed";
-/// Receipt emitted after native compilation.
-pub const NATIVE_COMPILE_RECEIPT_V0: &str = "joan.native-compile-receipt.v0";
-/// Receipt emitted after one native invocation.
-pub const NATIVE_EXECUTION_RECEIPT_V0: &str = "joan.native-execution-receipt.v0";
 /// Exact Cranelift crate version frozen into this backend implementation.
 pub const CRANELIFT_VERSION: &str = "0.134.3";
 
@@ -61,60 +61,6 @@ const STATUS_SUBTRACTION_FAILED: u32 = 4;
 const STATUS_MULTIPLICATION_FAILED: u32 = 5;
 const STATUS_DIVISION_FAILED: u32 = 6;
 const STATUS_REMAINDER_FAILED: u32 = 7;
-
-/// Native compilation metadata bound to the verified bytecode and generated code bytes.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct NativeCompileReceipt {
-    /// Receipt schema.
-    pub schema: String,
-    /// Always `compiled`.
-    pub status: String,
-    /// Exact accepted native subset.
-    pub subset: String,
-    /// Exact backend implementation.
-    pub backend: String,
-    /// Exact Cranelift crate version used by the backend.
-    pub codegen_version: String,
-    /// Frozen backend optimization profile.
-    pub optimization_profile: String,
-    /// Cranelift target triple selected from the current host.
-    pub target: String,
-    /// Frozen backend flags that affect generated code.
-    pub flags: Vec<String>,
-    /// Semantic identity of the source program.
-    pub semantic_digest: Digest,
-    /// Identity of the exact verified bytecode.
-    pub bytecode_digest: Digest,
-    /// Identity of code bytes plus all configuration fields above.
-    pub artifact_digest: Digest,
-    /// Number of compiled JOAN functions.
-    pub function_count: u64,
-    /// Sum of pre-relocation generated function and wrapper code bytes.
-    pub code_bytes: u64,
-    /// Number of address-independent relocation records bound into the artifact identity.
-    pub relocation_count: u64,
-}
-
-/// Result of invoking one native function under a bounded instruction budget.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct NativeExecutionReceipt {
-    /// Receipt schema.
-    pub schema: String,
-    /// Always `completed`.
-    pub status: String,
-    /// Native artifact identity used for this invocation.
-    pub artifact_digest: Digest,
-    /// Verified bytecode identity used for this invocation.
-    pub bytecode_digest: Digest,
-    /// Exact invoked function.
-    pub function: String,
-    /// Typed invocation result.
-    pub result: Value,
-    /// Exact number of JOAN bytecode instructions consumed, including calls and returns.
-    pub instructions_executed: u64,
-}
 
 /// Raw result from one prepared native invocation.
 ///

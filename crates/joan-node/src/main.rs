@@ -10,9 +10,12 @@ use joan_compiler::{LanguageError, check_source, compile_source, execute_source}
 use joan_conformance::{benchmark_digest_v1, run_jce1_suite};
 use joan_dispute::DisputeEvaluationBundle;
 use joan_guardian::GuardianCandidate;
+use joan_host::{
+    HostExecutionReceipt, HostExecutionStatus, HostLimits, HostOperation, NativeCompileReceipt,
+    NativeExecutionReceipt, ensure_sibling_executor, execute_sibling,
+};
 use joan_identity::{SemanticIdentityBundle, verify_bundle};
 use joan_instruction::AuthorityEnvelope;
-use joan_native::compile_bytecode as compile_native_bytecode;
 use joan_node::{
     AdoptionTrialReceipt, InstructionAuditTask, audit_instructions, evaluate_adoption,
     inspect_repository, node_self_check,
@@ -78,8 +81,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         {
             let source = read_text(input)?;
             let artifact = language_result(compile_source(&source))?;
-            let native = compile_native_bytecode(&artifact.bytecode)?;
-            write_json(native.receipt())?;
+            let receipt = execute_sibling(
+                &artifact.bytecode,
+                HostOperation::Compile,
+                HostLimits::default(),
+            )?;
+            write_json(&completed_native_compile(receipt)?)?;
         }
         [group, command, input, rest @ ..] if group == "native" && command == "run" => {
             if !rest.iter().any(|argument| argument == "--json") {
@@ -92,8 +99,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 read_exact_jce1_json(arguments_path, 1_048_576)?;
             let source = read_text(input)?;
             let artifact = language_result(compile_source(&source))?;
-            let native = compile_native_bytecode(&artifact.bytecode)?;
-            write_json(&native.invoke(function, &arguments, instruction_budget)?)?;
+            let receipt = execute_sibling(
+                &artifact.bytecode,
+                HostOperation::Run {
+                    function: function.to_owned(),
+                    arguments,
+                    instruction_budget,
+                },
+                HostLimits::default(),
+            )?;
+            write_json(&completed_native_execution(receipt)?)?;
         }
         [command, input] if command == "canonicalize" => {
             let text = read_text(input)?;
@@ -230,6 +245,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             )?)?;
         }
         [group, command] if group == "node" && command == "self-check" => {
+            ensure_sibling_executor()?;
             write_json(&node_self_check()?)?;
         }
         [group, command, path, flag]
@@ -321,6 +337,37 @@ fn language_result<T>(result: Result<T, LanguageError>) -> Result<T, Box<dyn std
         }
         Err(error) => Err(error.into()),
     }
+}
+
+fn completed_native_compile(
+    receipt: HostExecutionReceipt,
+) -> Result<NativeCompileReceipt, Box<dyn std::error::Error>> {
+    if receipt.status == HostExecutionStatus::Completed {
+        return receipt
+            .compile_receipt
+            .ok_or_else(|| "completed native host receipt omits compile receipt".into());
+    }
+    write_jce1_json(&receipt)?;
+    Err(host_failure_message(&receipt).into())
+}
+
+fn completed_native_execution(
+    receipt: HostExecutionReceipt,
+) -> Result<NativeExecutionReceipt, Box<dyn std::error::Error>> {
+    if receipt.status == HostExecutionStatus::Completed {
+        return receipt
+            .execution_receipt
+            .ok_or_else(|| "completed native host receipt omits execution receipt".into());
+    }
+    write_jce1_json(&receipt)?;
+    Err(host_failure_message(&receipt).into())
+}
+
+fn host_failure_message(receipt: &HostExecutionReceipt) -> String {
+    receipt
+        .detail
+        .clone()
+        .unwrap_or_else(|| format!("native executor did not complete: {:?}", receipt.reason))
 }
 
 fn format_result(source: &str) -> Result<String, Box<dyn std::error::Error>> {

@@ -17,6 +17,7 @@ if [[ "$target_dir" != /* ]]; then
   target_dir="$root/$target_dir"
 fi
 binary="$target_dir/$target/release/joan"
+executor_binary="$target_dir/$target/release/joan-executor"
 
 if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][A-Za-z0-9.-]+)?$ ]]; then
   printf 'invalid release tag: %s\n' "$tag" >&2
@@ -28,6 +29,10 @@ if [[ ! "$target" =~ ^[A-Za-z0-9_-]+$ ]]; then
 fi
 if [[ ! -x "$binary" ]]; then
   printf 'release binary does not exist or is not executable: %s\n' "$binary" >&2
+  exit 3
+fi
+if [[ ! -x "$executor_binary" ]]; then
+  printf 'release executor does not exist or is not executable: %s\n' "$executor_binary" >&2
   exit 3
 fi
 
@@ -55,6 +60,7 @@ sbom_directory="$temporary_directory/sbom"
 bash scripts/generate-sbom.sh "$target" "$sbom_directory" >/dev/null
 
 cp "$binary" "$stage/joan"
+cp "$executor_binary" "$stage/joan-executor"
 cp README.md LICENSE NOTICE COPYRIGHT AUTHORS.md SECURITY.md OPERATIONS.md TRADEMARKS.md "$stage/"
 cp vectors/jce1/conformance-v1.json "$stage/jce1-conformance-v1.json"
 mkdir -p "$stage/SBOM"
@@ -63,7 +69,7 @@ printf 'tag=%s\ntarget=%s\nsource_commit=%s\n' "$tag" "$target" "$source_commit"
 
 find "$stage" -type d -exec chmod 0755 {} +
 find "$stage" -type f -exec chmod 0644 {} +
-chmod 0755 "$stage/joan"
+chmod 0755 "$stage/joan" "$stage/joan-executor"
 find "$stage" -exec touch -h -t 200001010000.00 {} +
 
 archive="$output_directory/$package.tar.gz"

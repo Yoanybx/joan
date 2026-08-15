@@ -122,6 +122,12 @@ pub enum RegisteredDomainV1 {
     NativeArtifact,
     /// One relocatable native-code image before address-dependent JIT linking.
     NativeCode,
+    /// One bounded request sent to a JOAN native executor process.
+    HostExecutionRequest,
+    /// One bounded response emitted by a JOAN native executor process.
+    HostExecutorResponse,
+    /// Controller receipt for one isolated native execution attempt.
+    HostExecutionReceipt,
     /// Offline pull-request candidate identity.
     PrCandidate,
     /// Versioned pull-request trust policy identity.
@@ -170,6 +176,9 @@ impl RegisteredDomainV1 {
             Self::BenchmarkManifest => "joan.benchmark-manifest.v1",
             Self::NativeArtifact => "joan.native-artifact.v1",
             Self::NativeCode => "joan.native-code.v1",
+            Self::HostExecutionRequest => "joan.host-execution-request.v1",
+            Self::HostExecutorResponse => "joan.host-executor-response.v1",
+            Self::HostExecutionReceipt => "joan.host-execution-receipt.v1",
             Self::PrCandidate => "joan.pr-candidate.v1",
             Self::PrTrustPolicy => "joan.pr-trust-policy.v1",
             Self::PrTrustEvidence => "joan.pr-trust-evidence.v1",
@@ -207,6 +216,9 @@ impl RegisteredDomainV1 {
             "joan.benchmark-manifest.v1" => Self::BenchmarkManifest,
             "joan.native-artifact.v1" => Self::NativeArtifact,
             "joan.native-code.v1" => Self::NativeCode,
+            "joan.host-execution-request.v1" => Self::HostExecutionRequest,
+            "joan.host-executor-response.v1" => Self::HostExecutorResponse,
+            "joan.host-execution-receipt.v1" => Self::HostExecutionReceipt,
             "joan.pr-candidate.v1" => Self::PrCandidate,
             "joan.pr-trust-policy.v1" => Self::PrTrustPolicy,
             "joan.pr-trust-evidence.v1" => Self::PrTrustEvidence,

@@ -21,6 +21,8 @@ random CycloneDX serial number is forbidden.
 `scripts/generate-sbom.sh <target|all> <output-directory>` produces:
 
 - `release-runtime.cdx.json`: dependency graph for the `joan-node` executable;
+- `release-executor-runtime.cdx.json`: dependency graph for the isolated
+  `joan-executor` executable and its native backend;
 - `workspace/<crate>.cdx.json`: one package-level SBOM for every workspace crate;
 - `workspace-index.json`: deterministic paths, hashes, byte sizes and graph counts;
 - `receipt.json`: source, commit, lockfile, tool, target and reproducibility binding.

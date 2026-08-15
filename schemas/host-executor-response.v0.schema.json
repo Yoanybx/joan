@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/host-executor-response.v0.schema.json",
+  "title": "JOAN Host Executor Response v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["bytecode_digest", "request_digest", "response_digest", "schema", "semantic_digest", "status"],
+  "properties": {
+    "schema": {"const": "joan.host-executor-response.v0"},
+    "status": {"enum": ["completed", "failed"]},
+    "request_digest": {"$ref": "#/$defs/requestDigest"},
+    "semantic_digest": {"$ref": "digest.v1.schema.json"},
+    "bytecode_digest": {"$ref": "digest.v1.schema.json"},
+    "compile_receipt": {"$ref": "native-compile-receipt.v0.schema.json"},
+    "execution_receipt": {"$ref": "native-execution-receipt.v0.schema.json"},
+    "failure_code": {
+      "enum": [
+        "bytecode_rejected",
+        "unsupported_native_subset",
+        "resource_limit",
+        "codegen_failed",
+        "identity_failed",
+        "instruction_budget_exhausted",
+        "runtime_failed"
+      ]
+    },
+    "failure_message": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "response_digest": {"$ref": "#/$defs/responseDigest"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "completed"}}, "required": ["status"]},
+      "then": {
+        "required": ["compile_receipt"],
+        "properties": {"failure_code": false, "failure_message": false}
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "failed"}}, "required": ["status"]},
+      "then": {
+        "required": ["failure_code", "failure_message"],
+        "properties": {"execution_receipt": false}
+      }
+    }
+  ],
+  "$defs": {
+    "requestDigest": {
+      "allOf": [
+        {"$ref": "digest.v1.schema.json"},
+        {"properties": {"domain": {"const": "joan.host-execution-request.v1"}}}
+      ]
+    },
+    "responseDigest": {
+      "allOf": [
+        {"$ref": "digest.v1.schema.json"},
+        {"properties": {"domain": {"const": "joan.host-executor-response.v1"}}}
+      ]
+    }
+  }
+}

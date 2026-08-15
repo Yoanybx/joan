@@ -373,6 +373,17 @@ function buildOnce(stage, target, context) {
   if (!statSync(runtimeInput).isFile()) fail("joan-node runtime SBOM was not generated");
   const runtimePath = join(output, "release-runtime.cdx.json");
   const runtimeSbom = normalizeToFile(runtimeInput, runtimePath, context.timestamp);
+  const executorRuntimeInput = join(
+    runtimeProjection,
+    "crates/joan-executor/joan-executor_bin.cdx.json",
+  );
+  if (!statSync(executorRuntimeInput).isFile()) fail("joan-executor runtime SBOM was not generated");
+  const executorRuntimePath = join(output, "release-executor-runtime.cdx.json");
+  const executorRuntimeSbom = normalizeToFile(
+    executorRuntimeInput,
+    executorRuntimePath,
+    context.timestamp,
+  );
 
   const receipt = {
     schema: "joan.sbom-evidence.v0",
@@ -389,6 +400,11 @@ function buildOnce(stage, target, context) {
     },
     target,
     runtime: artifact(runtimePath, "release-runtime.cdx.json", runtimeSbom),
+    executor_runtime: artifact(
+      executorRuntimePath,
+      "release-executor-runtime.cdx.json",
+      executorRuntimeSbom,
+    ),
     workspace: {
       index: {
         path: "workspace-index.json",
@@ -480,20 +496,26 @@ export function verifyArtifactDirectory(root) {
   }
   const expectedCommit = runText("git", ["rev-parse", "HEAD"]);
   if (receipt.source_commit !== expectedCommit) fail("SBOM receipt commit binding mismatch");
-  const runtimePath = join(root, receipt.runtime.path);
-  const runtimeBytes = readFileSync(runtimePath);
-  if (sha256(runtimeBytes) !== receipt.runtime.sha256 || runtimeBytes.length !== receipt.runtime.bytes) {
-    fail("runtime SBOM artifact binding mismatch");
-  }
-  const runtimeSummary = validateSbomDocument(
-    JSON.parse(runtimeBytes.toString("utf8")),
-    expectedTimestamp(receipt.source_date_epoch),
-  );
-  if (
-    runtimeSummary.componentCount !== receipt.runtime.component_count ||
-    runtimeSummary.dependencyCount !== receipt.runtime.dependency_count
-  ) {
-    fail("runtime SBOM graph count mismatch");
+  for (const [name, runtime] of [
+    ["runtime", receipt.runtime],
+    ["executor runtime", receipt.executor_runtime],
+  ]) {
+    if (!runtime || typeof runtime.path !== "string") fail(`${name} SBOM receipt is absent`);
+    const runtimePath = join(root, runtime.path);
+    const runtimeBytes = readFileSync(runtimePath);
+    if (sha256(runtimeBytes) !== runtime.sha256 || runtimeBytes.length !== runtime.bytes) {
+      fail(`${name} SBOM artifact binding mismatch`);
+    }
+    const runtimeSummary = validateSbomDocument(
+      JSON.parse(runtimeBytes.toString("utf8")),
+      expectedTimestamp(receipt.source_date_epoch),
+    );
+    if (
+      runtimeSummary.componentCount !== runtime.component_count ||
+      runtimeSummary.dependencyCount !== runtime.dependency_count
+    ) {
+      fail(`${name} SBOM graph count mismatch`);
+    }
   }
   const indexPath = join(root, receipt.workspace.index.path);
   const indexBytes = readFileSync(indexPath);
@@ -510,6 +532,7 @@ export function verifyArtifactDirectory(root) {
   const expectedFiles = new Set([
     "receipt.json",
     "release-runtime.cdx.json",
+    "release-executor-runtime.cdx.json",
     "workspace-index.json",
     ...index.packages.map((item) => item.path),
   ]);

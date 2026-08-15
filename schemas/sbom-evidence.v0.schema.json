@@ -15,6 +15,7 @@
     "generator",
     "target",
     "runtime",
+    "executor_runtime",
     "workspace",
     "reproducibility"
   ],
@@ -38,6 +39,7 @@
     },
     "target": {"type": "string", "pattern": "^(all|[A-Za-z0-9_.-]+)$"},
     "runtime": {"$ref": "#/$defs/artifact"},
+    "executor_runtime": {"$ref": "#/$defs/artifact"},
     "workspace": {
       "type": "object",
       "additionalProperties": false,

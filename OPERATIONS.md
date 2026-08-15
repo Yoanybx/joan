@@ -63,7 +63,7 @@ JOAN does not yet have an official GitHub remote or a stable release channel. Un
 1. LED ACTION LLC designates the official repository and protected release environment.
 2. A reviewed commit passes all required checks on the protected default branch.
 3. The release workflow builds from an immutable tag, publishes checksums and GitHub provenance attestations, and records the exact source commit.
-4. Clients download only from the configured official repository, verify provenance and checksums, install side by side, run `joan node self-check`, then switch atomically.
+4. Clients download only from the configured official repository, verify provenance and checksums, install `joan` and its sibling `joan-executor` side by side, run both self-checks, then switch atomically.
 5. The prior verified binary remains available for rollback.
 
 The current machine-readable publication state is blocked and can be inspected

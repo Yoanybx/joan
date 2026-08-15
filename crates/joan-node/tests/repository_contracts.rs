@@ -4,6 +4,10 @@ use joan_canonical::parse_strict;
 use joan_canonical::{RegisteredDomainV1, digest_bytes_v1};
 use joan_compiler::{canonicalize_source_ast, compile_source};
 use joan_guardian::{GuardianCandidate, GuardianRole, GuardianVote, VoteDecision};
+use joan_host::{
+    HostExecutionReason, HostExecutionReceipt, HostExecutionStatus, HostOperation,
+    completed_run_response, decode_request_frame, encode_request_frame,
+};
 use joan_native::compile_bytecode;
 use joan_package::{
     PACKAGE_MANIFEST_SCHEMA, PackageCoordinate, PackageManifest, PackageModule, encode_manifest,
@@ -373,6 +377,75 @@ fn main() -> i64 effects [] {
 }
 
 #[test]
+fn host_protocol_receipts_match_their_schemas() -> Result<(), Box<dyn std::error::Error>> {
+    let artifact = compile_source(
+        r"module host_contract;
+fn multiply(left: i64, right: i64) -> i64 effects [] {
+  return left * right;
+}
+fn main() -> i64 effects [] {
+  return 0;
+}
+",
+    )?;
+    let operation = HostOperation::Run {
+        function: "multiply".to_owned(),
+        arguments: vec![joan_bytecode::Value::I64(6), joan_bytecode::Value::I64(7)],
+        instruction_budget: 100,
+    };
+    let (_, frame) = encode_request_frame(&artifact.bytecode, operation)?;
+    let request = decode_request_frame(&frame)?.control;
+    validate_instance(
+        &serde_json::to_value(&request)?,
+        "schemas/host-execution-request.v0.schema.json",
+    )?;
+
+    let native = compile_bytecode(&artifact.bytecode)?;
+    let execution = native.invoke(
+        "multiply",
+        &[joan_bytecode::Value::I64(6), joan_bytecode::Value::I64(7)],
+        100,
+    )?;
+    let response = completed_run_response(&request, native.receipt().clone(), execution)?;
+    validate_instance(
+        &serde_json::to_value(&response)?,
+        "schemas/host-executor-response.v0.schema.json",
+    )?;
+
+    let receipt = HostExecutionReceipt {
+        schema: "joan.host-execution-receipt.v0".to_owned(),
+        status: HostExecutionStatus::Completed,
+        reason: HostExecutionReason::ExecutorCompleted,
+        request_digest: request.request_digest,
+        semantic_digest: request.semantic_digest,
+        bytecode_digest: request.bytecode_digest,
+        child_exit_code: Some(0),
+        executor_response_digest: Some(response.response_digest),
+        compile_receipt: response.compile_receipt,
+        execution_receipt: response.execution_receipt,
+        detail: None,
+        receipt_digest: digest_bytes_v1(
+            RegisteredDomainV1::HostExecutionReceipt,
+            b"schema-fixture",
+        )?,
+    };
+    let receipt_value = serde_json::to_value(&receipt)?;
+    validate_instance(
+        &receipt_value,
+        "schemas/host-execution-receipt.v0.schema.json",
+    )?;
+
+    let mut contradictory = receipt_value;
+    contradictory["status"] = Value::String("unknown".to_owned());
+    contradictory["reason"] = Value::String("timeout".to_owned());
+    assert_invalid_instance(
+        &contradictory,
+        "schemas/host-execution-receipt.v0.schema.json",
+    )?;
+    Ok(())
+}
+
+#[test]
 fn joan_manifests_match_their_schemas() -> Result<(), Box<dyn std::error::Error>> {
     let root = workspace_root();
     let retriever = LocalSchemaRetriever::load()?;
@@ -430,6 +503,7 @@ fn publication_workflow_remains_fail_closed() -> Result<(), Box<dyn std::error::
         "RELEASE-CUSTODY.md",
         "TRADEMARKS.md",
         "scripts/verify-publication-readiness.sh",
+        "scripts/verify-release-installation.sh",
         "tools/publication-readiness.mjs",
         "tools/publication-readiness.test.mjs",
     ] {
@@ -461,6 +535,7 @@ fn publication_workflow_remains_fail_closed() -> Result<(), Box<dyn std::error::
 
     let packager = fs::read_to_string(root.join("scripts/package-release.sh"))?;
     for contract in [
+        "cp \"$executor_binary\" \"$stage/joan-executor\"",
         "find \"$stage\" -exec touch -h -t 200001010000.00",
         "find \"$package\" -print | LC_ALL=C sort",
         "--format ustar --no-recursion",
@@ -469,6 +544,20 @@ fn publication_workflow_remains_fail_closed() -> Result<(), Box<dyn std::error::
         assert!(
             packager.contains(contract),
             "reproducible release-package contract is absent: {contract}"
+        );
+    }
+    let installer = fs::read_to_string(root.join("scripts/install-release.sh"))?;
+    for contract in [
+        "candidate_executor=",
+        "executor_destination=",
+        "\"$executor_destination\" --self-check",
+        "install_started=1",
+        "install_committed=1",
+        "installation did not commit; previous binary set restored.",
+    ] {
+        assert!(
+            installer.contains(contract),
+            "two-binary installation contract is absent: {contract}"
         );
     }
     Ok(())

@@ -703,11 +703,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "joan-executor"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "joan-bytecode",
+ "joan-compiler",
+ "joan-host",
+ "joan-native",
+ "tempfile",
+]
+
+[[package]]
 name = "joan-guardian"
 version = "0.1.0-alpha.1"
 dependencies = [
  "joan-canonical",
  "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "joan-host"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "joan-bytecode",
+ "joan-canonical",
+ "joan-compiler",
+ "joan-lattice",
+ "serde",
+ "serde_json",
+ "sha2",
  "thiserror",
 ]
 
@@ -763,6 +788,7 @@ dependencies = [
  "joan-bytecode",
  "joan-canonical",
  "joan-compiler",
+ "joan-host",
  "serde",
  "serde_json",
  "thiserror",
@@ -778,6 +804,7 @@ dependencies = [
  "joan-conformance",
  "joan-dispute",
  "joan-guardian",
+ "joan-host",
  "joan-identity",
  "joan-instruction",
  "joan-native",

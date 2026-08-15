@@ -101,9 +101,12 @@ The crate forbids unsafe Rust except in `unsafe_boundary.rs`, which owns executa
 retrieves finalized function pointers, and invokes them through typed borrowed storage. Raw pointers
 and untyped entrypoints are not exposed to the rest of the crate. Generated code may relocate only
 to Cranelift user functions declared inside the same module; libcalls, known symbols, and test-case
-symbols fail closed before finalization. This does not isolate generated code from the host process.
-Production use requires the separate-process, default-deny host sandbox defined by the product
-roadmap.
+symbols fail closed before finalization. The official `joan native compile` and `joan native run`
+commands execute this crate through the adjacent `joan-executor` process and the bounded protocol
+defined in `host-executor-v0.md`; `joan-node` does not link this crate or Cranelift. The low-level
+Rust API remains available for conformance tests and therefore does not itself isolate generated
+code. Process separation and an empty inherited environment are not an operating-system sandbox:
+kernel-enforced filesystem, network, syscall, process-tree and memory limits remain H08 work.
 
 ## Claims
 

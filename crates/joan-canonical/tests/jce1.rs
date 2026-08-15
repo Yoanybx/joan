@@ -157,6 +157,32 @@ fn tool_forge_domains_are_registered() -> Result<(), Box<dyn std::error::Error>>
 }
 
 #[test]
+fn native_host_domains_are_registered() -> Result<(), Box<dyn std::error::Error>> {
+    for (name, expected) in [
+        (
+            "joan.native-artifact.v1",
+            RegisteredDomainV1::NativeArtifact,
+        ),
+        ("joan.native-code.v1", RegisteredDomainV1::NativeCode),
+        (
+            "joan.host-execution-request.v1",
+            RegisteredDomainV1::HostExecutionRequest,
+        ),
+        (
+            "joan.host-executor-response.v1",
+            RegisteredDomainV1::HostExecutorResponse,
+        ),
+        (
+            "joan.host-execution-receipt.v1",
+            RegisteredDomainV1::HostExecutionReceipt,
+        ),
+    ] {
+        assert_eq!(RegisteredDomainV1::parse(name)?, expected);
+    }
+    Ok(())
+}
+
+#[test]
 fn typed_digest_rejects_profile_domain_and_payload_substitution()
 -> Result<(), Box<dyn std::error::Error>> {
     let payload = b"JOAN JCE1 fixed payload";

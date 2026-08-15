@@ -39,6 +39,12 @@ bash scripts/verify-differential-language.sh
 printf '%s\n' '==> native C ABI and zero-copy borrowed payloads'
 bash scripts/verify-native-abi.sh
 
+printf '%s\n' '==> isolated native host process'
+bash scripts/verify-host-executor.sh
+
+printf '%s\n' '==> atomic two-binary release installation rollback'
+bash scripts/verify-release-installation.sh
+
 printf '%s\n' '==> experimental Cranelift native backend'
 bash scripts/verify-native-backend.sh
 

@@ -15,7 +15,8 @@ or prompt-injection immunity.
 No account, API key, wallet, token, server or telemetry is required.
 
 ```bash
-cargo run -p joan-node -- node self-check
+cargo build -p joan-node -p joan-executor
+"${CARGO_TARGET_DIR:-target}/debug/joan" node self-check
 cargo run -p joan-node -- check examples/agent-handoff.joan --json
 cargo run -p joan-node -- fmt examples/agent-handoff.joan --check
 cargo run -p joan-node -- compile examples/agent-handoff.joan --json
@@ -108,11 +109,16 @@ Run `scripts/verify-differential-language.sh` to compare the Rust parser/checker
 
 The experimental native boundary in `include/joan.h` exposes fixed-width C/C++
 layouts and relative Lattice spans without retaining input pointers. Separately,
-`joan-native` JIT-compiles the verified effect-free scalar subset and remains in-process;
-neither component is a host sandbox or a claim of speed superiority. The ABI's source-bound local receipt is retained at
+`joan-native` JIT-compiles the verified effect-free scalar subset. The official
+native CLI runs that backend in the adjacent, environment-cleared `joan-executor`
+process through a bounded canonical protocol; the low-level Rust API remains
+in-process for conformance tests and embedders. Process separation is not an
+operating-system sandbox, and neither component is a claim of speed superiority.
+The ABI's source-bound local receipt is retained at
 `.joan/evidence/native-abi-v1.json`. See
 [spec/native-abi-v1.md](spec/native-abi-v1.md) and
-[spec/native-backend-v0.md](spec/native-backend-v0.md).
+[spec/native-backend-v0.md](spec/native-backend-v0.md), with the process contract
+in [spec/host-executor-v0.md](spec/host-executor-v0.md).
 
 ## License and commercial authority
 

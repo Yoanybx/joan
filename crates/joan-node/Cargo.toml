@@ -20,7 +20,7 @@ joan-dispute = { path = "../joan-dispute" }
 joan-guardian = { path = "../joan-guardian" }
 joan-identity = { path = "../joan-identity" }
 joan-instruction = { path = "../joan-instruction" }
-joan-native = { path = "../joan-native" }
+joan-host = { path = "../joan-host" }
 joan-patch = { path = "../joan-patch" }
 joan-package = { path = "../joan-package" }
 joan-sim = { path = "../joan-sim" }
@@ -34,6 +34,7 @@ thiserror.workspace = true
 [dev-dependencies]
 tempfile.workspace = true
 jsonschema.workspace = true
+joan-native = { path = "../joan-native" }
 
 [lints]
 workspace = true

@@ -90,7 +90,7 @@ receipt="$stage/independent-rerun-receipt.json"
 started_at="$(node -p 'new Date().toISOString()')"
 
 node tools/independent-rerun.mjs validate-manifest "$manifest"
-cargo build --quiet --release --locked -p joan-node -p joan-native \
+cargo build --quiet --release --locked -p joan-node -p joan-executor -p joan-native \
   --features joan-native/benchmark-tools --bin joan --bin joan-native-bench
 
 JOAN_NATIVE_BENCHMARK_TMPDIR="$work" node tools/native-backend-benchmark.mjs \

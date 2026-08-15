@@ -78,7 +78,7 @@ jobs:
       - name: Build target binary
         run: |
           rustup target add "${{ matrix.target }}"
-          cargo build --locked --release --target "${{ matrix.target }}" -p joan-node
+          cargo build --locked --release --target "${{ matrix.target }}" -p joan-node -p joan-executor
       - name: Package release
         run: ./scripts/package-release.sh "$GITHUB_REF_NAME" "${{ matrix.target }}" dist
       - name: Attest package provenance

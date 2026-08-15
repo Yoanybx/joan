@@ -51,7 +51,35 @@ esac
 
 archive="joan-${tag#v}-$target.tar.gz"
 temporary_directory="$(mktemp -d "${TMPDIR:-/tmp}/joan-install.XXXXXX")"
-trap 'rm -rf "$temporary_directory"' EXIT
+install_started=0
+install_committed=0
+had_previous_node=0
+had_previous_executor=0
+destination=''
+executor_destination=''
+previous=''
+executor_previous=''
+
+cleanup() {
+  status="$?"
+  set +e
+  if (( install_started == 1 && install_committed == 0 )); then
+    if (( had_previous_node == 1 )); then
+      mv -f "$previous" "$destination"
+    else
+      rm -f "$destination"
+    fi
+    if (( had_previous_executor == 1 )); then
+      mv -f "$executor_previous" "$executor_destination"
+    else
+      rm -f "$executor_destination"
+    fi
+    printf '%s\n' 'installation did not commit; previous binary set restored.' >&2
+  fi
+  rm -rf "$temporary_directory"
+  return "$status"
+}
+trap cleanup EXIT
 
 gh release download "$tag" \
   --repo "$repository" \
@@ -64,33 +92,47 @@ gh attestation verify "$temporary_directory/$archive" --repo "$repository"
 tar -xzf "$temporary_directory/$archive" -C "$temporary_directory"
 
 candidate="$temporary_directory/joan-${tag#v}-$target/joan"
-if [[ ! -x "$candidate" ]]; then
-  printf '%s\n' 'verified archive does not contain an executable JOAN binary.' >&2
+candidate_executor="$temporary_directory/joan-${tag#v}-$target/joan-executor"
+if [[ ! -x "$candidate" || ! -x "$candidate_executor" ]]; then
+  printf '%s\n' 'verified archive does not contain both JOAN executables.' >&2
   exit 6
 fi
-"$candidate" node self-check >/dev/null
+"$candidate_executor" --self-check >/dev/null
 
 mkdir -p "$install_directory"
 destination="$install_directory/joan"
+executor_destination="$install_directory/joan-executor"
 staged="$install_directory/.joan.new.$$"
+executor_staged="$install_directory/.joan-executor.new.$$"
 previous="$install_directory/joan.previous"
+executor_previous="$install_directory/joan-executor.previous"
 cp "$candidate" "$staged"
-chmod 0755 "$staged"
+cp "$candidate_executor" "$executor_staged"
+chmod 0755 "$staged" "$executor_staged"
 
 if [[ -e "$destination" ]]; then
   cp "$destination" "$previous"
+  had_previous_node=1
 fi
+if [[ -e "$executor_destination" ]]; then
+  cp "$executor_destination" "$executor_previous"
+  had_previous_executor=1
+fi
+install_started=1
+mv "$executor_staged" "$executor_destination"
 mv "$staged" "$destination"
 
-if ! "$destination" node self-check >/dev/null; then
-  if [[ -e "$previous" ]]; then
-    mv "$previous" "$destination"
-  fi
-  printf '%s\n' 'installed binary failed self-check; previous binary restored.' >&2
+if ! "$executor_destination" --self-check >/dev/null \
+  || ! "$destination" node self-check >/dev/null; then
+  printf '%s\n' 'installed binary set failed self-check; previous set restored.' >&2
   exit 7
 fi
+install_committed=1
 
-printf 'Installed %s from %s at %s\n' "$tag" "$repository" "$destination"
+printf 'Installed %s from %s at %s and %s\n' "$tag" "$repository" "$destination" "$executor_destination"
 if [[ -e "$previous" ]]; then
   printf 'Rollback binary: %s\n' "$previous"
+fi
+if [[ -e "$executor_previous" ]]; then
+  printf 'Rollback executor: %s\n' "$executor_previous"
 fi

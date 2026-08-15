@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/host-execution-receipt.v0.schema.json",
+  "title": "JOAN Host Execution Receipt v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["bytecode_digest", "reason", "receipt_digest", "request_digest", "schema", "semantic_digest", "status"],
+  "properties": {
+    "schema": {"const": "joan.host-execution-receipt.v0"},
+    "status": {"enum": ["completed", "failed", "unknown"]},
+    "reason": {
+      "enum": [
+        "executor_completed",
+        "executor_rejected",
+        "spawn_failed",
+        "request_write_failed",
+        "timeout",
+        "child_exit_unknown",
+        "output_limit_exceeded",
+        "output_read_failed",
+        "malformed_response",
+        "binding_mismatch",
+        "process_wait_failed"
+      ]
+    },
+    "request_digest": {"$ref": "host-executor-response.v0.schema.json#/$defs/requestDigest"},
+    "semantic_digest": {"$ref": "digest.v1.schema.json"},
+    "bytecode_digest": {"$ref": "digest.v1.schema.json"},
+    "child_exit_code": {"type": "integer", "minimum": -2147483648, "maximum": 2147483647},
+    "executor_response_digest": {"$ref": "host-executor-response.v0.schema.json#/$defs/responseDigest"},
+    "compile_receipt": {"$ref": "native-compile-receipt.v0.schema.json"},
+    "execution_receipt": {"$ref": "native-execution-receipt.v0.schema.json"},
+    "detail": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "receipt_digest": {
+      "allOf": [
+        {"$ref": "digest.v1.schema.json"},
+        {"properties": {"domain": {"const": "joan.host-execution-receipt.v1"}}}
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "completed"}}, "required": ["status"]},
+      "then": {
+        "required": ["child_exit_code", "compile_receipt", "executor_response_digest"],
+        "properties": {"reason": {"const": "executor_completed"}, "detail": false}
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "failed"}, "reason": {"const": "executor_rejected"}},
+        "required": ["status", "reason"]
+      },
+      "then": {"required": ["child_exit_code", "detail", "executor_response_digest"]}
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "failed"}, "reason": {"const": "spawn_failed"}},
+        "required": ["status", "reason"]
+      },
+      "then": {
+        "properties": {
+          "child_exit_code": false,
+          "executor_response_digest": false,
+          "compile_receipt": false,
+          "execution_receipt": false,
+          "detail": false
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "unknown"}}, "required": ["status"]},
+      "then": {
+        "properties": {
+          "reason": {
+            "enum": [
+              "request_write_failed",
+              "timeout",
+              "child_exit_unknown",
+              "output_limit_exceeded",
+              "output_read_failed",
+              "malformed_response",
+              "binding_mismatch",
+              "process_wait_failed"
+            ]
+          },
+          "executor_response_digest": false,
+          "compile_receipt": false,
+          "execution_receipt": false,
+          "detail": false
+        }
+      }
+    }
+  ]
+}

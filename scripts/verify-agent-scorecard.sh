@@ -27,7 +27,7 @@ mkdir -p "$scorecard_tmp"
 work="$(mktemp -d "$scorecard_tmp/joan-agent-scorecard-gate.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 
-cargo build --quiet --release --locked -p joan-node
+cargo build --quiet --release --locked -p joan-node -p joan-executor
 
 report="$work/report.json"
 JOAN_SCORECARD_TMPDIR="$scorecard_tmp" node tools/agent-scorecard-runner.mjs \

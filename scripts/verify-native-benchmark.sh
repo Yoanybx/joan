@@ -26,7 +26,7 @@ trap 'rm -rf "$work"' EXIT
 
 node tools/native-backend-benchmark.mjs --self-test >/dev/null
 
-cargo build --quiet --release --locked -p joan-node -p joan-native \
+cargo build --quiet --release --locked -p joan-node -p joan-executor -p joan-native \
   --features joan-native/benchmark-tools --bin joan --bin joan-native-bench
 
 report="$work/report.json"

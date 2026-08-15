@@ -1,0 +1,24 @@
+[package]
+name = "joan-executor"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "joan-executor"
+path = "src/main.rs"
+
+[dependencies]
+joan-host = { path = "../joan-host" }
+joan-native = { path = "../joan-native" }
+
+[dev-dependencies]
+joan-bytecode = { path = "../joan-bytecode" }
+joan-compiler = { path = "../joan-compiler" }
+tempfile.workspace = true
+
+[lints]
+workspace = true

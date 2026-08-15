@@ -24,6 +24,7 @@ cranelift-native.workspace = true
 joan-ast = { path = "../joan-ast" }
 joan-bytecode = { path = "../joan-bytecode" }
 joan-canonical = { path = "../joan-canonical" }
+joan-host = { path = "../joan-host" }
 joan-compiler = { path = "../joan-compiler", optional = true }
 serde.workspace = true
 serde_json = { workspace = true, optional = true }

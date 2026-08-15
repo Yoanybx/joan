@@ -34,7 +34,7 @@ compile_two="$work/compile-two.json"
 run_one="$work/run-one.json"
 run_two="$work/run-two.json"
 
-cargo build --quiet --locked -p joan-node
+cargo build --quiet --locked -p joan-node -p joan-executor
 cargo test --quiet --locked -p joan-native --lib
 cargo test --quiet --locked -p joan-native --test differential
 cargo test --quiet --locked -p joan-node --test cli native_commands_require_explicit_machine_inputs

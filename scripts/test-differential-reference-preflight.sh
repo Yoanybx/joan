@@ -4,7 +4,7 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
 
-external_tmp="${JOAN_DIFFERENTIAL_TMPDIR:-/Volumes/ParallesWin 1/JOAN/tmp}"
+external_tmp="${JOAN_DIFFERENTIAL_TMPDIR:-${TMPDIR:-/tmp}}"
 mkdir -p "$external_tmp"
 work="$(mktemp -d "$external_tmp/joan-differential-preflight.XXXXXX")"
 missing_log="$work/missing.log"

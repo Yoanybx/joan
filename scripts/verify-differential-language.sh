@@ -9,7 +9,7 @@ if [[ "$target_dir" != /* ]]; then
   target_dir="$root/$target_dir"
 fi
 binary="$target_dir/debug/joan"
-external_tmp="${JOAN_DIFFERENTIAL_TMPDIR:-/Volumes/ParallesWin 1/JOAN/tmp}"
+external_tmp="${JOAN_DIFFERENTIAL_TMPDIR:-${TMPDIR:-/tmp}}"
 mkdir -p "$external_tmp"
 work="$(mktemp -d "$external_tmp/joan-language-differential.XXXXXX")"
 first="$work/report-first.json"

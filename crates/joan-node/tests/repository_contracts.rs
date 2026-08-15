@@ -645,6 +645,15 @@ fn cross_host_evidence_mode_is_explicit_and_strict_by_default()
         );
     }
 
+    for path in [
+        "scripts/test-differential-reference-preflight.sh",
+        "scripts/verify-differential-language.sh",
+    ] {
+        let differential = fs::read_to_string(root.join(path))?;
+        assert!(differential.contains("JOAN_DIFFERENTIAL_TMPDIR:-${TMPDIR:-/tmp}"));
+        assert!(!differential.contains("/Volumes/ParallesWin 1"));
+    }
+
     let refresh = fs::read_to_string(root.join("scripts/refresh-evidence.sh"))?;
     assert!(refresh.contains("node tools/evidence-index.mjs check"));
     assert!(!refresh.contains("check-portable"));

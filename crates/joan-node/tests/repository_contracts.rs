@@ -656,6 +656,12 @@ fn cross_host_evidence_mode_is_explicit_and_strict_by_default()
 
     let refresh = fs::read_to_string(root.join("scripts/refresh-evidence.sh"))?;
     assert!(refresh.contains("node tools/evidence-index.mjs check"));
+    assert!(refresh.contains("native_report='.joan/evidence/native-abi-v1.json'"));
+    assert!(refresh.contains(
+        "JOAN_NATIVE_ABI_REPORT=\"$temporary_native_report\" ./scripts/verify-native-abi.sh"
+    ));
+    assert!(refresh.contains("cp \"$backup_directory/native-abi-v1.json\" \"$native_report\""));
+    assert!(refresh.contains("mv \"$staged_native_report\" \"$native_report\""));
     assert!(!refresh.contains("check-portable"));
     Ok(())
 }

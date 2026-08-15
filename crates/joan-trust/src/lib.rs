@@ -2065,7 +2065,7 @@ mod tests {
                 "gate_config_sha256".to_owned(),
                 JsonValue::String(gate_config_sha256.to_owned()),
             );
-        bind_tool_to_current_executable(&mut current_environment, 0, "node")?;
+        bind_tools_to_current_executables(&mut current_environment)?;
         validate_receipt_environment(
             &root,
             &current_environment,
@@ -2126,22 +2126,48 @@ mod tests {
         index: usize,
         command: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let (path, sha256) = current_executable_binding(command)?;
+        environment["tools"][index]["path"] = JsonValue::String(path);
+        environment["tools"][index]["sha256"] = JsonValue::String(sha256);
+        Ok(())
+    }
+
+    fn bind_tools_to_current_executables(
+        environment: &mut JsonValue,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        for (index, command) in ["node", "cargo", "rustc", "cargo-audit", "cargo-deny"]
+            .into_iter()
+            .enumerate()
+        {
+            bind_tool_to_current_executable(environment, index, command)?;
+        }
+        Ok(())
+    }
+
+    fn bind_gate_to_current_executable(
+        gate: &mut JsonValue,
+        command: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let (path, sha256) = current_executable_binding(command)?;
+        gate["executable_path"] = JsonValue::String(path);
+        gate["executable_sha256"] = JsonValue::String(sha256);
+        Ok(())
+    }
+
+    fn current_executable_binding(
+        command: &str,
+    ) -> Result<(String, String), Box<dyn std::error::Error>> {
         let current =
             std::env::split_paths(&std::env::var_os("PATH").ok_or("PATH is unavailable")?)
                 .map(|directory| directory.join(command))
                 .find_map(|candidate| fs::canonicalize(candidate).ok())
                 .ok_or_else(|| format!("{command} is unavailable on PATH"))?;
-        environment["tools"][index]["path"] = JsonValue::String(
-            current
-                .to_str()
-                .ok_or("current executable path is not UTF-8")?
-                .to_owned(),
-        );
-        environment["tools"][index]["sha256"] = JsonValue::String(raw_sha256(&read_bounded_file(
-            &current,
-            MAX_EXECUTABLE_BYTES,
-        )?));
-        Ok(())
+        let path = current
+            .to_str()
+            .ok_or("current executable path is not UTF-8")?
+            .to_owned();
+        let sha256 = raw_sha256(&read_bounded_file(&current, MAX_EXECUTABLE_BYTES)?);
+        Ok((path, sha256))
     }
 
     #[test]
@@ -2152,7 +2178,8 @@ mod tests {
             decode_strict(&fs::read(root.join(".joan/evidence/latest.json"))?)?;
         let receipt: VerificationReceipt =
             decode_strict(&fs::read(root.join(&index.verification.runs[0].path))?)?;
-        let gate = receipt.gates[0].clone();
+        let mut gate = receipt.gates[0].clone();
+        bind_gate_to_current_executable(&mut gate, "cargo")?;
         validate_gate_receipt(&root, &gate, "format", true)?;
 
         let relocated = TempDir::new()?;
@@ -2183,9 +2210,9 @@ mod tests {
         invalid["completed_at"] = JsonValue::String("not-a-time".to_owned());
         assert!(validate_gate_receipt(&root, &invalid, "format", false).is_err());
         invalid = gate;
-        let node_tool = &receipt.environment["tools"][0];
-        invalid["executable_path"] = node_tool["path"].clone();
-        invalid["executable_sha256"] = node_tool["sha256"].clone();
+        let (node_path, node_sha256) = current_executable_binding("node")?;
+        invalid["executable_path"] = JsonValue::String(node_path);
+        invalid["executable_sha256"] = JsonValue::String(node_sha256);
         assert!(validate_gate_receipt(&root, &invalid, "format", true).is_err());
         Ok(())
     }

@@ -1291,12 +1291,19 @@ fn main() -> i64 effects [] {
         Ok(())
     }
 
-    #[cfg(target_vendor = "apple")]
     #[test]
-    fn apple_default_records_unavailable_kernel_memory_limit() {
+    fn default_memory_limit_matches_host_capability() {
         let limits = HostLimits::default();
-        assert_eq!(limits.memory_limit_kind(), HostMemoryLimitKind::Unavailable);
-        assert_eq!(limits.memory_limit_bytes(), 0);
+        if cfg!(target_vendor = "apple") {
+            assert_eq!(limits.memory_limit_kind(), HostMemoryLimitKind::Unavailable);
+            assert_eq!(limits.memory_limit_bytes(), 0);
+        } else {
+            assert_eq!(
+                limits.memory_limit_kind(),
+                HostMemoryLimitKind::AddressSpace
+            );
+            assert_eq!(limits.memory_limit_bytes(), DEFAULT_HOST_MEMORY_LIMIT_BYTES);
+        }
     }
 
     #[test]

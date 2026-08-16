@@ -17,6 +17,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Show pinned Rust toolchain
         run: rustc --version --verbose && cargo --version --verbose
       - name: Install pinned Node runtime
@@ -28,6 +29,8 @@ jobs:
         run: |
           cargo install --locked cargo-audit@0.22.2 cargo-deny@0.20.2
           cargo install --locked cargo-cyclonedx@0.5.9
+          cargo install --locked ripgrep@15.1.0
+          test "$(rg --version | sed -n '1p')" = 'ripgrep 15.1.0'
       - name: Require complete local verification gate
         env:
           JOAN_NATIVE_ABI_REPORT: ${{ runner.temp }}/joan-native-abi-v1.json

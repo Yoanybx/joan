@@ -645,6 +645,20 @@ fn cross_host_evidence_mode_is_explicit_and_strict_by_default()
         );
     }
 
+    let guardian = fs::read_to_string(root.join(".github/workflows/guardian.yml"))?;
+    for contract in [
+        "persist-credentials: false",
+        "fetch-depth: 0",
+        "cargo install --locked ripgrep@15.1.0",
+        "test \"$(rg --version | sed -n '1p')\" = 'ripgrep 15.1.0'",
+    ] {
+        assert!(
+            guardian.contains(contract),
+            "guardian cross-host prerequisite is absent: {contract}"
+        );
+    }
+    assert!(!guardian.contains("apt-get"));
+
     for path in [
         "scripts/test-differential-reference-preflight.sh",
         "scripts/verify-differential-language.sh",

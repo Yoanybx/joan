@@ -23,7 +23,7 @@
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "19fbed32b3d4248847c42d51ee683795940818f1d98a0b1fd1d36d7f05f99617"
+      "value": "b6f930a08058ec70d410c1fe4c2a631a79b273afbe3db95c56b42124335fd1f8"
     },
     "file_count": 349,
     "excludes": [

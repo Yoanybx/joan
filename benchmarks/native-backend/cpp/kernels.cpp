@@ -1,12 +1,13 @@
+#include <charconv>
 #include <chrono>
 #include <climits>
 #include <cstdint>
-#include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <system_error>
 
 #if defined(__clang__) || defined(__GNUC__)
 #define NOINLINE __attribute__((noinline))
@@ -40,6 +41,19 @@ Workload parse_workload(std::string_view name) {
     if (name == "split-budget") return Workload::SplitBudget;
     if (name == "deadline-slack") return Workload::DeadlineSlack;
     throw std::invalid_argument("unknown native benchmark workload");
+}
+
+std::uint64_t parse_u64(std::string_view text) {
+    if (text.empty()) throw std::invalid_argument("expected an unsigned 64-bit integer");
+    std::uint64_t value = 0;
+    const auto result = std::from_chars(text.data(), text.data() + text.size(), value, 10);
+    if (result.ec == std::errc::result_out_of_range) {
+        throw std::out_of_range("unsigned 64-bit integer is out of range");
+    }
+    if (result.ec != std::errc{} || result.ptr != text.data() + text.size()) {
+        throw std::invalid_argument("expected an unsigned 64-bit integer");
+    }
+    return value;
 }
 
 bool charge(volatile std::uint64_t &fuel) {
@@ -201,10 +215,10 @@ int main(int argc, char **argv) {
     try {
         const std::string_view workload_name(argv[1]);
         const auto workload = parse_workload(workload_name);
-        const auto iterations = std::stoull(argv[2]);
-        const auto seed = std::stoull(argv[3]);
+        const std::uint64_t iterations = parse_u64(argv[2]);
+        const std::uint64_t seed = parse_u64(argv[3]);
         if (iterations == 0 || iterations > UINT64_C(10000000)) return 2;
-        auto state = seed ^ UINT64_C(0x4a4f414e4c313600);
+        std::uint64_t state = seed ^ UINT64_C(0x4a4f414e4c313600);
         for (std::uint64_t index = 0; index < WARMUP_ITERATIONS; ++index) {
             if (execute(workload, state).status != 0) return 4;
         }

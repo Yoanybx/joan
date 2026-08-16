@@ -26,6 +26,22 @@ trap 'rm -rf "$work"' EXIT
 
 node tools/native-backend-benchmark.mjs --self-test >/dev/null
 
+cpp_portability="$work/cpp-portability"
+clang++ -O3 -march=native -std=c++20 -Wall -Wextra -Werror -pedantic \
+  benchmarks/native-backend/cpp/kernels.cpp -o "$cpp_portability"
+"$cpp_portability" cost-model 1 18446744073709551615 >/dev/null
+
+expect_cpp_rejection() {
+  if "$cpp_portability" "$@" >/dev/null 2>&1; then
+    printf 'C++ benchmark accepted invalid integer input: %s\n' "$*" >&2
+    exit 1
+  fi
+}
+
+expect_cpp_rejection cost-model 1x 7
+expect_cpp_rejection cost-model 1 7x
+expect_cpp_rejection cost-model 1 18446744073709551616
+
 cargo build --quiet --release --locked -p joan-node -p joan-executor -p joan-native \
   --features joan-native/benchmark-tools --bin joan --bin joan-native-bench
 

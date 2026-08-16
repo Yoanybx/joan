@@ -710,6 +710,33 @@ fn cross_host_evidence_mode_is_explicit_and_strict_by_default()
 }
 
 #[test]
+fn guardian_requires_linux_and_macos_complete_portable_gates()
+-> Result<(), Box<dyn std::error::Error>> {
+    let guardian = fs::read_to_string(workspace_root().join(".github/workflows/guardian.yml"))?;
+    for contract in ["local-contracts:", "macos-contracts:", "runs-on: macos-14"] {
+        assert!(
+            guardian.contains(contract),
+            "guardian operating-system contract is absent: {contract}"
+        );
+    }
+    assert_eq!(
+        guardian
+            .matches("run: ./scripts/verify-all.sh --portable-evidence")
+            .count(),
+        2,
+        "both hosted operating systems must execute the complete portable gate"
+    );
+    assert_eq!(
+        guardian
+            .matches("JOAN_NATIVE_BENCHMARK_REQUIRE_JULIA: \"1\"")
+            .count(),
+        2,
+        "both hosted operating systems must require the Julia benchmark"
+    );
+    Ok(())
+}
+
+#[test]
 fn hosted_julia_benchmark_is_required_and_locally_scoped() -> Result<(), Box<dyn std::error::Error>>
 {
     let root = workspace_root();

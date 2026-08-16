@@ -82,6 +82,11 @@ portable pass proves cross-host reproducibility of the declared contracts. It
 does not prove operator independence, organizational independence, release
 authorization, production readiness or universal language superiority.
 
+The hosted guardian defines distinct `local-contracts` and `macos-contracts`
+check contexts. They run the complete portable gate on Ubuntu and macOS 14,
+respectively, with the same pinned Node, Julia and supply-chain prerequisites.
+Neither context is a substitute for an independent operator rerun.
+
 The final PR-trust step preserves the same boundary. In strict mode it validates
 the issuer-host index and emits and byte-reverifies the local PR Trust Envelope.
 In portable mode it revalidates the current-host receipt but intentionally does

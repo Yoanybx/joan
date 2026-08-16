@@ -12,8 +12,10 @@
 - Initial implementation branch: `codex/joan-genesis`
 - Initial implementation environment: local Apple Silicon Mac
 - Tool assistance: AI-assisted drafting and coding under founder direction
+- Public source repository: <https://github.com/Yoanybx/joan>
 - Public release: not created
-- Remote repository: not configured
+- Remote repository: `https://github.com/Yoanybx/joan.git` (official source;
+  hosted under the founder-administered `Yoanybx` user account)
 - Signing identity: not yet bound
 - Copyright registration: not yet recorded by this repository
 

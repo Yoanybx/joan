@@ -58,7 +58,10 @@ Use the structured GitHub `Bug report` form for reproducible, non-sensitive defe
 
 Dependency updates are proposed by Dependabot and must pass the guardian workflow, JCE1 cross-implementation conformance and review before merge. No dependency update, release or agent output bypasses those gates.
 
-JOAN does not yet have an official GitHub remote or a stable release channel. Until both exist, there is no trusted automatic binary update path. The intended release process is:
+JOAN's official public source repository is
+<https://github.com/Yoanybx/joan>, but JOAN does not yet have a stable release
+channel. Public source availability is not a binary release, and there is no
+trusted automatic update path. The intended release process is:
 
 1. LED ACTION LLC designates the official repository and protected release environment.
 2. A reviewed commit passes all required checks on the protected default branch.

@@ -21,7 +21,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout exact tagged source without credentials
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - name: Install pinned Node runtime
@@ -54,7 +54,7 @@ jobs:
       attestations: write
     steps:
       - name: Checkout exact tagged source
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - name: Install pinned Node runtime

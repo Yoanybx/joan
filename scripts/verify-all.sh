@@ -71,7 +71,12 @@ bash scripts/verify-independent-rerun.sh
 printf '%s\n' '==> AI-agent language scorecard'
 bash scripts/verify-agent-scorecard.sh
 
-printf '%s\n' '==> offline PR trust envelope'
-bash scripts/verify-pr-trust.sh
+if [[ "$evidence_mode" == "portable" ]]; then
+  printf '%s\n' '==> portable PR trust prerequisite (no issuer-host envelope)'
+  bash scripts/verify-pr-trust.sh --portable-evidence "$receipt"
+else
+  printf '%s\n' '==> offline PR trust envelope'
+  bash scripts/verify-pr-trust.sh
+fi
 
 printf 'JOAN local verification and evidence-receipt gates passed (%s mode).\n' "$evidence_mode"

@@ -82,6 +82,13 @@ portable pass proves cross-host reproducibility of the declared contracts. It
 does not prove operator independence, organizational independence, release
 authorization, production readiness or universal language superiority.
 
+The final PR-trust step preserves the same boundary. In strict mode it validates
+the issuer-host index and emits and byte-reverifies the local PR Trust Envelope.
+In portable mode it revalidates the current-host receipt but intentionally does
+not emit an issuer-host envelope from historical receipts created on another
+platform. The mode and receipt are positional arguments propagated by
+`verify-all.sh`; environment variables cannot silently select the policy.
+
 The v2 index also binds the recorded AI-agent scorecard file, its
 `baseline-only-not-qualified` status, workload count, frozen JOAN safety total,
 and false broad/universal superiority claims. This binding is evidence of the

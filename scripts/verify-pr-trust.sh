@@ -3,6 +3,22 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+evidence_mode="strict"
+receipt=""
+if [[ $# -eq 2 && "$1" == "--portable-evidence" ]]; then
+  evidence_mode="portable"
+  receipt="$2"
+elif [[ $# -ne 0 ]]; then
+  printf '%s\n' 'usage: bash scripts/verify-pr-trust.sh [--portable-evidence <current-receipt>]' >&2
+  exit 2
+fi
+
+if [[ "$evidence_mode" == "portable" ]]; then
+  node tools/evidence-index.mjs check-portable "$receipt"
+  printf '%s\n' 'JOAN portable PR trust prerequisite passed; issuer-host envelope intentionally not emitted.'
+  exit 0
+fi
+
 target_dir="${CARGO_TARGET_DIR:-target}"
 binary="$target_dir/debug/joan"
 envelope="$(mktemp "${TMPDIR:-/tmp}/joan-pr-trust-envelope.XXXXXX")"

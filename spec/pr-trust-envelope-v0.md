@@ -55,6 +55,11 @@ These are three local runs from one host and operator. They are not independent
 attestations. A modified implementation can generate new self-consistent local
 receipts, so external review, signatures and protected CI remain separate.
 
+The envelope is therefore an issuer-host artifact. Cross-host
+`verify-all.sh --portable-evidence` validates its new host receipt and the
+historical bindings, but does not emit this envelope or reinterpret historical
+receipts as current-host authorization.
+
 ## JOAN policy composition
 
 `.joan/pr-trust.json` pins the policy source and package manifest by JCE1 typed

@@ -632,6 +632,31 @@ fn cross_host_evidence_mode_is_explicit_and_strict_by_default()
         );
     }
     assert!(!verifier.contains("JOAN_EVIDENCE_MODE"));
+    assert!(verifier.contains("bash scripts/verify-pr-trust.sh --portable-evidence \"$receipt\""));
+
+    let pr_trust = fs::read_to_string(root.join("scripts/verify-pr-trust.sh"))?;
+    for contract in [
+        "evidence_mode=\"strict\"",
+        "--portable-evidence <current-receipt>",
+        "check-portable \"$receipt\"",
+        "issuer-host envelope intentionally not emitted",
+        "node tools/evidence-index.mjs check",
+    ] {
+        assert!(
+            pr_trust.contains(contract),
+            "PR trust evidence-mode contract is absent: {contract}"
+        );
+    }
+    assert!(!pr_trust.contains("JOAN_EVIDENCE_MODE"));
+
+    let invalid_pr_trust = Command::new("bash")
+        .args(["scripts/verify-pr-trust.sh", "--unknown-mode"])
+        .current_dir(&root)
+        .output()?;
+    assert_eq!(invalid_pr_trust.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&invalid_pr_trust.stderr).contains(
+        "usage: bash scripts/verify-pr-trust.sh [--portable-evidence <current-receipt>]"
+    ));
 
     for path in [
         ".github/workflows/guardian.yml",

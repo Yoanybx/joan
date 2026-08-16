@@ -2,6 +2,7 @@ const FNV_OFFSET = UInt64(0xcbf29ce484222325)
 const FNV_PRIME = UInt64(0x00000100000001b3)
 const WARMUP_ITERATIONS = 256
 const INSTRUCTION_BUDGET = UInt64(128)
+const MAX_ITERATIONS = UInt64(10_000_000)
 
 function splitmix64(state::Base.RefValue{UInt64})::UInt64
     state[] += UInt64(0x9e3779b97f4a7c15)
@@ -107,29 +108,36 @@ function execute(workload::Symbol, state)
     error("unknown native benchmark workload")
 end
 
-length(ARGS) == 3 || error("usage: kernels.jl <workload> <iterations> <seed>")
-workload_name = ARGS[1]
-workload = Symbol(replace(workload_name, "-" => "_"))
-workload in (:cost_model, :dispatch_decision, :route_score, :split_budget, :deadline_slack) ||
-    error("unknown native benchmark workload")
-iterations = parse(UInt64, ARGS[2])
-seed = parse(UInt64, ARGS[3])
-state = Ref(seed ⊻ UInt64(0x4a4f414e4c313600))
-for _ in 1:WARMUP_ITERATIONS
-    execute(workload, state)
+function main(args::Vector{String})::Int
+    length(args) == 3 || error("usage: kernels.jl <workload> <iterations> <seed>")
+    workload_name::String = args[1]
+    workload::Symbol = Symbol(replace(workload_name, "-" => "_"))
+    workload in (:cost_model, :dispatch_decision, :route_score, :split_budget, :deadline_slack) ||
+        error("unknown native benchmark workload")
+    iterations::UInt64 = parse(UInt64, args[2])
+    UInt64(1) <= iterations <= MAX_ITERATIONS ||
+        error("iterations must be between 1 and 10000000")
+    seed::UInt64 = parse(UInt64, args[3])
+    state::Base.RefValue{UInt64} = Ref(seed ⊻ UInt64(0x4a4f414e4c313600))
+    for _ in 1:WARMUP_ITERATIONS
+        execute(workload, state)
+    end
+    state[] = seed
+    checksum::UInt64 = FNV_OFFSET
+    instructions::UInt64 = UInt64(0)
+    started::UInt64 = time_ns()
+    for _ in UInt64(1):iterations
+        value, observed_instructions = execute(workload, state)
+        checksum = (checksum ⊻ reinterpret(UInt64, value)) * FNV_PRIME
+        instructions += observed_instructions
+    end
+    runtime_ns::UInt64 = time_ns() - started
+    println("{\"checksum\":\"", string(checksum, base=16, pad=16),
+            "\",\"instructions_executed\":", instructions,
+            ",\"iterations\":", iterations,
+            ",\"runtime_ns\":", runtime_ns,
+            ",\"status\":\"completed\",\"workload\":\"", workload_name, "\"}")
+    return 0
 end
-state[] = seed
-checksum = FNV_OFFSET
-instructions = UInt64(0)
-started = time_ns()
-for _ in UInt64(1):iterations
-    value, observed_instructions = execute(workload, state)
-    checksum = (checksum ⊻ reinterpret(UInt64, value)) * FNV_PRIME
-    instructions += observed_instructions
-end
-runtime_ns = time_ns() - started
-println("{\"checksum\":\"", string(checksum, base=16, pad=16),
-        "\",\"instructions_executed\":", instructions,
-        ",\"iterations\":", iterations,
-        ",\"runtime_ns\":", runtime_ns,
-        ",\"status\":\"completed\",\"workload\":\"", workload_name, "\"}")
+
+exit(main(ARGS))

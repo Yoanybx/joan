@@ -25,6 +25,12 @@ jobs:
         with:
           node-version: 24.19.0
           package-manager-cache: false
+      - name: Install pinned Julia runtime
+        uses: julia-actions/setup-julia@4c0cb0fce8556fdb04a90347310e5db8b1f98fb9
+        with:
+          version: "1.12.7"
+      - name: Verify pinned Julia runtime
+        run: test "$(julia --startup-file=no -e 'print(VERSION)')" = '1.12.7'
       - name: Install pinned supply-chain gates
         run: |
           cargo install --locked cargo-audit@0.22.2 cargo-deny@0.20.2
@@ -34,4 +40,5 @@ jobs:
       - name: Require complete local verification gate
         env:
           JOAN_NATIVE_ABI_REPORT: ${{ runner.temp }}/joan-native-abi-v1.json
+          JOAN_NATIVE_BENCHMARK_REQUIRE_JULIA: "1"
         run: ./scripts/verify-all.sh --portable-evidence

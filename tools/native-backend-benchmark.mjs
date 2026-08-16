@@ -90,6 +90,29 @@ function locate(name) {
   return resolve(result.stdout.trim());
 }
 
+function requiredByEnvironment(environment, name) {
+  const value = environment[name];
+  assert(value === undefined || value === "0" || value === "1", `${name} must be 0 or 1`);
+  return value === "1";
+}
+
+function requireAvailableTool(required, executable, label) {
+  assert(!required || executable !== null, `${label} is required but unavailable`);
+}
+
+function selfTestRequiredToolGate() {
+  assert(requiredByEnvironment({}, "JOAN_TEST_REQUIRE_TOOL") === false, "unset tool requirement was enabled");
+  assert(requiredByEnvironment({ JOAN_TEST_REQUIRE_TOOL: "0" }, "JOAN_TEST_REQUIRE_TOOL") === false, "disabled tool requirement was enabled");
+  assert(requiredByEnvironment({ JOAN_TEST_REQUIRE_TOOL: "1" }, "JOAN_TEST_REQUIRE_TOOL") === true, "enabled tool requirement was ignored");
+  let missingRequiredToolRejected = false;
+  try {
+    requireAvailableTool(true, null, "test tool");
+  } catch (error) {
+    missingRequiredToolRejected = error instanceof Error && error.message === "test tool is required but unavailable";
+  }
+  assert(missingRequiredToolRejected, "missing required tool was accepted");
+}
+
 function integerOption(argumentsList, name, fallback, minimum, maximum) {
   const index = argumentsList.indexOf(name);
   if (index === -1) return fallback;
@@ -270,7 +293,8 @@ function validateManifest(manifest) {
 const argumentsList = process.argv.slice(2);
 if (argumentsList.length === 1 && argumentsList[0] === "--self-test") {
   selfTestSemanticObservationDigest();
-  process.stdout.write(`${JSON.stringify({ status: "passed", timing_fields_excluded: ["compile_ns", "runtime_ns"] })}\n`);
+  selfTestRequiredToolGate();
+  process.stdout.write(`${JSON.stringify({ missing_required_tool_rejected: true, status: "passed", timing_fields_excluded: ["compile_ns", "runtime_ns"] })}\n`);
   process.exit(0);
 }
 assert(argumentsList.length >= 2, "usage: native-backend-benchmark.mjs <manifest> <report> [options]");
@@ -306,6 +330,8 @@ try {
     nativeBench: resolve(process.env.JOAN_NATIVE_BENCH_BINARY ?? join(targetDir, "release", "joan-native-bench")),
     oracle: sourcePath("reference/native-benchmark-oracle.mjs"),
   };
+  const requireJulia = requiredByEnvironment(process.env, "JOAN_NATIVE_BENCHMARK_REQUIRE_JULIA");
+  requireAvailableTool(requireJulia, tools.julia, "Julia");
   for (const key of ["c", "cpp", "rust", "joan", "nativeBench"]) statSync(tools[key]);
   const available = IMPLEMENTATIONS.filter((id) => id !== "julia" || tools.julia !== null);
   const sourcePaths = Object.fromEntries(IMPLEMENTATIONS.map((id) => [id, sourcePath(manifest.sources[id])]));

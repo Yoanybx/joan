@@ -649,6 +649,10 @@ fn cross_host_evidence_mode_is_explicit_and_strict_by_default()
     for contract in [
         "persist-credentials: false",
         "fetch-depth: 0",
+        "julia-actions/setup-julia@4c0cb0fce8556fdb04a90347310e5db8b1f98fb9",
+        "version: \"1.12.7\"",
+        "test \"$(julia --startup-file=no -e 'print(VERSION)')\" = '1.12.7'",
+        "JOAN_NATIVE_BENCHMARK_REQUIRE_JULIA: \"1\"",
         "cargo install --locked ripgrep@15.1.0",
         "test \"$(rg --version | sed -n '1p')\" = 'ripgrep 15.1.0'",
     ] {
@@ -677,6 +681,55 @@ fn cross_host_evidence_mode_is_explicit_and_strict_by_default()
     assert!(refresh.contains("cp \"$backup_directory/native-abi-v1.json\" \"$native_report\""));
     assert!(refresh.contains("mv \"$staged_native_report\" \"$native_report\""));
     assert!(!refresh.contains("check-portable"));
+    Ok(())
+}
+
+#[test]
+fn hosted_julia_benchmark_is_required_and_locally_scoped() -> Result<(), Box<dyn std::error::Error>>
+{
+    let root = workspace_root();
+    let benchmark_runner = fs::read_to_string(root.join("tools/native-backend-benchmark.mjs"))?;
+    for contract in [
+        "requiredByEnvironment(process.env, \"JOAN_NATIVE_BENCHMARK_REQUIRE_JULIA\")",
+        "requireAvailableTool(requireJulia, tools.julia, \"Julia\")",
+        "missing_required_tool_rejected: true",
+    ] {
+        assert!(
+            benchmark_runner.contains(contract),
+            "native benchmark required-tool contract is absent: {contract}"
+        );
+    }
+
+    let julia_kernel = fs::read_to_string(root.join("benchmarks/native-backend/julia/kernels.jl"))?;
+    for contract in [
+        "const MAX_ITERATIONS = UInt64(10_000_000)",
+        "function main(args::Vector{String})::Int",
+        "UInt64(1) <= iterations <= MAX_ITERATIONS",
+        "exit(main(ARGS))",
+    ] {
+        assert!(
+            julia_kernel.contains(contract),
+            "Julia hosted benchmark contract is absent: {contract}"
+        );
+    }
+    for global_binding in [
+        "workload_name",
+        "workload",
+        "iterations",
+        "seed",
+        "state",
+        "checksum",
+        "instructions",
+        "started",
+        "runtime_ns",
+    ] {
+        assert!(
+            !julia_kernel
+                .lines()
+                .any(|line| line.starts_with(global_binding)),
+            "Julia benchmark mutable state escaped main: {global_binding}"
+        );
+    }
     Ok(())
 }
 

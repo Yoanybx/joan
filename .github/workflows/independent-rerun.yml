@@ -39,7 +39,7 @@ jobs:
           CARGO_TARGET_DIR: ${{ runner.temp }}/joan-cargo-target
         run: bash scripts/run-independent-rerun.sh "${RUNNER_TEMP}/joan-independent-rerun-v0"
       - name: Attest machine provenance
-        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
           subject-path: ${{ runner.temp }}/joan-independent-rerun-v0/*.json
       - name: Upload rerun artifacts

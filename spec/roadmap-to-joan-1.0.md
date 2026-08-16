@@ -40,7 +40,7 @@ Legend:
 - [-] `A12` POSIX limits: CPU, file, descriptors, and core are enforced; macOS memory limit is unavailable in the current profile.
 - [x] `A13` Three local full evidence receipts and reproducible clean-clone machinery.
 - [x] `A14` Apache-2.0 source license, copyright notice, trademark boundary, and CODEOWNERS.
-- [ ] `A15` Official GitHub push, hosted macOS/Linux CI, branch/tag rules, and private vulnerability reporting.
+- [x] `A15` Official GitHub push, hosted macOS/Linux CI, branch/tag rules, and private vulnerability reporting.
 - [ ] `A16` Independent second-host rerun and three external agent trials.
 
 ## J1 language semantics

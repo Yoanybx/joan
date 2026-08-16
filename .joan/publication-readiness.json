@@ -18,17 +18,17 @@
     "trademark_clearance_recorded": false
   },
   "security": {
-    "private_vulnerability_reporting_enabled": false,
+    "private_vulnerability_reporting_enabled": true,
     "recovery_procedure_tested": false
   },
   "release": {
     "public_release_approved": false,
     "protected_environment": "release",
     "environment_protection_configured": false,
-    "tag_rules_configured": false,
+    "tag_rules_configured": true,
     "codeowners_configured": true,
     "signing_identity_bound": false,
-    "hosted_ci_passed": false,
+    "hosted_ci_passed": true,
     "independent_rerun_verified": false
   },
   "authorization": {

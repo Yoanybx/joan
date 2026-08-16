@@ -547,6 +547,19 @@ fn publication_workflow_remains_fail_closed() -> Result<(), Box<dyn std::error::
     );
     assert_eq!(readiness["release"]["public_release_approved"], false);
     assert_eq!(readiness["release"]["codeowners_configured"], true);
+    assert_eq!(
+        readiness["security"]["private_vulnerability_reporting_enabled"],
+        true
+    );
+    assert_eq!(readiness["release"]["tag_rules_configured"], true);
+    assert_eq!(readiness["release"]["hosted_ci_passed"], true);
+    assert_eq!(readiness["security"]["recovery_procedure_tested"], false);
+    assert_eq!(
+        readiness["release"]["environment_protection_configured"],
+        false
+    );
+    assert_eq!(readiness["release"]["signing_identity_bound"], false);
+    assert_eq!(readiness["release"]["independent_rerun_verified"], false);
     assert!(root.join(".github/CODEOWNERS").is_file());
 
     for path in [

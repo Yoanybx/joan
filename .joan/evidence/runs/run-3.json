@@ -1,15 +1,15 @@
 {
   "schema": "joan.verification-run-receipt.v1",
   "version": "0.1.0-alpha.1",
-  "run_id": "685c5c70-669e-43ec-9e96-563c4b0b5e49",
+  "run_id": "f875aca4-ed88-4930-8f7e-53bccf853951",
   "status": "passed",
-  "started_at": "2026-08-17T06:26:49.137Z",
-  "completed_at": "2026-08-17T06:28:14.343Z",
+  "started_at": "2026-08-17T17:35:29.943Z",
+  "completed_at": "2026-08-17T17:37:01.578Z",
   "source": {
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "697510514c4739301fd26ddfe37c66ff15a9b95ba6d772bc31f15b463732c8a1"
+      "value": "72778755be423c7c41bea723235ffc3865fc0b0d6ec52b489f247a47ab97d689"
     },
     "file_count": 358,
     "excludes": [
@@ -69,9 +69,9 @@
       ],
       "executable_path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
       "executable_sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
-      "started_at": "2026-08-17T06:26:49.141Z",
-      "completed_at": "2026-08-17T06:26:49.367Z",
-      "duration_ms": 226,
+      "started_at": "2026-08-17T17:35:29.947Z",
+      "completed_at": "2026-08-17T17:35:30.166Z",
+      "duration_ms": 218,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -99,9 +99,9 @@
       ],
       "executable_path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
       "executable_sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
-      "started_at": "2026-08-17T06:26:49.377Z",
-      "completed_at": "2026-08-17T06:26:49.561Z",
-      "duration_ms": 183,
+      "started_at": "2026-08-17T17:35:30.176Z",
+      "completed_at": "2026-08-17T17:35:30.355Z",
+      "duration_ms": 178,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -111,7 +111,7 @@
       },
       "stderr": {
         "bytes": 72,
-        "sha256": "22e0df986057b9ba5be07526ac5fb348862a3dedef42108383cc3e088acbb889"
+        "sha256": "4cf86278c1e6d659943a46a3d7e3da429ac15be90f0f17742e24ef85228e7d3e"
       }
     },
     {
@@ -125,15 +125,15 @@
       ],
       "executable_path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
       "executable_sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
-      "started_at": "2026-08-17T06:26:49.571Z",
-      "completed_at": "2026-08-17T06:28:08.509Z",
-      "duration_ms": 78937,
+      "started_at": "2026-08-17T17:35:30.365Z",
+      "completed_at": "2026-08-17T17:36:55.369Z",
+      "duration_ms": 85004,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
       "stdout": {
         "bytes": 22012,
-        "sha256": "afe872355ea1240e3596b8e3932c01b59e49887f1a1555371b3004f5d1a38501"
+        "sha256": "122dc7148a7ebf46d19f34d4e4b6f3a9c45ee62c8dd1f28490dd6afc7073395e"
       },
       "stderr": {
         "bytes": 5089,
@@ -151,9 +151,9 @@
       ],
       "executable_path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
       "executable_sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
-      "started_at": "2026-08-17T06:28:08.524Z",
-      "completed_at": "2026-08-17T06:28:09.851Z",
-      "duration_ms": 1327,
+      "started_at": "2026-08-17T17:36:55.384Z",
+      "completed_at": "2026-08-17T17:36:56.814Z",
+      "duration_ms": 1430,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -163,7 +163,7 @@
       },
       "stderr": {
         "bytes": 716,
-        "sha256": "53b920e4bf91b26c3549ccf42e64d66c8f97d44b8ac8d7b78eae1eb3d48d9ea5"
+        "sha256": "0548e756a4e8e87deb12dcdcb9e0080ff2d18d74d5915fc676ef333cec309f23"
       }
     },
     {
@@ -177,9 +177,9 @@
       ],
       "executable_path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
       "executable_sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
-      "started_at": "2026-08-17T06:28:09.867Z",
-      "completed_at": "2026-08-17T06:28:09.970Z",
-      "duration_ms": 102,
+      "started_at": "2026-08-17T17:36:56.828Z",
+      "completed_at": "2026-08-17T17:36:56.955Z",
+      "duration_ms": 127,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -189,7 +189,7 @@
       },
       "stderr": {
         "bytes": 62,
-        "sha256": "64d0cbd4b7e4c6329fde55978dd3d261407b55f34c21add0feebf7e0575ee531"
+        "sha256": "3997fc6790b8063b86c119e91f87ac7395ac6cf26135da637dcb229006bc32dc"
       }
     },
     {
@@ -199,9 +199,9 @@
       ],
       "executable_path": "/Users/runner/work/joan/joan/scripts/verify-jce1.sh",
       "executable_sha256": "b5798b586af75b93465da894d03da93e430d9742e160f5912743216d976a9814",
-      "started_at": "2026-08-17T06:28:09.980Z",
-      "completed_at": "2026-08-17T06:28:10.300Z",
-      "duration_ms": 319,
+      "started_at": "2026-08-17T17:36:56.966Z",
+      "completed_at": "2026-08-17T17:36:57.371Z",
+      "duration_ms": 404,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -223,15 +223,15 @@
       ],
       "executable_path": "/Users/runner/work/joan/joan/scripts/benchmark-digest.sh",
       "executable_sha256": "804f065635cfbc42dfd7d8c9ede79ff667e057cc47e529168dfcff703c76347f",
-      "started_at": "2026-08-17T06:28:10.300Z",
-      "completed_at": "2026-08-17T06:28:10.483Z",
-      "duration_ms": 183,
+      "started_at": "2026-08-17T17:36:57.371Z",
+      "completed_at": "2026-08-17T17:36:57.592Z",
+      "duration_ms": 220,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
       "stdout": {
         "bytes": 782,
-        "sha256": "c493f5e1c51a640416569000637b717a4dd1424cedab04e0254656f4ab544d32"
+        "sha256": "fea4a2090992894b5b41bcd6cd31567e65e0d205a8450801b3244f84c6d48131"
       },
       "stderr": {
         "bytes": 0,
@@ -245,15 +245,15 @@
       ],
       "executable_path": "/Users/runner/work/joan/joan/scripts/verify-payment-cost.sh",
       "executable_sha256": "1f413855abefacd9ba1d1c1af924bd8b87287a2db62951ebdf9b69ff457f7917",
-      "started_at": "2026-08-17T06:28:10.484Z",
-      "completed_at": "2026-08-17T06:28:10.598Z",
-      "duration_ms": 114,
+      "started_at": "2026-08-17T17:36:57.592Z",
+      "completed_at": "2026-08-17T17:36:57.721Z",
+      "duration_ms": 129,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
       "stdout": {
-        "bytes": 606,
-        "sha256": "7efdd645f478e2f8ce8475c184baff1e1ce8b271d04c0bb15ab7317626c9f3ae"
+        "bytes": 603,
+        "sha256": "a22030aa678a3a507fbf73f474ebaa46208d7bdaeaf6a5941dcfd588f59dbbd5"
       },
       "stderr": {
         "bytes": 0,
@@ -267,9 +267,9 @@
       ],
       "executable_path": "/Users/runner/work/joan/joan/scripts/verify-tool-forge.sh",
       "executable_sha256": "4fc990e191cc89b71024c28c213d3bf1830b3cc39998c33e0a960301818b93d1",
-      "started_at": "2026-08-17T06:28:10.598Z",
-      "completed_at": "2026-08-17T06:28:11.450Z",
-      "duration_ms": 852,
+      "started_at": "2026-08-17T17:36:57.722Z",
+      "completed_at": "2026-08-17T17:36:58.666Z",
+      "duration_ms": 944,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -292,9 +292,9 @@
       ],
       "executable_path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
       "executable_sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
-      "started_at": "2026-08-17T06:28:11.453Z",
-      "completed_at": "2026-08-17T06:28:12.360Z",
-      "duration_ms": 907,
+      "started_at": "2026-08-17T17:36:58.669Z",
+      "completed_at": "2026-08-17T17:36:59.369Z",
+      "duration_ms": 700,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -316,9 +316,9 @@
       ],
       "executable_path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
       "executable_sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
-      "started_at": "2026-08-17T06:28:12.372Z",
-      "completed_at": "2026-08-17T06:28:13.072Z",
-      "duration_ms": 700,
+      "started_at": "2026-08-17T17:36:59.384Z",
+      "completed_at": "2026-08-17T17:37:00.076Z",
+      "duration_ms": 691,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -343,7 +343,7 @@
       "tree_digest": {
         "algorithm": "sha256",
         "profile": "joan-source-tree-v2",
-        "value": "697510514c4739301fd26ddfe37c66ff15a9b95ba6d772bc31f15b463732c8a1"
+        "value": "72778755be423c7c41bea723235ffc3865fc0b0d6ec52b489f247a47ab97d689"
       },
       "file_count": 358,
       "excludes": [

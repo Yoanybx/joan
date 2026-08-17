@@ -27,7 +27,7 @@ trap 'rm -rf "$work"' EXIT
 node tools/native-backend-benchmark.mjs --self-test >/dev/null
 
 cpp_portability="$work/cpp-portability"
-clang++ -O3 -march=native -std=c++20 -Wall -Wextra -Werror -pedantic \
+clang++ -O3 -std=c++20 -Wall -Wextra -Werror -pedantic \
   benchmarks/native-backend/cpp/kernels.cpp -o "$cpp_portability"
 "$cpp_portability" cost-model 1 18446744073709551615 >/dev/null
 

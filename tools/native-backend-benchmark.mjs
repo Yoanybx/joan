@@ -224,18 +224,34 @@ function parseOracleObservation(execution, workload, iterations, seed) {
   return observation;
 }
 
-function compileDescriptor(implementation, source, output, tools) {
+function systemCompilerFlags(implementation, mode) {
+  assert(["smoke", "recorded"].includes(mode), "compile mode is invalid");
+  const nativeHost = mode === "recorded";
+  if (implementation === "c") {
+    return ["-O3", ...(nativeHost ? ["-march=native"] : []), "-std=c11", "-Wall", "-Wextra", "-Werror", "-pedantic"];
+  }
+  if (implementation === "cpp") {
+    return ["-O3", ...(nativeHost ? ["-march=native"] : []), "-std=c++20", "-Wall", "-Wextra", "-Werror", "-pedantic"];
+  }
+  if (implementation === "rust") {
+    return [
+      "--edition=2024",
+      "-Copt-level=3",
+      ...(nativeHost ? ["-Ctarget-cpu=native"] : []),
+      "-Coverflow-checks=yes",
+    ];
+  }
+  return null;
+}
+
+function compileDescriptor(implementation, source, output, tools, mode) {
   if (implementation === "joan-native") {
     return { command: tools.joan, arguments: ["native", "compile", source, "--json"] };
   }
-  if (implementation === "c") {
-    return { command: tools.c, arguments: ["-O3", "-march=native", "-std=c11", "-Wall", "-Wextra", "-Werror", "-pedantic", source, "-o", output] };
-  }
-  if (implementation === "cpp") {
-    return { command: tools.cpp, arguments: ["-O3", "-march=native", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-pedantic", source, "-o", output] };
-  }
-  if (implementation === "rust") {
-    return { command: tools.rust, arguments: ["--edition=2024", "-C", "opt-level=3", "-C", "target-cpu=native", "-C", "overflow-checks=yes", source, "-o", output] };
+  const flags = systemCompilerFlags(implementation, mode);
+  if (flags !== null) {
+    const command = { c: tools.c, cpp: tools.cpp, rust: tools.rust }[implementation];
+    return { command, arguments: [...flags, source, "-o", output] };
   }
   return null;
 }
@@ -266,12 +282,57 @@ function peakRss(descriptor, implementation, workload, iterations, seed) {
   return platform() === "darwin" ? Number(match[1]) : Number(match[1]) * 1024;
 }
 
-function compileFlags(implementation) {
+function compileFlags(implementation, mode) {
   if (implementation === "joan-native") return ["native", "compile", "--json", "opt_level=speed"];
-  if (implementation === "c") return ["-O3", "-march=native", "-std=c11", "-Wall", "-Wextra", "-Werror", "-pedantic"];
-  if (implementation === "cpp") return ["-O3", "-march=native", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-pedantic"];
-  if (implementation === "rust") return ["--edition=2024", "-Copt-level=3", "-Ctarget-cpu=native", "-Coverflow-checks=yes"];
+  const flags = systemCompilerFlags(implementation, mode);
+  if (flags !== null) return flags;
   return ["--startup-file=no", "jit-at-runtime"];
+}
+
+function selfTestCompilationProfiles() {
+  const tools = { c: "clang", cpp: "clang++", rust: "rustc" };
+  for (const implementation of ["c", "cpp", "rust"]) {
+    const smoke = systemCompilerFlags(implementation, "smoke");
+    const recorded = systemCompilerFlags(implementation, "recorded");
+    const smokeDescriptor = compileDescriptor(implementation, "source", "output", tools, "smoke");
+    const recordedDescriptor = compileDescriptor(implementation, "source", "output", tools, "recorded");
+    assert(
+      !smoke.includes("-march=native") && !smoke.includes("-Ctarget-cpu=native"),
+      `${implementation} smoke profile is host-native`,
+    );
+    assert(
+      recorded.includes(implementation === "rust" ? "-Ctarget-cpu=native" : "-march=native"),
+      `${implementation} recorded profile is not host-native`,
+    );
+    assert(
+      JSON.stringify(compileFlags(implementation, "smoke")) === JSON.stringify(smoke),
+      `${implementation} reported smoke flags drift from the compiler command`,
+    );
+    assert(
+      JSON.stringify(compileFlags(implementation, "recorded")) === JSON.stringify(recorded),
+      `${implementation} reported recorded flags drift from the compiler command`,
+    );
+    assert(
+      smokeDescriptor.command === tools[implementation]
+        && JSON.stringify(smokeDescriptor.arguments) === JSON.stringify([...smoke, "source", "-o", "output"]),
+      `${implementation} smoke compiler command drift`,
+    );
+    assert(
+      recordedDescriptor.command === tools[implementation]
+        && JSON.stringify(recordedDescriptor.arguments) === JSON.stringify([...recorded, "source", "-o", "output"]),
+      `${implementation} recorded compiler command drift`,
+    );
+  }
+  for (const implementation of ["c", "cpp"]) {
+    assert(systemCompilerFlags(implementation, "smoke").includes("-Werror"), `${implementation} smoke warnings are not fatal`);
+  }
+  let invalidModeRejected = false;
+  try {
+    systemCompilerFlags("c", "invalid");
+  } catch (error) {
+    invalidModeRejected = error instanceof Error && error.message === "compile mode is invalid";
+  }
+  assert(invalidModeRejected, "invalid compile mode was accepted");
 }
 
 function toolEvidence(id, executable, versionArguments) {
@@ -294,7 +355,15 @@ const argumentsList = process.argv.slice(2);
 if (argumentsList.length === 1 && argumentsList[0] === "--self-test") {
   selfTestSemanticObservationDigest();
   selfTestRequiredToolGate();
-  process.stdout.write(`${JSON.stringify({ missing_required_tool_rejected: true, status: "passed", timing_fields_excluded: ["compile_ns", "runtime_ns"] })}\n`);
+  selfTestCompilationProfiles();
+  process.stdout.write(`${JSON.stringify({
+    invalid_compile_mode_rejected: true,
+    missing_required_tool_rejected: true,
+    native_recorded_profile: true,
+    portable_smoke_profile: true,
+    status: "passed",
+    timing_fields_excluded: ["compile_ns", "runtime_ns"],
+  })}\n`);
   process.exit(0);
 }
 assert(argumentsList.length >= 2, "usage: native-backend-benchmark.mjs <manifest> <report> [options]");
@@ -344,7 +413,7 @@ try {
         artifact_scope: "julia-source-file-jit-runtime",
         artifact_sha256: sha256(readFileSync(sourcePaths[implementation])),
         compile: null,
-        compile_flags: compileFlags(implementation),
+        compile_flags: compileFlags(implementation, mode),
         generated_code_bytes: null,
         native_artifact_digest: null,
         note: "Julia JIT compilation is part of process execution.",
@@ -358,7 +427,7 @@ try {
     let artifact = implementation === "joan-native" ? tools.nativeBench : join(work, `${implementation}-runtime`);
     for (let sample = 0; sample < Math.min(sampleCount, mode === "recorded" ? 21 : sampleCount); sample += 1) {
       const sampleArtifact = implementation === "joan-native" ? artifact : join(work, `${implementation}-compile-${sample}`);
-      const descriptor = compileDescriptor(implementation, sourcePaths[implementation], sampleArtifact, tools);
+      const descriptor = compileDescriptor(implementation, sourcePaths[implementation], sampleArtifact, tools, mode);
       const execution = run(descriptor.command, descriptor.arguments, `${implementation} compile sample ${sample}`);
       if (implementation === "joan-native") {
         const receipt = JSON.parse(execution.stdout);
@@ -380,7 +449,7 @@ try {
         : "single-dynamic-executable-not-transitive-runtime",
       artifact_sha256: sha256(readFileSync(artifact)),
       compile: timingSummary(samples),
-      compile_flags: compileFlags(implementation),
+      compile_flags: compileFlags(implementation, mode),
       generated_code_bytes: nativeCodeBytes,
       native_artifact_digest: nativeArtifactDigest,
       note: implementation === "joan-native"

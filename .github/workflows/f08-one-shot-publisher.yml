@@ -25,10 +25,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Materialize and verify exact F08 tree
+      - name: Materialize and verify approved F08 files
         shell: bash
         env:
-          EXPECTED_TREE: 06ad12cf3433ceaa6a8235202e8bc2f5187e4c18
           PAYLOAD_SHA256: 9e095c7a73b6a515bb6053a5a62a119ce8456b40637b94f818e72057ba239571
         run: |
           set -euo pipefail
@@ -517,13 +516,52 @@ jobs:
           JOAN_F08_PAYLOAD
           echo "$PAYLOAD_SHA256  $archive" | sha256sum --check --strict
           tar -xzf "$archive"
-          git rm -- .github/workflows/f08-one-shot-publisher.yml
           git add -A
-          actual_tree="$(git write-tree)"
-          if [[ "$actual_tree" != "$EXPECTED_TREE" ]]; then
-            echo "tree mismatch: expected=$EXPECTED_TREE actual=$actual_tree" >&2
+          if ! git diff --cached --quiet -- .github/workflows; then
+            echo 'workflow drift detected after payload extraction' >&2
+            git diff --cached --name-status -- .github/workflows >&2
             exit 1
           fi
+          while IFS=$'\t' read -r expected_mode expected_sha path; do
+            entry="$(git ls-files -s -- "$path")"
+            actual_mode="${entry%% *}"
+            remainder="${entry#* }"
+            actual_sha="${remainder%% *}"
+            if [[ "$actual_mode" != "$expected_mode" || "$actual_sha" != "$expected_sha" ]]; then
+              echo "manifest mismatch: $path expected=$expected_mode/$expected_sha actual=$actual_mode/$actual_sha" >&2
+              exit 1
+            fi
+          done <<'JOAN_F08_MANIFEST'
+          100644	a93bce4e2d5590dcf152865430ea58a3d781f98a	.github/ISSUE_TEMPLATE/adoption_report.yml
+          100644	064a1eb9fc7ea76873161933d0ca6bc71f32f28e	.github/workflows/adoption-trial.yml
+          100644	b899501e5e33bd2621a57ec787b54dca8cb4c002	README.md
+          100644	52bcf7797201424cd8342ed2a5a2a6b110cefad8	audit/adoption-trial-v1/REVIEW.md
+          100644	6173013aefceb9b5db7e61d5fab60f2cdee91fed	audit/adoption-trial-v1/manifest.json
+          100644	265b29f349996c7e1625194e7451b368c5db1bc7	crates/joan-node/tests/repository_contracts.rs
+          100755	236bf181866501d459b68218a7e70eb9824b2a06	reference/adoption-trial-baseline.mjs
+          100644	55e6d60d2992d424c124f7003e1710996474a90c	schemas/adoption-trial-manifest.v1.schema.json
+          100644	74ddc78f0b56173a76c39c1ada78175d1d3828c6	schemas/adoption-trial-run-receipt.v1.schema.json
+          100755	9d68ba10e284ce0c33b79b2e8b39d64a8e58ab42	scripts/run-adoption-trial.sh
+          100755	9ff830de133fadc772d3d946acea7d8a18e279f4	scripts/verify-adoption-trial.sh
+          100755	65a7777b9a3508623b2e8dbf1f4e3ce6b8480ee5	scripts/verify-all.sh
+          100755	5dcd08f36e51db672f4966b0dda72b67999c08fc	tools/adoption-trial.mjs
+          JOAN_F08_MANIFEST
+          git diff --cached --name-only | LC_ALL=C sort > "$RUNNER_TEMP/actual-changes.txt"
+          cat > "$RUNNER_TEMP/expected-changes.txt" <<'JOAN_F08_CHANGES'
+          .github/ISSUE_TEMPLATE/adoption_report.yml
+          README.md
+          audit/adoption-trial-v1/REVIEW.md
+          audit/adoption-trial-v1/manifest.json
+          crates/joan-node/tests/repository_contracts.rs
+          reference/adoption-trial-baseline.mjs
+          schemas/adoption-trial-manifest.v1.schema.json
+          schemas/adoption-trial-run-receipt.v1.schema.json
+          scripts/run-adoption-trial.sh
+          scripts/verify-adoption-trial.sh
+          scripts/verify-all.sh
+          tools/adoption-trial.mjs
+          JOAN_F08_CHANGES
+          diff -u "$RUNNER_TEMP/expected-changes.txt" "$RUNNER_TEMP/actual-changes.txt"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'test: publish GitHub-only adoption trial package'

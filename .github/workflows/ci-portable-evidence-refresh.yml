@@ -1,0 +1,106 @@
+name: CI portable smoke evidence refresh
+
+on:
+  push:
+    branches:
+      - codex/ci-portable-smoke
+    paths:
+      - .github/workflows/ci-portable-evidence-refresh.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ci-portable-smoke-evidence-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: macos-14
+    timeout-minutes: 90
+    steps:
+      - name: Check out exact portable smoke branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: codex/ci-portable-smoke
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Show pinned Rust toolchain
+        run: rustc --version --verbose && cargo --version --verbose
+
+      - name: Install pinned Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24.19.0
+          package-manager-cache: false
+
+      - name: Install pinned Julia runtime
+        uses: julia-actions/setup-julia@4c0cb0fce8556fdb04a90347310e5db8b1f98fb9
+        with:
+          version: "1.12.7"
+
+      - name: Verify pinned Julia runtime
+        run: test "$(julia --startup-file=no -e 'print(VERSION)')" = '1.12.7'
+
+      - name: Install pinned evidence tools
+        run: |
+          set -euo pipefail
+          cargo install --locked cargo-audit@0.22.2 cargo-deny@0.20.2
+          cargo install --locked cargo-cyclonedx@0.5.9
+          cargo install --locked ripgrep@15.1.0
+          test "$(cargo-audit --version)" = 'cargo-audit 0.22.2'
+          test "$(cargo-deny --version)" = 'cargo-deny 0.20.2'
+          cargo cyclonedx --version | grep -F '0.5.9'
+          test "$(rg --version | sed -n '1p')" = 'ripgrep 15.1.0'
+
+      - name: Refresh exact portable smoke evidence
+        env:
+          CARGO_INCREMENTAL: "0"
+          JOAN_NATIVE_BENCHMARK_REQUIRE_JULIA: "1"
+        run: |
+          set -euo pipefail
+
+          workflow='.github/workflows/ci-portable-evidence-refresh.yml'
+          test -f "$workflow"
+          rm "$workflow"
+
+          source_json="$(node tools/evidence-index.mjs source)"
+          node -e '
+            const source = JSON.parse(process.argv[1]);
+            if (source.tree_digest.value !== "72778755be423c7c41bea723235ffc3865fc0b0d6ec52b489f247a47ab97d689") {
+              throw new Error("unexpected portable smoke source digest: " + source.tree_digest.value);
+            }
+            if (source.file_count !== 358) {
+              throw new Error("unexpected portable smoke source file count: " + source.file_count);
+            }
+          ' "$source_json"
+
+          bash scripts/refresh-evidence.sh
+          node tools/evidence-index.mjs check
+
+          git diff --name-only -- .joan/evidence | LC_ALL=C sort > "$RUNNER_TEMP/actual-evidence.txt"
+          cat > "$RUNNER_TEMP/expected-evidence.txt" <<'JOAN_PORTABLE_EVIDENCE'
+          .joan/evidence/latest.json
+          .joan/evidence/native-abi-v1.json
+          .joan/evidence/runs/run-1.json
+          .joan/evidence/runs/run-2.json
+          .joan/evidence/runs/run-3.json
+          JOAN_PORTABLE_EVIDENCE
+          diff -u "$RUNNER_TEMP/expected-evidence.txt" "$RUNNER_TEMP/actual-evidence.txt"
+
+          git add \
+            .joan/evidence/latest.json \
+            .joan/evidence/native-abi-v1.json \
+            .joan/evidence/runs/run-1.json \
+            .joan/evidence/runs/run-2.json \
+            .joan/evidence/runs/run-3.json
+
+          git diff --cached --name-only | LC_ALL=C sort > "$RUNNER_TEMP/staged-evidence.txt"
+          diff -u "$RUNNER_TEMP/expected-evidence.txt" "$RUNNER_TEMP/staged-evidence.txt"
+
+          test "$(git diff --name-only)" = "$workflow"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'test: refresh portable smoke evidence'
+          git push origin HEAD:refs/heads/codex/ci-portable-smoke

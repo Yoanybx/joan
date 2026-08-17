@@ -26,7 +26,7 @@ jobs:
           node-version: 24.19.0
           package-manager-cache: false
       - name: Install pinned Julia runtime
-        uses: julia-actions/setup-julia@4c0cb0fce8556fdb04a90347310e5db8b1f98fb9
+        uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32
         with:
           version: "1.12.7"
       - name: Verify pinned Julia runtime
@@ -60,7 +60,7 @@ jobs:
           node-version: 24.19.0
           package-manager-cache: false
       - name: Install pinned Julia runtime
-        uses: julia-actions/setup-julia@4c0cb0fce8556fdb04a90347310e5db8b1f98fb9
+        uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32
         with:
           version: "1.12.7"
       - name: Verify pinned Julia runtime

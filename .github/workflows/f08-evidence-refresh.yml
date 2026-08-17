@@ -1,6 +1,11 @@
 name: F08 hosted evidence refresh
 
 on:
+  push:
+    branches:
+      - codex/f08-github-adoption-trial
+    paths:
+      - .github/workflows/f08-evidence-refresh.yml
   workflow_dispatch:
 
 permissions:

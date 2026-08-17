@@ -23,9 +23,9 @@
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "a9e473838e7e1bfb42d423e860200542a2004d2f2e9c233fd34359fd7bf52ed4"
+      "value": "697510514c4739301fd26ddfe37c66ff15a9b95ba6d772bc31f15b463732c8a1"
     },
-    "file_count": 349,
+    "file_count": 358,
     "excludes": [
       ".git",
       "target",
@@ -39,27 +39,27 @@
     "c_corpus_sha256": "ecd2795864670fa838dd5a0cd10c7b7d1fdbe7bd296b4635d22d5a17fbd42244",
     "rust_api_sha256": "750ac8bcd6885bb07026f5a9f933d762a0120406be1d605108ba9d441f941733",
     "gate_files_sha256": "055bdc277f85291d6318c9c246bc9a0e68f5d31fc31ec6ef6d5444c1600476c5",
-    "library_sha256": "be7b51a5c1d475281df9347c5a8346e4cb673a97af11a8ff0c6cd176cc0e109b",
+    "library_sha256": "e4baa99aa215720a326949ca7ce47230a247766a402bd342c158eba5facf1830",
     "tools": [
       {
         "id": "c-compiler",
-        "version": "Apple clang version 14.0.3 (clang-1403.0.22.14.1)\nTarget: arm64-apple-darwin22.6.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
-        "sha256": "60e0dc56bdd6e58d00830d2947f5e7dcaab7bfabbca0fdac83a7e4a9a0e32459"
+        "version": "Apple clang version 15.0.0 (clang-1500.3.9.4)\nTarget: arm64-apple-darwin23.6.0\nThread model: posix\nInstalledDir: /Applications/Xcode_15.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+        "sha256": "4016687c36d60a2bbcab1de3850ebdafdd0a95f9421ff7f05aaf4ca6a002a227"
       },
       {
         "id": "cpp-compiler",
-        "version": "Apple clang version 14.0.3 (clang-1403.0.22.14.1)\nTarget: arm64-apple-darwin22.6.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
-        "sha256": "60e0dc56bdd6e58d00830d2947f5e7dcaab7bfabbca0fdac83a7e4a9a0e32459"
+        "version": "Apple clang version 15.0.0 (clang-1500.3.9.4)\nTarget: arm64-apple-darwin23.6.0\nThread model: posix\nInstalledDir: /Applications/Xcode_15.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+        "sha256": "4016687c36d60a2bbcab1de3850ebdafdd0a95f9421ff7f05aaf4ca6a002a227"
       },
       {
         "id": "cargo",
-        "version": "cargo 1.94.1 (29ea6fb6a 2026-03-24)\nrelease: 1.94.1\ncommit-hash: 29ea6fb6a5db279426f4cc4e17aa385f05a0cfbc\ncommit-date: 2026-03-24\nhost: aarch64-apple-darwin\nlibgit2: 1.9.2 (sys:0.20.3 vendored)\nlibcurl: 8.1.2 (sys:0.4.83+curl-8.15.0 system ssl:(SecureTransport) LibreSSL/3.3.6)\nssl: OpenSSL 3.5.4 30 Sep 2025\nos: Mac OS 13.5.0 [64-bit]",
-        "sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1"
+        "version": "cargo 1.94.1 (29ea6fb6a 2026-03-24)\nrelease: 1.94.1\ncommit-hash: 29ea6fb6a5db279426f4cc4e17aa385f05a0cfbc\ncommit-date: 2026-03-24\nhost: aarch64-apple-darwin\nlibgit2: 1.9.2 (sys:0.20.3 vendored)\nlibcurl: 8.7.1 (sys:0.4.83+curl-8.15.0 system ssl:(SecureTransport) LibreSSL/3.3.6)\nssl: OpenSSL 3.5.4 30 Sep 2025\nos: Mac OS 14.8.7 [64-bit]",
+        "sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6"
       },
       {
         "id": "nm",
-        "version": "llvm-nm, compatible with GNU nm\nApple LLVM version 14.0.3 (clang-1403.0.22.14.1)\n  Optimized build.\n  Default target: arm64-apple-darwin22.6.0\n  Host CPU: apple-m1",
-        "sha256": "60e0dc56bdd6e58d00830d2947f5e7dcaab7bfabbca0fdac83a7e4a9a0e32459"
+        "version": "llvm-nm, compatible with GNU nm\nApple LLVM version 15.0.0\n  Optimized build.\n  Default target: arm64-apple-darwin23.6.0\n  Host CPU: apple-m1",
+        "sha256": "4016687c36d60a2bbcab1de3850ebdafdd0a95f9421ff7f05aaf4ca6a002a227"
       },
       {
         "id": "node",
@@ -68,13 +68,13 @@
       },
       {
         "id": "rg",
-        "version": "ripgrep 15.2.0 (rev e89fff89ac)\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
-        "sha256": "243d3d8fe176bfc3268bfd70311b60a7e0be4158e73f301c1efadbd3271cdcc0"
+        "version": "ripgrep 15.1.0\n\nfeatures:-pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 is not available in this build of ripgrep.",
+        "sha256": "cc257bbe5884c39f8af7f71f6e5727c61427a7556b551296fe7bfb8a4fcf075a"
       },
       {
         "id": "rustc",
         "version": "rustc 1.94.1 (e408947bf 2026-03-25)\nbinary: rustc\ncommit-hash: e408947bfd200af42db322daf0fadfe7e26d3bd1\ncommit-date: 2026-03-25\nhost: aarch64-apple-darwin\nrelease: 1.94.1\nLLVM version: 21.1.8",
-        "sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1"
+        "sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6"
       }
     ]
   }

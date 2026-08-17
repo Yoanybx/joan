@@ -1,17 +1,17 @@
 {
   "schema": "joan.verification-run-receipt.v1",
   "version": "0.1.0-alpha.1",
-  "run_id": "9ffcb265-ae14-4d55-a11d-3666848fbfc5",
+  "run_id": "3eeb2051-3000-4ff0-87a2-9de129d05b0a",
   "status": "passed",
-  "started_at": "2026-08-16T18:22:38.044Z",
-  "completed_at": "2026-08-16T18:32:54.904Z",
+  "started_at": "2026-08-17T06:25:22.475Z",
+  "completed_at": "2026-08-17T06:26:47.528Z",
   "source": {
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "a9e473838e7e1bfb42d423e860200542a2004d2f2e9c233fd34359fd7bf52ed4"
+      "value": "697510514c4739301fd26ddfe37c66ff15a9b95ba6d772bc31f15b463732c8a1"
     },
-    "file_count": 349,
+    "file_count": 358,
     "excludes": [
       ".git",
       "target",
@@ -23,38 +23,38 @@
   "environment": {
     "platform": "darwin",
     "arch": "arm64",
-    "os_release": "22.6.0",
+    "os_release": "23.6.0",
     "runner_sha256": "49a49221d4551b212d463c253c55a6930dd1ccc16bbb9fdb8a9d40f3947e2635",
     "gate_config_sha256": "ff64028ba119e005dcea72caa53da27bfde77194ba0595501b0f5c62728faf95",
     "tools": [
       {
         "id": "node",
-        "path": "/Users/gepsygainza/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "path": "/Users/runner/hostedtoolcache/node/24.19.0/arm64/bin/node",
         "sha256": "27db838bb204ef7c21df2931f5656e4c8fb32e6e947f363a402b49714d32b5b1",
         "version": "v24.19.0"
       },
       {
         "id": "cargo",
-        "path": "/Users/gepsygainza/.cargo/bin/rustup",
-        "sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-        "version": "cargo 1.94.1 (29ea6fb6a 2026-03-24)\nrelease: 1.94.1\ncommit-hash: 29ea6fb6a5db279426f4cc4e17aa385f05a0cfbc\ncommit-date: 2026-03-24\nhost: aarch64-apple-darwin\nlibgit2: 1.9.2 (sys:0.20.3 vendored)\nlibcurl: 8.1.2 (sys:0.4.83+curl-8.15.0 system ssl:(SecureTransport) LibreSSL/3.3.6)\nssl: OpenSSL 3.5.4 30 Sep 2025\nos: Mac OS 13.5.0 [64-bit]"
+        "path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
+        "sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
+        "version": "cargo 1.94.1 (29ea6fb6a 2026-03-24)\nrelease: 1.94.1\ncommit-hash: 29ea6fb6a5db279426f4cc4e17aa385f05a0cfbc\ncommit-date: 2026-03-24\nhost: aarch64-apple-darwin\nlibgit2: 1.9.2 (sys:0.20.3 vendored)\nlibcurl: 8.7.1 (sys:0.4.83+curl-8.15.0 system ssl:(SecureTransport) LibreSSL/3.3.6)\nssl: OpenSSL 3.5.4 30 Sep 2025\nos: Mac OS 14.8.7 [64-bit]"
       },
       {
         "id": "rustc",
-        "path": "/Users/gepsygainza/.cargo/bin/rustup",
-        "sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
+        "path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
+        "sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
         "version": "rustc 1.94.1 (e408947bf 2026-03-25)\nbinary: rustc\ncommit-hash: e408947bfd200af42db322daf0fadfe7e26d3bd1\ncommit-date: 2026-03-25\nhost: aarch64-apple-darwin\nrelease: 1.94.1\nLLVM version: 21.1.8"
       },
       {
         "id": "cargo-audit",
-        "path": "/Volumes/ParallesWin 1/JOAN/cargo-tools/bin/cargo-audit",
-        "sha256": "fac339e7a9c648a54db7265a202bebe6b4c3aa56ef843d853525c062e064aa02",
+        "path": "/Users/runner/.cargo/bin/cargo-audit",
+        "sha256": "a978098c37a09ee5b0e2275674073201499df1e36aa7ecd19a16c9fb07f6fb8e",
         "version": "cargo-audit 0.22.2"
       },
       {
         "id": "cargo-deny",
-        "path": "/Volumes/ParallesWin 1/JOAN/cargo-tools/bin/cargo-deny",
-        "sha256": "6604e5b955d621c21d87a20580dae1ff1afecaa9f87be1b1b2335c5ee2ef0ef0",
+        "path": "/Users/runner/.cargo/bin/cargo-deny",
+        "sha256": "623e91af37c7e4fdfa12e50914728fe7a8e945f25a96ecf36ff038c5df0a3e3f",
         "version": "cargo-deny 0.20.2"
       }
     ]
@@ -67,11 +67,11 @@
         "fmt",
         "--check"
       ],
-      "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
-      "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-16T18:22:38.050Z",
-      "completed_at": "2026-08-16T18:22:42.511Z",
-      "duration_ms": 4464,
+      "executable_path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
+      "executable_sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
+      "started_at": "2026-08-17T06:25:22.478Z",
+      "completed_at": "2026-08-17T06:25:22.689Z",
+      "duration_ms": 211,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -97,11 +97,11 @@
         "-D",
         "warnings"
       ],
-      "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
-      "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-16T18:22:42.531Z",
-      "completed_at": "2026-08-16T18:23:07.067Z",
-      "duration_ms": 24544,
+      "executable_path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
+      "executable_sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
+      "started_at": "2026-08-17T06:25:22.699Z",
+      "completed_at": "2026-08-17T06:25:22.931Z",
+      "duration_ms": 231,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -110,8 +110,8 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stderr": {
-        "bytes": 73,
-        "sha256": "d5a6e8633fe46ef856caa88f99839b3df9c8729574b240f2b0e5e6c418b8bd17"
+        "bytes": 72,
+        "sha256": "4f27ac380b22e1d975eee20ce727fa8cbc09061177f6253af0777fd4de7b7506"
       }
     },
     {
@@ -123,21 +123,21 @@
         "--all-features",
         "--locked"
       ],
-      "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
-      "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-16T18:23:07.096Z",
-      "completed_at": "2026-08-16T18:29:20.339Z",
-      "duration_ms": 373247,
+      "executable_path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
+      "executable_sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
+      "started_at": "2026-08-17T06:25:22.941Z",
+      "completed_at": "2026-08-17T06:26:41.674Z",
+      "duration_ms": 78732,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
       "stdout": {
-        "bytes": 22033,
-        "sha256": "28a93ca7218cb6aa11cbd8edec722eb367db55e004c98903708270fcf6263925"
+        "bytes": 22012,
+        "sha256": "bd9b63585f80e02a31a0dedff8602b42ebe014a10fee5e6cd6f029788a6b9b1e"
       },
       "stderr": {
-        "bytes": 7250,
-        "sha256": "5f2e4927b85130d3622ba77228bd5404c37b65b1b42202f2e65be16aaefd4bb3"
+        "bytes": 5089,
+        "sha256": "1380c19ca6593813dc57d5e14fcf7e2837387b945b1005ee305253d7027bb2fd"
       }
     },
     {
@@ -149,11 +149,11 @@
         "--workspace",
         "--locked"
       ],
-      "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
-      "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-16T18:29:20.379Z",
-      "completed_at": "2026-08-16T18:29:56.315Z",
-      "duration_ms": 35936,
+      "executable_path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
+      "executable_sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
+      "started_at": "2026-08-17T06:26:41.687Z",
+      "completed_at": "2026-08-17T06:26:42.845Z",
+      "duration_ms": 1157,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -163,7 +163,7 @@
       },
       "stderr": {
         "bytes": 716,
-        "sha256": "0ab485a24a8a114091d053e2ab73250d17467aaa69876c25dcc06d3139ddba19"
+        "sha256": "223e164f63ecea76fab7c45c662ced8d068008e013e4f9e998e998dda0ef99fa"
       }
     },
     {
@@ -175,11 +175,11 @@
         "--release",
         "--locked"
       ],
-      "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
-      "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-16T18:29:56.347Z",
-      "completed_at": "2026-08-16T18:30:11.026Z",
-      "duration_ms": 14679,
+      "executable_path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
+      "executable_sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
+      "started_at": "2026-08-17T06:26:42.855Z",
+      "completed_at": "2026-08-17T06:26:42.957Z",
+      "duration_ms": 102,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -188,8 +188,8 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stderr": {
-        "bytes": 63,
-        "sha256": "7d3bb348e19c3ec2527b150cbee285500cc3b71f998446fbc05d8ec9f5f63851"
+        "bytes": 62,
+        "sha256": "7a7bb64a28cdda9b91e6e27f41be455104d929b5d7ad6dd5beca75fc5a47f1f4"
       }
     },
     {
@@ -197,11 +197,11 @@
       "argv": [
         "./scripts/verify-jce1.sh"
       ],
-      "executable_path": "/Users/gepsygainza/Documents/Playground/joan/scripts/verify-jce1.sh",
+      "executable_path": "/Users/runner/work/joan/joan/scripts/verify-jce1.sh",
       "executable_sha256": "b5798b586af75b93465da894d03da93e430d9742e160f5912743216d976a9814",
-      "started_at": "2026-08-16T18:30:11.044Z",
-      "completed_at": "2026-08-16T18:30:26.737Z",
-      "duration_ms": 15693,
+      "started_at": "2026-08-17T06:26:42.965Z",
+      "completed_at": "2026-08-17T06:26:43.267Z",
+      "duration_ms": 302,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -221,17 +221,17 @@
         "1024",
         "1000"
       ],
-      "executable_path": "/Users/gepsygainza/Documents/Playground/joan/scripts/benchmark-digest.sh",
+      "executable_path": "/Users/runner/work/joan/joan/scripts/benchmark-digest.sh",
       "executable_sha256": "804f065635cfbc42dfd7d8c9ede79ff667e057cc47e529168dfcff703c76347f",
-      "started_at": "2026-08-16T18:30:26.739Z",
-      "completed_at": "2026-08-16T18:30:34.767Z",
-      "duration_ms": 8028,
+      "started_at": "2026-08-17T06:26:43.268Z",
+      "completed_at": "2026-08-17T06:26:43.467Z",
+      "duration_ms": 199,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
       "stdout": {
-        "bytes": 783,
-        "sha256": "9e9105d9e8bba0f9d88cc88c73c5eed3c71de524d1f14462eec3f2a0881a18a2"
+        "bytes": 782,
+        "sha256": "cd16f1b66baa83f3a8bba94ebc4ef263af61ea8d9ab73021690ae2887a616386"
       },
       "stderr": {
         "bytes": 0,
@@ -243,17 +243,17 @@
       "argv": [
         "./scripts/verify-payment-cost.sh"
       ],
-      "executable_path": "/Users/gepsygainza/Documents/Playground/joan/scripts/verify-payment-cost.sh",
+      "executable_path": "/Users/runner/work/joan/joan/scripts/verify-payment-cost.sh",
       "executable_sha256": "1f413855abefacd9ba1d1c1af924bd8b87287a2db62951ebdf9b69ff457f7917",
-      "started_at": "2026-08-16T18:30:34.770Z",
-      "completed_at": "2026-08-16T18:30:35.106Z",
-      "duration_ms": 336,
+      "started_at": "2026-08-17T06:26:43.467Z",
+      "completed_at": "2026-08-17T06:26:43.606Z",
+      "duration_ms": 138,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
       "stdout": {
         "bytes": 606,
-        "sha256": "7eecc3dbdcecd0f2b67fc6b399ea6979f858e37fed55b38cf486049b38c42546"
+        "sha256": "724ac9539627fc891cc915eb6b30bb72be0cc61facf1fa750c55a09f2dd97937"
       },
       "stderr": {
         "bytes": 0,
@@ -265,11 +265,11 @@
       "argv": [
         "./scripts/verify-tool-forge.sh"
       ],
-      "executable_path": "/Users/gepsygainza/Documents/Playground/joan/scripts/verify-tool-forge.sh",
+      "executable_path": "/Users/runner/work/joan/joan/scripts/verify-tool-forge.sh",
       "executable_sha256": "4fc990e191cc89b71024c28c213d3bf1830b3cc39998c33e0a960301818b93d1",
-      "started_at": "2026-08-16T18:30:35.107Z",
-      "completed_at": "2026-08-16T18:31:06.423Z",
-      "duration_ms": 31316,
+      "started_at": "2026-08-17T06:26:43.606Z",
+      "completed_at": "2026-08-17T06:26:44.466Z",
+      "duration_ms": 860,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -290,11 +290,11 @@
         "--locked",
         "check"
       ],
-      "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
-      "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-16T18:31:06.431Z",
-      "completed_at": "2026-08-16T18:31:07.746Z",
-      "duration_ms": 1314,
+      "executable_path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
+      "executable_sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
+      "started_at": "2026-08-17T06:26:44.469Z",
+      "completed_at": "2026-08-17T06:26:45.370Z",
+      "duration_ms": 901,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -314,11 +314,11 @@
         "audit",
         "--json"
       ],
-      "executable_path": "/Users/gepsygainza/.cargo/bin/rustup",
-      "executable_sha256": "aeb4105778ca1bd3c6b0e75768f581c656633cd51368fa61289b6a71696ac7e1",
-      "started_at": "2026-08-16T18:31:07.764Z",
-      "completed_at": "2026-08-16T18:31:10.185Z",
-      "duration_ms": 2420,
+      "executable_path": "/opt/homebrew/Cellar/rustup/1.29.0/bin/rustup-init",
+      "executable_sha256": "eefd7db0bdf403380b10a0eaaa27cee9c00f8f7c3ef5d25caafbfd6e433255e6",
+      "started_at": "2026-08-17T06:26:45.380Z",
+      "completed_at": "2026-08-17T06:26:46.131Z",
+      "duration_ms": 750,
       "status": "passed",
       "exit_code": 0,
       "signal": null,
@@ -343,9 +343,9 @@
       "tree_digest": {
         "algorithm": "sha256",
         "profile": "joan-source-tree-v2",
-        "value": "a9e473838e7e1bfb42d423e860200542a2004d2f2e9c233fd34359fd7bf52ed4"
+        "value": "697510514c4739301fd26ddfe37c66ff15a9b95ba6d772bc31f15b463732c8a1"
       },
-      "file_count": 349,
+      "file_count": 358,
       "excludes": [
         ".git",
         "target",
@@ -356,8 +356,8 @@
     },
     "inventory": {
       "workspace_crates": 26,
-      "json_schemas": 79,
-      "rust_tests": 233
+      "json_schemas": 81,
+      "rust_tests": 234
     },
     "jce1": {
       "total": 27,

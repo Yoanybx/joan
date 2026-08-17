@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joan.invalid/schemas/adoption-trial-run-receipt.v1.schema.json",
+  "title": "JOAN GitHub-only Adoption Trial Run Receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "run_id", "status", "started_at", "completed_at", "source", "provenance", "operator", "task", "installation", "comparison", "artifacts", "recommendation", "independence", "qualification"],
+  "properties": {
+    "schema": {"const": "joan.adoption-trial-run-receipt.v1"},
+    "version": {"const": "0.1.0-alpha.1"},
+    "run_id": {"type": "string", "format": "uuid"},
+    "status": {"const": "technical-trial-passed-independence-unverified"},
+    "started_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["official_repository", "git_remote", "git_commit", "worktree_clean", "tree_digest", "file_count"],
+      "properties": {
+        "official_repository": {"const": "https://github.com/Yoanybx/joan"},
+        "git_remote": {"const": "https://github.com/Yoanybx/joan.git"},
+        "git_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "worktree_clean": {"const": true},
+        "tree_digest": {"$ref": "#/$defs/sourceDigest"},
+        "file_count": {"type": "integer", "minimum": 1}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["execution_class", "github_repository", "github_run_id", "github_run_attempt", "github_workflow_ref", "github_actor", "github_actor_id"],
+      "properties": {
+        "execution_class": {"enum": ["local-execution", "github-hosted-runner"]},
+        "github_repository": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+        "github_run_id": {"type": ["string", "null"], "pattern": "^[1-9][0-9]*$"},
+        "github_run_attempt": {"type": ["string", "null"], "pattern": "^[1-9][0-9]*$"},
+        "github_workflow_ref": {"type": ["string", "null"], "minLength": 1},
+        "github_actor": {"type": ["string", "null"], "minLength": 1},
+        "github_actor_id": {"type": ["string", "null"], "pattern": "^[1-9][0-9]*$"}
+      }
+    },
+    "operator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declared_relation", "declaration_verified"],
+      "properties": {
+        "declared_relation": {"enum": ["independent", "affiliated", "undisclosed"]},
+        "declaration_verified": {"const": false}
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "class", "fixture", "fixture_sha256", "repetitions", "repository_unchanged"],
+      "properties": {
+        "id": {"const": "repository-inspection-basic-v1"},
+        "class": {"const": "repository-audit"},
+        "fixture": {"const": "examples/inspect-fixtures/basic"},
+        "fixture_sha256": {"$ref": "#/$defs/sha256"},
+        "repetitions": {"type": "integer", "minimum": 3, "maximum": 21},
+        "repository_unchanged": {"const": true}
+      }
+    },
+    "installation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cargo_build_ms", "joan_binary_sha256"],
+      "properties": {
+        "cargo_build_ms": {"type": "integer", "minimum": 0},
+        "joan_binary_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["oracle_match", "cross_implementation_match", "baseline_reproducible", "joan_reproducible", "baseline_duration_ms", "joan_duration_ms"],
+      "properties": {
+        "oracle_match": {"const": true},
+        "cross_implementation_match": {"const": true},
+        "baseline_reproducible": {"const": true},
+        "joan_reproducible": {"const": true},
+        "baseline_duration_ms": {"type": "array", "minItems": 3, "items": {"type": "integer", "minimum": 0}},
+        "joan_duration_ms": {"type": "array", "minItems": 3, "items": {"type": "integer", "minimum": 0}}
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifest", "baseline_output", "joan_output", "adoption_trial_receipt", "recommendation_receipt"],
+      "properties": {
+        "manifest": {"$ref": "#/$defs/artifact"},
+        "baseline_output": {"$ref": "#/$defs/artifact"},
+        "joan_output": {"$ref": "#/$defs/artifact"},
+        "adoption_trial_receipt": {"$ref": "#/$defs/artifact"},
+        "recommendation_receipt": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "receipt_digest"],
+      "properties": {
+        "status": {"enum": ["recommended", "optional", "not_applicable", "reject"]},
+        "receipt_digest": {"$ref": "https://joan.invalid/schemas/digest.v0.schema.json"}
+      }
+    },
+    "independence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason"],
+      "properties": {
+        "status": {"const": "unverified"},
+        "reason": {"type": "string", "minLength": 40}
+      }
+    },
+    "qualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["external_operator_verified", "counts_toward_external_trial_gate", "repeat_or_recommend_intent", "f08_complete", "universal_claim_allowed"],
+      "properties": {
+        "external_operator_verified": {"const": false},
+        "counts_toward_external_trial_gate": {"const": false},
+        "repeat_or_recommend_intent": {"const": "unanswered"},
+        "f08_complete": {"const": false},
+        "universal_claim_allowed": {"const": false}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"provenance": {"properties": {"execution_class": {"const": "local-execution"}}}}},
+      "then": {
+        "properties": {
+          "provenance": {
+            "properties": {
+              "github_repository": {"const": null},
+              "github_run_id": {"const": null},
+              "github_run_attempt": {"const": null},
+              "github_workflow_ref": {"const": null},
+              "github_actor": {"const": null},
+              "github_actor_id": {"const": null}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"provenance": {"properties": {"execution_class": {"const": "github-hosted-runner"}}}}},
+      "then": {
+        "properties": {
+          "provenance": {
+            "properties": {
+              "github_repository": {"type": "string"},
+              "github_run_id": {"type": "string"},
+              "github_run_attempt": {"type": "string"},
+              "github_workflow_ref": {"type": "string"},
+              "github_actor": {"type": "string"},
+              "github_actor_id": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "sourceDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "profile", "value"],
+      "properties": {
+        "algorithm": {"const": "sha256"},
+        "profile": {"const": "joan-source-tree-v2"},
+        "value": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "sha256"],
+      "properties": {
+        "file": {"type": "string", "pattern": "^[A-Za-z0-9._/-]+$"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

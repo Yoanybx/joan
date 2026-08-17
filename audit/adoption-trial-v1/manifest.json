@@ -1,0 +1,86 @@
+{
+  "schema": "joan.adoption-trial-manifest.v1",
+  "version": "0.1.0-alpha.1",
+  "profile": "github-only-repository-inspection-v1",
+  "source": {
+    "official_repository": "https://github.com/Yoanybx/joan",
+    "git_remote": "https://github.com/Yoanybx/joan.git",
+    "clean_checkout_required": true,
+    "tagged_release_required": false
+  },
+  "task": {
+    "id": "repository-inspection-basic-v1",
+    "class": "repository-audit",
+    "fixture": "examples/inspect-fixtures/basic",
+    "fixture_sha256": "dc1f5ab42c9290fdeef2f638e85d925f93694be7cdc5b9be2733a584ee3ca8a9",
+    "repetitions": 7,
+    "oracle": {
+      "schema": "joan.adoption-trial-observation.v1",
+      "mode": "read-only-offline",
+      "network": "denied-by-design-no-network-client",
+      "telemetry": "none",
+      "writes": "none",
+      "manifests": ["Cargo.toml"],
+      "languages": ["Rust"],
+      "instruction_files": [
+        {"path": ".github/copilot-instructions.md", "bytes": 78},
+        {"path": "AGENTS.md", "bytes": 103}
+      ],
+      "diagnostic_codes": []
+    },
+    "baseline": {
+      "implementation": "node-reference-no-shared-rust",
+      "command": ["node", "reference/adoption-trial-baseline.mjs", "examples/inspect-fixtures/basic"]
+    },
+    "joan": {
+      "implementation": "joan-repository-inspector",
+      "command": ["<joan-binary>", "repo", "inspect", "examples/inspect-fixtures/basic", "--json"]
+    }
+  },
+  "execution": {
+    "command": ["bash", "scripts/run-adoption-trial.sh", "<absolute-output-directory>", "<operator-relation>"],
+    "required_tools": ["bash", "cargo", "git", "node", "rustc"],
+    "pinned_versions": {
+      "node": "v24.19.0",
+      "rustc_prefix": "rustc 1.94.1 "
+    },
+    "supported_hosts": ["darwin", "linux"]
+  },
+  "safety": {
+    "source_acquisition": "official-github-repository",
+    "task_network": "none",
+    "telemetry": "none",
+    "secrets": "not-required",
+    "account": "not-required-for-local-trial",
+    "wallet": "not-required",
+    "payments": "none",
+    "repository_writes": "forbidden",
+    "generated_output": "absolute-path-outside-checkout"
+  },
+  "qualification": {
+    "external_trials_required": 3,
+    "successful_trials_required": 3,
+    "repeat_or_recommend_required": 2,
+    "self_execution_counts": false,
+    "machine_provenance_is_independence": false,
+    "universal_claim_allowed": false
+  },
+  "scope": {
+    "review_paths": [
+      ".github/ISSUE_TEMPLATE/adoption_report.yml",
+      ".github/workflows/adoption-trial.yml",
+      "audit/adoption-trial-v1/REVIEW.md",
+      "audit/adoption-trial-v1/manifest.json",
+      "crates/joan-node/tests/repository_contracts.rs",
+      "examples/inspect-fixtures/basic",
+      "reference/adoption-trial-baseline.mjs",
+      "schemas/adoption-trial-manifest.v1.schema.json",
+      "schemas/adoption-trial-run-receipt.v1.schema.json",
+      "scripts/run-adoption-trial.sh",
+      "scripts/verify-adoption-trial.sh",
+      "scripts/verify-all.sh",
+      "tools/adoption-trial.mjs"
+    ],
+    "excluded_effects": ["deployment", "listener", "payment", "release", "secret-access", "telemetry"]
+  }
+}

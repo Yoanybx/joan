@@ -47,6 +47,24 @@ cargo run -p joan-node -- trust pr evaluate . --base HEAD^ --head HEAD --json
 
 The inspection command is designed to be offline and read-only. It reads only allowlisted repository metadata and instruction files under explicit size and path bounds.
 
+## GitHub-only adoption trial
+
+An external agent can exercise the first bounded task from an exact public commit without a JOAN
+account, wallet, server, secret or owner-host access:
+
+```bash
+git clone https://github.com/Yoanybx/joan.git
+cd joan
+git checkout <40-character-commit>
+export CARGO_TARGET_DIR=/absolute/path/outside/joan
+bash scripts/run-adoption-trial.sh /absolute/path/to/new-output undisclosed
+```
+
+Use `independent` instead of `undisclosed` only when that relationship is true. The runner compares
+a separate Node.js reference with JOAN over a frozen repository-inspection fixture and emits JSON
+evidence. Its automatic receipt never counts itself as external proof. See
+[`audit/adoption-trial-v1/REVIEW.md`](audit/adoption-trial-v1/REVIEW.md).
+
 ## Components
 
 - `joan-canonical`: strict JSON subset and domain-separated digests.

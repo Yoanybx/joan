@@ -1,12 +1,46 @@
-name: Adoption report
-description: Voluntarily declare a real JOAN evaluation or deployment.
-title: "[Adoption] "
+name: Adoption trial report
+description: Submit reviewable evidence from a JOAN evaluation performed from GitHub.
+title: "[Adoption trial] "
 labels:
   - adoption-report
 body:
   - type: markdown
     attributes:
-      value: This report is public and optional. JOAN does not send runtime telemetry.
+      value: This report is public and optional. JOAN sends no runtime telemetry. A submission identifies a GitHub actor but does not automatically prove organizational independence.
+  - type: input
+    id: source_commit
+    attributes:
+      label: Exact JOAN source commit
+      description: Enter the 40-character commit tested from https://github.com/Yoanybx/joan.
+      placeholder: 0123456789abcdef0123456789abcdef01234567
+    validations:
+      required: true
+  - type: input
+    id: technical_receipt
+    attributes:
+      label: Technical receipt SHA-256
+      description: SHA-256 of adoption-trial-run-receipt.json and a public artifact or fork-run link.
+    validations:
+      required: true
+  - type: dropdown
+    id: source_channel
+    attributes:
+      label: Source acquisition
+      options:
+        - Official Yoanybx/joan GitHub repository only
+        - Another channel or private files were used
+    validations:
+      required: true
+  - type: dropdown
+    id: relationship
+    attributes:
+      label: Relationship to LED ACTION LLC
+      options:
+        - Independent
+        - Affiliated
+        - Undisclosed
+    validations:
+      required: true
   - type: dropdown
     id: usage
     attributes:
@@ -42,6 +76,25 @@ body:
         - Other JOAN component
     validations:
       required: true
+  - type: dropdown
+    id: task_completion
+    attributes:
+      label: Assigned task completed
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true
+  - type: dropdown
+    id: repeat_intent
+    attributes:
+      label: Would you repeat this trial or recommend JOAN for this task?
+      options:
+        - "Yes"
+        - "No"
+        - Undecided
+    validations:
+      required: true
   - type: textarea
     id: outcome
     attributes:
@@ -49,6 +102,13 @@ body:
       description: Describe evidence, limitations and the baseline used for comparison.
     validations:
       required: true
+  - type: checkboxes
+    id: independence_boundary
+    attributes:
+      label: Trial boundary
+      options:
+        - label: I did not use the owner Mac, private files, hidden services or private implementation help.
+          required: true
   - type: checkboxes
     id: consent
     attributes:

@@ -68,6 +68,9 @@ bash scripts/verify-native-benchmark.sh
 printf '%s\n' '==> independent native rerun package'
 bash scripts/verify-independent-rerun.sh
 
+printf '%s\n' '==> GitHub-only adoption trial package'
+bash scripts/verify-adoption-trial.sh
+
 printf '%s\n' '==> AI-agent language scorecard'
 bash scripts/verify-agent-scorecard.sh
 

@@ -1,0 +1,58 @@
+name: adoption-trial
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_commit:
+        description: Exact 40-character commit from Yoanybx/joan
+        required: true
+        type: string
+      operator_relation:
+        description: Relationship to LED ACTION LLC; this remains unverified
+        required: true
+        default: undisclosed
+        type: choice
+        options:
+          - undisclosed
+          - independent
+          - affiliated
+
+permissions:
+  contents: read
+
+jobs:
+  github-only-trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Require exact source commit
+        env:
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+        run: test "$(printf '%s' "$SOURCE_COMMIT" | sed -E 's/^[0-9a-f]{40}$//')" = ''
+      - name: Checkout official JOAN source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Yoanybx/joan
+          ref: ${{ inputs.source_commit }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install pinned Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24.19.0
+          package-manager-cache: false
+      - name: Verify pinned toolchains
+        run: test "$(node --version)" = 'v24.19.0' && test "$(rustc --version)" = 'rustc 1.94.1 (f64c431fb 2026-03-03)'
+      - name: Run technical trial
+        env:
+          CARGO_INCREMENTAL: "0"
+          CARGO_TARGET_DIR: ${{ runner.temp }}/joan-adoption-cargo-target
+          OPERATOR_RELATION: ${{ inputs.operator_relation }}
+        run: bash scripts/run-adoption-trial.sh "${RUNNER_TEMP}/joan-adoption-trial-v1" "$OPERATOR_RELATION"
+      - name: Upload technical evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: joan-adoption-trial-${{ inputs.source_commit }}-${{ github.actor_id }}
+          path: ${{ runner.temp }}/joan-adoption-trial-v1/*.json
+          if-no-files-found: error
+          retention-days: 30

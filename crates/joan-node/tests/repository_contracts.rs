@@ -921,6 +921,18 @@ fn independent_rerun_receipt_matches_its_schema_when_supplied()
 }
 
 #[test]
+fn adoption_trial_run_receipt_matches_its_schema_when_supplied()
+-> Result<(), Box<dyn std::error::Error>> {
+    let Ok(path) = std::env::var("JOAN_ADOPTION_TRIAL_RUN_RECEIPT_INPUT") else {
+        return Ok(());
+    };
+    validate_instance(
+        &read_json(Path::new(&path))?,
+        "schemas/adoption-trial-run-receipt.v1.schema.json",
+    )
+}
+
+#[test]
 fn sbom_artifacts_match_their_schemas_when_supplied() -> Result<(), Box<dyn std::error::Error>> {
     let Ok(directory) = std::env::var("JOAN_SBOM_ARTIFACT_DIRECTORY") else {
         return Ok(());
@@ -1123,7 +1135,7 @@ fn workspace_root() -> PathBuf {
         )
 }
 
-fn manifest_schema_pairs() -> [(&'static str, &'static str); 17] {
+fn manifest_schema_pairs() -> [(&'static str, &'static str); 18] {
     [
         (
             ".joan/adoption.json",
@@ -1192,6 +1204,10 @@ fn manifest_schema_pairs() -> [(&'static str, &'static str); 17] {
         (
             "audit/independent-rerun-v0/manifest.json",
             "schemas/independent-rerun-manifest.v0.schema.json",
+        ),
+        (
+            "audit/adoption-trial-v1/manifest.json",
+            "schemas/adoption-trial-manifest.v1.schema.json",
         ),
     ]
 }

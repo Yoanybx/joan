@@ -23,7 +23,7 @@
     "tree_digest": {
       "algorithm": "sha256",
       "profile": "joan-source-tree-v2",
-      "value": "697510514c4739301fd26ddfe37c66ff15a9b95ba6d772bc31f15b463732c8a1"
+      "value": "72778755be423c7c41bea723235ffc3865fc0b0d6ec52b489f247a47ab97d689"
     },
     "file_count": 358,
     "excludes": [
@@ -69,7 +69,7 @@
       {
         "id": "rg",
         "version": "ripgrep 15.1.0\n\nfeatures:-pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 is not available in this build of ripgrep.",
-        "sha256": "cc257bbe5884c39f8af7f71f6e5727c61427a7556b551296fe7bfb8a4fcf075a"
+        "sha256": "aa3b685cd52ead5a74fd74e3429a112e659cc2494029eeb932068f1e2b9861ff"
       },
       {
         "id": "rustc",

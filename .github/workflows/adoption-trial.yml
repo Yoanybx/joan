@@ -50,7 +50,7 @@ jobs:
           OPERATOR_RELATION: ${{ inputs.operator_relation }}
         run: bash scripts/run-adoption-trial.sh "${RUNNER_TEMP}/joan-adoption-trial-v1" "$OPERATOR_RELATION"
       - name: Upload technical evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: joan-adoption-trial-${{ inputs.source_commit }}-${{ github.actor_id }}
           path: ${{ runner.temp }}/joan-adoption-trial-v1/*.json

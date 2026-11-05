@@ -1,10 +1,21 @@
+# JOAN — Verifiable Payments Between AI Agents
+
+JOAN is an open-source language and protocol that lets AI agents pay each other for services — and prove it. When one agent buys a service from another, JOAN moves the value and produces a verifiable receipt that attests the service was delivered: payment and proof of delivery are one transaction, not two systems that have to trust each other.
+
+**Why it exists:** agents are starting to buy compute, data and services from other agents, but today's rails give them no native way to pay with delivery attestation. JOAN is built for that gap: JSON-native APIs machines can call directly, deterministic settlement logic, and receipts any third party can verify.
+
+**Status:** working implementation in Rust — 26 crates with a full test suite (build and run instructions below). Apache-2.0.
+
+**Quickstart:** see the build/run instructions further down in this README — clone, build with Cargo, run the test suite to see the protocol exercised end to end.
+
+---
+
 # JOAN
 
 JOAN is an experimental, agent-native language and verification substrate for deterministic programs, semantic identity, atomic patches, guardian decisions, repository instruction boundaries, evidence-based adoption and machine-only dispute resolution.
 
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-Original creator and founder: **Joan Alberto Barrios Cruz**. Project-designated corporate owner: **LED ACTION LLC**, Florida document number **L23000299152**. The signed-assignment requirement is recorded in [OWNERSHIP.md](OWNERSHIP.md). See [AUTHORS.md](AUTHORS.md), [ORIGIN.md](ORIGIN.md) and [GOVERNANCE.md](GOVERNANCE.md).
 
 Official source repository: [Yoanybx/joan](https://github.com/Yoanybx/joan).
 
@@ -157,3 +168,7 @@ trademark, certification, endorsement, official release, hosted service, or
 enterprise-module rights beyond its express terms. Corporate ownership must be
 supported by the separately signed assignment described in `OWNERSHIP.md`;
 repository text is not that legal instrument.
+
+## Project ownership & licensing
+
+Original creator and founder: **Joan Alberto Barrios Cruz**. Project-designated corporate owner: **LED ACTION LLC**, Florida document number **L23000299152**. The signed-assignment requirement is recorded in [OWNERSHIP.md](OWNERSHIP.md). See [AUTHORS.md](AUTHORS.md), [ORIGIN.md](ORIGIN.md) and [GOVERNANCE.md](GOVERNANCE.md).
